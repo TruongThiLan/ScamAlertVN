@@ -1,0 +1,98 @@
+import { createBrowserRouter } from 'react-router';
+import { RootLayout } from './layouts/RootLayout';
+import { Home } from './pages/Home';
+import { About } from './pages/About';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
+import { PostDetail } from './pages/PostDetail';
+import { CreatePost } from './pages/CreatePost';
+import { MyPosts } from './pages/MyPosts';
+import { Profile } from './pages/Profile';
+import { SearchPage } from './pages/SearchPage';
+import { UserProfile } from './pages/UserProfile';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminUsers } from './pages/admin/Users';
+import { AdminPosts } from './pages/admin/Posts';
+import { AdminCategories } from './pages/admin/Categories';
+import { AdminStatistics } from './pages/admin/Statistics';
+import { Outlet, Navigate } from 'react-router';
+import { Toaster } from './components/ui/sonner';
+
+// Simple layout for auth pages (no header)
+function AuthLayout() {
+  return (
+    <>
+      <Outlet />
+      <Toaster />
+    </>
+  );
+}
+
+// Router configuration for ScamAlert VN
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    Component: RootLayout,
+    children: [
+      // Home page
+      { index: true, Component: Home },
+      // About page
+      { path: 'about', Component: About },
+      // Posts
+      { path: 'posts/:id', Component: PostDetail },
+      { path: 'posts/create', Component: CreatePost },
+      { path: 'posts/:id/edit', Component: CreatePost },
+      // User pages
+      { path: 'my-posts', Component: MyPosts },
+      { path: 'profile', Component: Profile },
+      { path: 'search', Component: SearchPage },
+      { path: 'user/:userId', Component: UserProfile },
+      { path: 'post/:id', Component: PostDetail },
+      { path: 'create-post', Component: CreatePost },
+    ],
+  },
+  // Admin section with separate layout
+  {
+    path: 'admin',
+    Component: AdminLayout,
+    children: [
+      { index: true, element: <Navigate to="/admin/posts" replace /> },
+      { path: 'users', Component: AdminUsers },
+      { path: 'posts', Component: AdminPosts },
+      { path: 'categories', Component: AdminCategories },
+      { path: 'categories/:id', Component: AdminCategories },
+      { path: 'statistics', Component: AdminStatistics },
+    ],
+  },
+  // Auth pages without header - separate routes
+  {
+    path: 'login',
+    Component: AuthLayout,
+    children: [
+      { index: true, Component: Login },
+    ],
+  },
+  {
+    path: 'register',
+    Component: AuthLayout,
+    children: [
+      { index: true, Component: Register },
+    ],
+  },
+  {
+    path: 'forgot-password',
+    Component: AuthLayout,
+    children: [
+      { index: true, Component: ForgotPassword },
+    ],
+  },
+  {
+    path: 'reset-password',
+    Component: AuthLayout,
+    children: [
+      { index: true, Component: ResetPassword },
+    ],
+  },
+]);

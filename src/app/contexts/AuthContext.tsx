@@ -6,7 +6,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
+  updateUser: (userData: Partial<User>) => Promise<{ success: boolean; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,11 +34,12 @@ const mockUsers: User[] = [
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(mockUsers[1]); // Tài khoản user mặc định
 
   const login = async (email: string, password: string): Promise<boolean> => {
     // Mock login logic
-    const foundUser = mockUsers.find(u => u.email === email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const foundUser = mockUsers.find(u => u.email.toLowerCase() === normalizedEmail);
     if (foundUser) {
       setUser(foundUser);
       return true;
@@ -66,9 +67,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      setUser({ ...user, ...userData });
+  const updateUser = async (userData: Partial<User>): Promise<{ success: boolean; message?: string }> => {
+    try {
+      // Mock API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (!userData.name || userData.name.length < 3) {
+        return { success: false, message: 'Tên phải có ít nhất 3 ký tự' };
+      }
+
+      if (user) {
+        setUser({ ...user, ...userData });
+        return { success: true };
+      }
+      return { success: false, message: 'Người dùng không tồn tại' };
+    } catch (error) {
+      return { success: false, message: 'Lỗi hệ thống khi cập nhật' };
     }
   };
 

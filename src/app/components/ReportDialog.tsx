@@ -115,7 +115,12 @@ export function ReportDialog({ isOpen, onClose, onSubmit, title }: ReportDialogP
             </button>
             <button
               onClick={handleSubmit}
-              className="px-6 py-3 rounded-[10px] bg-[#E01515] text-white hover:bg-[#C10007] transition-colors font-semibold"
+              disabled={!selectedReason}
+              className={`px-6 py-3 rounded-[10px] font-semibold transition-colors ${
+                selectedReason 
+                  ? 'bg-[#E01515] text-white hover:bg-[#C10007]' 
+                  : 'bg-[#FCA5A5] text-white cursor-not-allowed'
+              }`}
             >
               Gửi báo cáo
             </button>

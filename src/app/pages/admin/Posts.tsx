@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, Eye, Trash2, Lock, EyeOff, Check, X, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -70,11 +71,11 @@ const mockPosts: Post[] = [
   },
 ];
 
-type ActionType = 'approve' | 'reject' | 'hide' | 'lock' | 'delete' | null;
+type ActionType = 'approve' | 'reject' | 'hide' | 'unhide' | 'lock' | 'unlock' | 'delete' | null;
 
 export function AdminPosts() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [posts] = useState<Post[]>(mockPosts);
+  const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [actionType, setActionType] = useState<ActionType>(null);
   const [actionReason, setActionReason] = useState('');
@@ -100,7 +101,31 @@ export function AdminPosts() {
 
   const confirmAction = () => {
     if (!selectedPost || !actionType) return;
-    console.log(`${actionType} post:`, selectedPost.id, 'Reason:', actionReason);
+    
+    if (actionType === 'delete') {
+      setPosts(posts.filter(p => p.id !== selectedPost.id));
+      toast.success('Đã xóa bài viết khỏi hệ thống');
+    } else {
+      setPosts(posts.map(p => {
+        if (p.id === selectedPost.id) {
+          if (actionType === 'approve') return { ...p, status: 'approved' };
+          if (actionType === 'reject') return { ...p, status: 'rejected' };
+          if (actionType === 'hide') return { ...p, isHidden: true };
+          if (actionType === 'unhide') return { ...p, isHidden: false };
+          if (actionType === 'lock') return { ...p, isLocked: true };
+          if (actionType === 'unlock') return { ...p, isLocked: false };
+        }
+        return p;
+      }));
+
+      if (actionType === 'approve') toast.success('Đã duyệt bài viết');
+      if (actionType === 'reject') toast.success('Đã từ chối bài viết');
+      if (actionType === 'hide') toast.success('Đã ẩn bài viết');
+      if (actionType === 'unhide') toast.success('Đã hiển thị lại bài viết');
+      if (actionType === 'lock') toast.success('Đã khóa bài viết');
+      if (actionType === 'unlock') toast.success('Đã mở khóa bài viết');
+    }
+
     setActionType(null);
     setSelectedPost(null);
     setActionReason('');
@@ -114,14 +139,20 @@ export function AdminPosts() {
     setSelectedReasonType('');
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (post: Post) => {
+    if (post.isHidden) {
+      return <span className="px-3 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium border border-gray-200">Đã ẩn</span>;
+    }
+    if (post.isLocked) {
+      return <span className="px-3 py-1 rounded-lg bg-[#FEE2E2] text-[#991B1B] text-xs font-medium">Đã khóa</span>;
+    }
+    switch (post.status) {
       case 'pending':
         return <span className="px-3 py-1 rounded-lg bg-[#FEF3C7] text-[#92400E] text-xs font-medium">Chờ duyệt</span>;
       case 'approved':
         return <span className="px-3 py-1 rounded-lg bg-[#D1FAE5] text-[#065F46] text-xs font-medium">Đã duyệt</span>;
       case 'rejected':
-        return <span className="px-3 py-1 rounded-lg bg-[#FEE2E2] text-[#991B1B] text-xs font-medium">Từ chối</span>;
+        return <span className="px-3 py-1 rounded-lg bg-[#FEE2E2] text-[#991B1B] text-xs font-medium">Đã từ chối</span>;
       default:
         return null;
     }
@@ -155,6 +186,14 @@ export function AdminPosts() {
           confirmText: 'Xác nhận',
           confirmClass: 'bg-[#E01515] hover:bg-[#C10007]',
         };
+      case 'unhide':
+        return {
+          title: 'Hiển thị lại bài viết',
+          description: `Bạn đang thực hiện hiển thị lại bài viết của ${selectedPost?.author.name}.`,
+          reasonLabel: null,
+          confirmText: 'Xác nhận',
+          confirmClass: 'bg-green-600 hover:bg-green-700',
+        };
       case 'lock':
         return {
           title: 'Khóa bài viết',
@@ -163,6 +202,14 @@ export function AdminPosts() {
           reasonOptions: ['Chọn lý do khóa'],
           confirmText: 'Xác nhận',
           confirmClass: 'bg-[#E01515] hover:bg-[#C10007]',
+        };
+      case 'unlock':
+        return {
+          title: 'Mở khóa bài viết',
+          description: `Bạn đang thực hiện mở khóa bài viết của ${selectedPost?.author.name}.`,
+          reasonLabel: null,
+          confirmText: 'Xác nhận',
+          confirmClass: 'bg-green-600 hover:bg-green-700',
         };
       case 'delete':
         return {
@@ -211,7 +258,7 @@ export function AdminPosts() {
                   <h3 className="text-base font-semibold text-[#1E293B] flex-1">
                     {post.title}
                   </h3>
-                  {getStatusBadge(post.status)}
+                  {getStatusBadge(post)}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-[#99A1AF]">
                   <span>Tác giả: {post.author.name}</span>
@@ -235,7 +282,7 @@ export function AdminPosts() {
                 <Eye className="h-4 w-4" />
                 Xem chi tiết
               </Button>
-              
+
               {post.status === 'pending' && (
                 <>
                   <Button
@@ -256,23 +303,45 @@ export function AdminPosts() {
                 </>
               )}
 
-              <Button
-                onClick={() => handleAction(post, 'hide')}
-                variant="outline"
-                className="flex items-center gap-1.5 h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-[8px]"
-              >
-                <EyeOff className="h-4 w-4" />
-                Ẩn
-              </Button>
+              {post.isHidden ? (
+                <Button
+                  onClick={() => handleAction(post, 'unhide')}
+                  variant="outline"
+                  className="flex items-center gap-1.5 h-9 px-4 border-[#3B82F6] text-[#3B82F6] hover:bg-[#EFF6FF] rounded-[8px]"
+                >
+                  <Eye className="h-4 w-4" />
+                  Hiển thị
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handleAction(post, 'hide')}
+                  variant="outline"
+                  className="flex items-center gap-1.5 h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-[8px]"
+                >
+                  <EyeOff className="h-4 w-4" />
+                  Ẩn
+                </Button>
+              )}
 
-              <Button
-                onClick={() => handleAction(post, 'lock')}
-                variant="outline"
-                className="flex items-center gap-1.5 h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-[8px]"
-              >
-                <Lock className="h-4 w-4" />
-                Khóa
-              </Button>
+              {post.isLocked ? (
+                <Button
+                  onClick={() => handleAction(post, 'unlock')}
+                  variant="outline"
+                  className="flex items-center gap-1.5 h-9 px-4 border-[#10B981] text-[#10B981] hover:bg-[#ECFDF5] rounded-[8px]"
+                >
+                  <Lock className="h-4 w-4" />
+                  Mở khóa
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handleAction(post, 'lock')}
+                  variant="outline"
+                  className="flex items-center gap-1.5 h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-[8px]"
+                >
+                  <Lock className="h-4 w-4" />
+                  Khóa
+                </Button>
+              )}
 
               <Button
                 onClick={() => handleAction(post, 'delete')}
@@ -294,8 +363,8 @@ export function AdminPosts() {
             <DialogHeader>
               <DialogTitle>{dialogConfig.title}</DialogTitle>
             </DialogHeader>
-            
-            {actionType !== 'approve' && (
+
+            {actionType !== 'approve' && actionType !== 'unhide' && actionType !== 'unlock' && (
               <div className="bg-[#FFF5F5] border border-[#FEE2E2] rounded-lg p-4 flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-[#E01515] shrink-0 mt-0.5" />
                 <div>
@@ -305,7 +374,7 @@ export function AdminPosts() {
               </div>
             )}
 
-            {actionType === 'approve' && (
+            {(actionType === 'approve' || actionType === 'unhide' || actionType === 'unlock') && (
               <p className="text-sm text-[#4A5565]">{dialogConfig.description}</p>
             )}
 
@@ -362,13 +431,13 @@ export function AdminPosts() {
       {/* Detail Dialog */}
       {showDetailDialog && selectedPost && (
         <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="sm:max-w-[950px] w-[95vw] p-8 gap-6">
             <DialogHeader>
-              <DialogTitle>{selectedPost.title}</DialogTitle>
+              <DialogTitle className="text-xl font-bold">{selectedPost.title}</DialogTitle>
             </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 text-sm text-[#99A1AF]">
+
+            <div>
+              <div className="flex items-center gap-4 text-sm text-[#4A5565] mb-4">
                 <span>Tác giả: {selectedPost.author.name}</span>
                 <span>•</span>
                 <span>{selectedPost.category.name}</span>
@@ -376,36 +445,37 @@ export function AdminPosts() {
                 <span>{selectedPost.createdAt}</span>
               </div>
 
-              <div className="flex gap-2">
-                <span className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs">Ngân hàng</span>
-                <span className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs">OTP</span>
-                <span className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs">Vietcombank</span>
+              <div className="flex gap-2 mb-6">
+                <span className="px-3 py-1 rounded-[16px] bg-[#F1F5F9] text-[#475569] text-xs font-medium">Ngân hàng</span>
+                <span className="px-3 py-1 rounded-[16px] bg-[#F1F5F9] text-[#475569] text-xs font-medium">OTP</span>
+                <span className="px-3 py-1 rounded-[16px] bg-[#F1F5F9] text-[#475569] text-xs font-medium">Vietcombank</span>
               </div>
 
-              <div className="bg-[#F9FAFB] rounded-lg p-4">
-                <p className="text-sm text-[#1E293B] whitespace-pre-wrap">{selectedPost.content}</p>
-              </div>
+              <div className="border-t border-[#E2E8F0] mb-6"></div>
 
-              <div className="space-y-2 text-sm">
-                <p className="font-semibold text-[#1E293B]">Đây là những dấu hiệu nhận biết:</p>
-                <ul className="list-disc list-inside space-y-1 text-[#4A5565]">
-                  <li>Gọi từ số điện thoại lạ, không phải hotline chính thức</li>
-                  <li>Yêu cầu cung cấp mã OTP, mật khẩu</li>
-                  <li>Tạo áp lực thời gian, đe dọa khóa tài khoản</li>
-                  <li>Giọng nói có thể là người Việt nhưng có giọng địa phương lạ</li>
-                </ul>
-              </div>
+              <div className="text-[15px] text-[#1E293B] leading-relaxed space-y-6">
+                <p>
+                  Tôi vừa nhận được cuộc gọi từ số 0123456789 tự xưng là nhân viên Vietcombank. Họ nói rằng tài khoản của tôi có giao dịch khả nghi và yêu cầu tôi cung cấp mã OTP để xác minh. May mắn là tôi đã biết về thủ đoạn này nên không cung cấp thông tin.
+                </p>
 
-              <div className="bg-[#FFF5F5] border border-[#FEE2E2] rounded-lg p-4">
-                <p className="text-sm font-semibold text-[#1E293B]">Lời khuyên:</p>
-                <p className="text-sm text-[#4A5565] mt-1">
-                  Luôn kiểm tra thông tin qua hotline chính thức của ngân hàng. Không bao giờ cung cấp OTP cho bất kỳ ai.
+                <div>
+                  <p className="font-semibold mb-2">Đây là những dấu hiệu nhận biết:</p>
+                  <ul className="space-y-1.5 text-[#475569]">
+                    <li>- Gọi từ số điện thoại lạ, không phải hotline chính thức</li>
+                    <li>- Yêu cầu cung cấp mã OTP, mật khẩu</li>
+                    <li>- Tạo áp lực thời gian, đe dọa khóa tài khoản</li>
+                    <li>- Giọng nói có thể là người Việt nhưng có giọng địa phương lạ</li>
+                  </ul>
+                </div>
+
+                <p>
+                  <span className="font-semibold">Lời khuyên:</span> Luôn kiểm tra thông tin qua hotline chính thức của ngân hàng. Không bao giờ cung cấp OTP cho bất kỳ ai.
                 </p>
               </div>
             </div>
 
-            <DialogFooter className="flex items-center justify-between mt-6">
-              <div className="flex gap-2">
+            <div className="flex items-center justify-between mt-2 pt-6 border-t border-[#E2E8F0]">
+              <div className="flex items-center gap-3">
                 {selectedPost.status === 'pending' && (
                   <>
                     <Button
@@ -413,7 +483,7 @@ export function AdminPosts() {
                         setShowDetailDialog(false);
                         handleAction(selectedPost, 'approve');
                       }}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-[#00B14F] hover:bg-[#009241] h-10 text-white px-5 rounded-[8px]"
                     >
                       <Check className="h-4 w-4 mr-2" />
                       Duyệt bài
@@ -423,43 +493,73 @@ export function AdminPosts() {
                         setShowDetailDialog(false);
                         handleAction(selectedPost, 'reject');
                       }}
-                      variant="outline"
-                      className="border-[#E01515] text-[#E01515] hover:bg-[#FFF5F5]"
+                      className="bg-[#E01515] hover:bg-[#C10007] h-10 text-white px-5 rounded-[8px]"
                     >
                       <X className="h-4 w-4 mr-2" />
                       Từ chối
                     </Button>
                   </>
                 )}
-                <Button
-                  onClick={() => {
-                    setShowDetailDialog(false);
-                    handleAction(selectedPost, 'hide');
-                  }}
-                  variant="outline"
-                >
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Ẩn
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowDetailDialog(false);
-                    handleAction(selectedPost, 'lock');
-                  }}
-                  variant="outline"
-                >
-                  <Lock className="h-4 w-4 mr-2" />
-                  Khóa
-                </Button>
+                {selectedPost.isHidden ? (
+                  <Button
+                    onClick={() => {
+                      setShowDetailDialog(false);
+                      handleAction(selectedPost, 'unhide');
+                    }}
+                    variant="outline"
+                    className="px-5 h-10 bg-white border-[#3B82F6] text-[#3B82F6] hover:bg-[#EFF6FF] rounded-[8px]"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Hiển thị
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setShowDetailDialog(false);
+                      handleAction(selectedPost, 'hide');
+                    }}
+                    variant="outline"
+                    className="px-5 h-10 bg-white border-[#D1D5DC] text-[#475569] hover:bg-gray-50 rounded-[8px]"
+                  >
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Ẩn
+                  </Button>
+                )}
+                {selectedPost.isLocked ? (
+                  <Button
+                    onClick={() => {
+                      setShowDetailDialog(false);
+                      handleAction(selectedPost, 'unlock');
+                    }}
+                    variant="outline"
+                    className="px-5 h-10 bg-white border-[#10B981] text-[#10B981] hover:bg-[#ECFDF5] rounded-[8px]"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Mở khóa
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setShowDetailDialog(false);
+                      handleAction(selectedPost, 'lock');
+                    }}
+                    variant="outline"
+                    className="px-5 h-10 bg-white border-[#D1D5DC] text-[#475569] hover:bg-gray-50 rounded-[8px]"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Khóa
+                  </Button>
+                )}
               </div>
-              <div className="flex gap-2">
+
+              <div className="flex items-center gap-3">
                 <Button
                   onClick={() => {
                     setShowDetailDialog(false);
                     handleAction(selectedPost, 'delete');
                   }}
                   variant="outline"
-                  className="border-[#E01515] text-[#E01515] hover:bg-[#FFF5F5]"
+                  className="border-[#E01515] text-[#E01515] hover:bg-[#FFF5F5] h-10 px-5 rounded-[8px]"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Xóa bài viết
@@ -467,11 +567,12 @@ export function AdminPosts() {
                 <Button
                   onClick={() => setShowDetailDialog(false)}
                   variant="outline"
+                  className="px-6 h-10 bg-white border-[#D1D5DC] text-[#475569] hover:bg-gray-50 rounded-[8px]"
                 >
                   Đóng
                 </Button>
               </div>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       )}

@@ -59,6 +59,20 @@ export function MyPosts() {
     alert('Chức năng chỉnh sửa đang được phát triển');
   };
 
+  const getPostStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'approved':
+        return <span className="px-2.5 py-1 rounded-[6px] bg-[#DCFCE7] text-[#16A34A] text-[13px] font-medium whitespace-nowrap">Đã đăng</span>;
+      case 'pending':
+        return <span className="px-2.5 py-1 rounded-[6px] bg-[#DBEAFE] text-[#2563EB] text-[13px] font-medium whitespace-nowrap">Chờ duyệt</span>;
+      case 'rejected':
+        return <span className="px-2.5 py-1 rounded-[6px] bg-[#FEE2E2] text-[#DC2626] text-[13px] font-medium whitespace-nowrap">Từ chối</span>;
+      case 'draft':
+      default:
+        return <span className="px-2.5 py-1 rounded-[6px] bg-[#F1F5F9] text-[#475569] text-[13px] font-medium whitespace-nowrap">Nháp</span>;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="max-w-[1200px] mx-auto px-6 py-8">
@@ -130,46 +144,48 @@ export function MyPosts() {
               >
                 {/* Post Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="flex-1 pr-4">
+                    <div className="flex items-center gap-3 mb-3">
                       <Link
                         to={`/post/${post.id}`}
-                        className="text-xl font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors"
+                        className="text-[18px] font-bold text-[#1E293B] hover:text-[#E01515] transition-colors"
                       >
-                        {post.title}
+                        {post.title || 'Bài viết chưa có tiêu đề'}
                       </Link>
-                      <span className="px-2 py-1 rounded bg-blue-100 text-blue-600 text-xs">
-                        {post.status || 'Nháp'}
-                      </span>
+                      {getPostStatusBadge(post.status)}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-[#99A1AF]">
+                    <div className="flex items-center gap-4 text-sm text-[#64748B]">
                       <span>Tạo: {formatDate(post.createdAt)}</span>
-                      {post.updatedAt && <span>Chỉnh sửa lần cuối: {formatDate(post.updatedAt)}</span>}
-                      <span className="px-3 py-1 rounded-full border border-[#E01515] text-[#E01515]">
-                        {post.category.name}
+                      {post.status === 'approved' && post.updatedAt && (
+                        <span>Đăng: {formatDate(post.updatedAt)}</span>
+                      )}
+                      <span className="px-2.5 py-0.5 rounded-full border border-[#E01515] text-[#E01515] text-[13px]">
+                        {post.category?.name || 'Chưa phân loại'}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleEdit(post.id)}
-                      className="p-2 rounded-[8px] border border-[#D1D5DC] text-[#4A5565] hover:border-[#E01515] hover:text-[#E01515] transition-colors"
-                      title="Sửa"
-                    >
-                      <Edit className="h-5 w-5" />
-                    </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {post.status !== 'approved' && (
+                      <button
+                        onClick={() => handleEdit(post.id)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#E2E8F0] text-[#475569] hover:bg-gray-50 transition-colors text-[13px] font-medium"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Sửa
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(post.id)}
-                      className="p-2 rounded-[8px] border border-[#E01515] text-[#E01515] hover:bg-[#FFF5F5] transition-colors"
-                      title="Xóa"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-[#E2E8F0] text-[#475569] hover:bg-gray-50 hover:text-[#E01515] transition-colors text-[13px] font-medium"
                     >
-                      <Trash2 className="h-5 w-5" />
+                      <Trash2 className="h-4 w-4" />
+                      Xóa
                     </button>
                   </div>
                 </div>
 
                 {/* Post Content Preview */}
-                <p className="text-[#4A5565] mb-4 line-clamp-2">{post.content}</p>
+                <p className="text-[#64748B] text-[15px] leading-relaxed mb-5 line-clamp-2">{post.content}</p>
 
                 {/* Post Stats */}
                 <div className="flex items-center gap-6 pt-4 border-t border-[#D1D5DC]">

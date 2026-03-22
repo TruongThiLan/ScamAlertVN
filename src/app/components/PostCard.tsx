@@ -1,4 +1,8 @@
 import { Link } from 'react-router';
+import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
+import { ReportDialog } from './ReportDialog';
 import { Post } from '../types';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import { Badge } from './ui/badge';
@@ -14,6 +18,22 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, showStatus = false }: PostCardProps) {
+  const { user } = useAuth();
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+
+  const handleReportClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để báo cáo bài viết');
+      return;
+    }
+    setIsReportDialogOpen(true);
+  };
+
+  const handleReportSubmit = (reason: string) => {
+    toast.success('Báo cáo đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+  };
+
   const timeAgo = formatDistanceToNow(new Date(post.createdAt), { 
     addSuffix: true,
     locale: vi 
@@ -83,7 +103,11 @@ export function PostCard({ post, showStatus = false }: PostCardProps) {
                 <Share2 className="h-4 w-4" />
                 <span className="text-sm">28 chia sẻ</span>
               </button>
-              <button className="ml-auto flex items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors">
+              <button 
+                onClick={handleReportClick}
+                className="ml-auto flex items-center gap-1 text-gray-600 hover:text-orange-600 transition-colors"
+                title={!user ? 'Vui lòng đăng nhập để báo cáo' : ''}
+              >
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-sm">Báo cáo</span>
               </button>
@@ -114,6 +138,13 @@ export function PostCard({ post, showStatus = false }: PostCardProps) {
           </div>
         </div>
       </CardContent>
+
+      <ReportDialog
+        isOpen={isReportDialogOpen}
+        onClose={() => setIsReportDialogOpen(false)}
+        onSubmit={handleReportSubmit}
+        title="Báo cáo bài viết"
+      />
     </Card>
   );
 }

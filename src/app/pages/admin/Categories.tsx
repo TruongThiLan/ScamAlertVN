@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
+import { useOutletContext } from 'react-router';
 import {
   Dialog,
   DialogContent,
@@ -9,14 +11,14 @@ import {
 } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
 
-interface Category {
+export interface Category {
   id: string;
   name: string;
   description: string;
   postCount: number;
 }
 
-const mockCategories: Category[] = [
+export const mockCategories: Category[] = [
   {
     id: '1',
     name: 'Lừa đảo qua điện thoại',
@@ -70,7 +72,7 @@ const mockCategories: Category[] = [
 type DialogType = 'add' | 'edit' | 'delete' | null;
 
 export function AdminCategories() {
-  const [categories, setCategories] = useState(mockCategories);
+  const { categories, setCategories } = useOutletContext<{ categories: Category[], setCategories: React.Dispatch<React.SetStateAction<Category[]>> }>();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [dialogType, setDialogType] = useState<DialogType>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -97,18 +99,38 @@ export function AdminCategories() {
 
   const handleSave = () => {
     if (dialogType === 'add') {
-      // TODO: Add category
-      console.log('Add category:', { categoryName, categoryDescription });
-    } else if (dialogType === 'edit') {
-      // TODO: Edit category
-      console.log('Edit category:', { id: selectedCategory?.id, categoryName, categoryDescription });
+      if (!categoryName.trim()) {
+        toast.error('Vui lòng nhập tên danh mục');
+        return;
+      }
+      const newCategory: Category = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: categoryName,
+        description: categoryDescription,
+        postCount: 0,
+      };
+      setCategories([...categories, newCategory]);
+      toast.success('Đã thêm danh mục mới');
+    } else if (dialogType === 'edit' && selectedCategory) {
+      if (!categoryName.trim()) {
+        toast.error('Vui lòng nhập tên danh mục');
+        return;
+      }
+      setCategories(categories.map(c => 
+        c.id === selectedCategory.id 
+          ? { ...c, name: categoryName, description: categoryDescription } 
+          : c
+      ));
+      toast.success('Đã cập nhật danh mục');
     }
     closeDialog();
   };
 
   const handleDelete = () => {
-    // TODO: Delete category
-    console.log('Delete category:', selectedCategory?.id);
+    if (selectedCategory) {
+      setCategories(categories.filter(c => c.id !== selectedCategory.id));
+      toast.success('Đã xóa danh mục');
+    }
     closeDialog();
   };
 

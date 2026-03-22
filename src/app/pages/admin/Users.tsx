@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Lock, AlertTriangle, Trash2, LockOpen } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,7 @@ const mockUsers: User[] = [
 type DialogType = 'lock' | 'unlock' | 'warning' | 'delete' | null;
 
 export function AdminUsers() {
+  const [users, setUsers] = useState<User[]>(mockUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -94,7 +96,7 @@ export function AdminUsers() {
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteDetails, setDeleteDetails] = useState('');
 
-  const filteredUsers = mockUsers.filter((user) => {
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -125,8 +127,24 @@ export function AdminUsers() {
   };
 
   const handleAction = () => {
-    // TODO: Implement action
-    console.log('Action:', dialogType, selectedUser);
+    if (selectedUser) {
+      setUsers(users.map((u): User => {
+        if (u.id === selectedUser.id) {
+          if (dialogType === 'lock') return { ...u, status: 'locked' };
+          if (dialogType === 'unlock') return { ...u, status: 'active' };
+          if (dialogType === 'warning') return { ...u, status: 'warning' };
+          return u;
+        }
+        return u;
+      }).filter(u => !(dialogType === 'delete' && u.id === selectedUser.id)));
+
+      // Show toast
+      if (dialogType === 'lock') toast.success('Đã khóa tài khoản thành công');
+      else if (dialogType === 'unlock') toast.success('Đã mở khóa tài khoản thành công');
+      else if (dialogType === 'warning') toast.success('Đã gửi nhắc nhở tới người dùng');
+      else if (dialogType === 'delete') toast.success('Đã xóa người dùng khỏi hệ thống');
+    }
+    
     closeDialog();
   };
 
@@ -165,9 +183,19 @@ export function AdminUsers() {
             className="w-full pl-12 pr-4 py-3 rounded-[10px] border border-[#D1D5DC] focus:outline-none focus:border-[#E01515] transition-colors"
           />
         </div>
-        <button className="px-6 py-3 rounded-[10px] border border-[#D1D5DC] text-[#1E293B] hover:border-[#E01515] hover:text-[#E01515] transition-colors">
-          Tất cả trạng thái
-        </button>
+        <div className="w-[180px]">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="px-5 py-3 h-[50px] rounded-[10px] border border-[#D1D5DC] focus:border-[#E01515] bg-white text-[#1E293B]">
+              <SelectValue placeholder="Tất cả trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="active">Đang hoạt động</SelectItem>
+              <SelectItem value="locked">Tạm khóa bị khóa</SelectItem>
+              <SelectItem value="warning">Cảnh báo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Users List */}
@@ -202,7 +230,7 @@ export function AdminUsers() {
 
               {/* Actions */}
               <div className="flex items-center gap-2">
-                {user.status === 'locked' ? (
+                {user.status === 'locked' || user.status === 'warning' ? (
                   <button
                     onClick={() => openDialog('unlock', user)}
                     className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#22C55E] text-[#22C55E] hover:bg-[#F0FDF4] transition-colors"

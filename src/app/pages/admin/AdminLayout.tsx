@@ -1,24 +1,15 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChevronRight } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
-
-const adminCategories = [
-  { id: '1', name: 'Lừa đảo qua điện thoại', count: 45, icon: '📞' },
-  { id: '2', name: 'Lừa đảo trực tuyến', count: 78, icon: '💻' },
-  { id: '3', name: 'Lừa đảo đầu tư', count: 32, icon: '💰' },
-  { id: '4', name: 'Lừa đảo tín dụng đen', count: 21, icon: '💳' },
-  { id: '5', name: 'Lừa đảo việc làm', count: 56, icon: '💼' },
-  { id: '6', name: 'Lừa đảo mua sắm', count: 89, icon: '🛒' },
-  { id: '7', name: 'Lừa đảo giả danh', count: 43, icon: '🎭' },
-  { id: '8', name: 'Lừa đảo bất động sản', count: 18, icon: '🏠' },
-];
+import { Category, mockCategories } from './Categories';
 
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [categories, setCategories] = useState<Category[]>(mockCategories);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -45,14 +36,14 @@ export function AdminLayout() {
           <div className="p-6">
             <h2 className="text-lg font-semibold text-[#1E293B] mb-4">Danh mục lừa đảo</h2>
             <div className="space-y-2">
-              {adminCategories.map((category) => (
+              {categories.map((category) => (
                 <button
                   key={category.id}
                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-[#FFF5F5] transition-colors group"
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <div className="w-10 h-10 rounded-lg bg-[#E01515] text-white flex items-center justify-center font-semibold text-sm">
-                      {category.count}
+                      {category.postCount}
                     </div>
                     <span className="text-sm text-[#1E293B] group-hover:text-[#E01515] transition-colors">
                       {category.name}
@@ -67,7 +58,7 @@ export function AdminLayout() {
 
         {/* Main Content */}
         <div className="flex-1">
-          <Outlet />
+          <Outlet context={{ categories, setCategories }} />
         </div>
       </div>
     </div>

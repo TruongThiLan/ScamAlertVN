@@ -4,6 +4,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import { User, Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { ReputationBadge } from '../components/ReputationBadge';
@@ -20,6 +30,9 @@ export function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [isUpdateProfileAlertOpen, setIsUpdateProfileAlertOpen] = useState(false);
+  const [isChangePasswordAlertOpen, setIsChangePasswordAlertOpen] = useState(false);
+
   if (!user) {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center px-4">
@@ -33,13 +46,28 @@ export function Profile() {
     );
   }
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateUser({ name, email });
-    toast.success('Đã cập nhật thông tin cá nhân');
+    setIsUpdateProfileAlertOpen(true);
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const confirmUpdateProfile = async () => {
+    try {
+      // Gọi hàm updateUser mock có trả về trạng thái
+      const result = await updateUser({ name, email });
+      if (result.success) {
+        toast.success('Đã cập nhật thông tin cá nhân');
+      } else {
+        toast.error(result.message || 'Cập nhật không thành công. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi cập nhật thông tin.');
+    } finally {
+      setIsUpdateProfileAlertOpen(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
@@ -52,10 +80,22 @@ export function Profile() {
       return;
     }
 
-    toast.success('Đã đổi mật khẩu thành công');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setIsChangePasswordAlertOpen(true);
+  };
+
+  const confirmChangePassword = async () => {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      toast.success('Đã đổi mật khẩu thành công');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      toast.error('Đổi mật khẩu không thành công. Vui lòng thử lại sau.');
+    } finally {
+      setIsChangePasswordAlertOpen(false);
+    }
   };
 
   return (
@@ -86,7 +126,7 @@ export function Profile() {
             </TabsList>
 
             <TabsContent value="profile" className="p-6">
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
+              <form onSubmit={handleUpdateProfileSubmit} className="space-y-6">
                 <div>
                   <label className="block text-[#364153] font-medium mb-2">
                     Tên đăng nhập <span className="text-[#E01515]">*</span>
@@ -158,7 +198,7 @@ export function Profile() {
                 Mật khẩu của bạn phải có tối thiểu 8 ký tự, đồng thời bao gồm cả chữ số, chữ cái và ký tự đặc biệt (!$@%).
               </p>
 
-              <form onSubmit={handleChangePassword} className="space-y-6">
+              <form onSubmit={handleChangePasswordSubmit} className="space-y-6">
                 <div>
                   <label className="block text-[#364153] font-medium mb-2">
                     Mật khẩu cũ <span className="text-[#E01515]">*</span>
@@ -241,6 +281,42 @@ export function Profile() {
           </Tabs>
         </div>
       </div>
+
+      {/* Cập nhật thông tin Dialog */}
+      <AlertDialog open={isUpdateProfileAlertOpen} onOpenChange={setIsUpdateProfileAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận cập nhật</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn cập nhật thông tin cá nhân? Các thay đổi sẽ được lưu vào hệ thống.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUpdateProfile} className="bg-[#E01515] hover:bg-[#C10007] text-white">
+              Đồng ý
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Đổi mật khẩu Dialog */}
+      <AlertDialog open={isChangePasswordAlertOpen} onOpenChange={setIsChangePasswordAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận đổi mật khẩu</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn đổi mật khẩu? Bạn sẽ cần sử dụng mật khẩu mới cho lần đăng nhập tiếp theo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmChangePassword} className="bg-[#E01515] hover:bg-[#C10007] text-white">
+              Đồng ý
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -4,12 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { mockPosts, mockUsers } from '../data/mockData';
 import { ArrowLeft, Flag, Heart, MessageCircle, Share2, ShieldAlert } from 'lucide-react';
 import { ReportUserDialog } from '../components/ReportUserDialog';
+import { ReportDialog } from '../components/ReportDialog';
+import { toast } from 'sonner';
 
 export function UserProfile() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null);
 
   const profileUser = mockUsers.find(u => u.id === userId);
   const userPosts = mockPosts.filter(post => post.author.id === userId);
@@ -51,7 +54,12 @@ export function UserProfile() {
 
   const handleReportUser = (reason: string) => {
     console.log('Report user:', { userId, reason });
-    alert('Báo cáo người dùng đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+    toast.success('Báo cáo người dùng đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+  };
+
+  const handleReportPostSubmit = (reason: string) => {
+    toast.success('Báo cáo bài viết đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+    setReportingPostId(null);
   };
 
   // Mock stats
@@ -179,10 +187,13 @@ export function UserProfile() {
                       <Share2 className="h-5 w-5" />
                       <span>32 chia sẻ</span>
                     </div>
-                    <div className="ml-auto text-sm text-[#99A1AF]">
+                    <button
+                      onClick={() => setReportingPostId(post.id)}
+                      className="ml-auto text-sm text-[#99A1AF] hover:text-[#E01515] transition-colors"
+                    >
                       <ShieldAlert className="inline h-4 w-4 mr-1" />
                       Báo cáo
-                    </div>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -197,6 +208,14 @@ export function UserProfile() {
         onClose={() => setIsReportDialogOpen(false)}
         onSubmit={handleReportUser}
         userName={profileUser.name}
+      />
+
+      {/* Report Post Dialog */}
+      <ReportDialog
+        isOpen={reportingPostId !== null}
+        onClose={() => setReportingPostId(null)}
+        onSubmit={handleReportPostSubmit}
+        title="Báo cáo bài viết"
       />
     </div>
   );

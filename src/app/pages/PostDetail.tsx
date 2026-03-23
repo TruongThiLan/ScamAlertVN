@@ -17,15 +17,6 @@ import {
 } from 'lucide-react';
 import { Comment } from '../types';
 
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * PostDetail component
- *
- * Displays a single post and its comments. Allows users to like, comment, and report the post.
- *
- * @param {string} id - The ID of the post to display.
- */
-/*******  2af65171-5474-4d87-8b2b-b9018096e26d  *******/
 export function PostDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -43,7 +34,6 @@ export function PostDetail() {
   const [reportTarget, setReportTarget] = useState<{ type: 'post' | 'comment'; id: string } | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post?.likes || 0);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   if (!post) {
     return (
@@ -61,7 +51,7 @@ export function PostDetail() {
     );
   }
 
-  const approvedPosts = mockPosts.filter(post => post.status === 'approved');
+  const approvedPosts = mockPosts.filter(p => p.status === 'approved');
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
@@ -169,12 +159,6 @@ export function PostDetail() {
     });
   };
 
-  const getReputationColor = (score: number) => {
-    if (score >= 100) return '#22C55E';
-    if (score >= 50) return '#F59E0B';
-    return '#E01515';
-  };
-
   const renderComment = (comment: Comment, isReply = false) => (
     <div key={comment.id} className={`${isReply ? 'ml-14' : ''}`}>
       <div className="flex gap-3">
@@ -188,27 +172,11 @@ export function PostDetail() {
             <Link to={`/user/${comment.author.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
               {comment.author.name}
             </Link>
-            {/* <span
-              className="text-xs font-semibold px-2 py-0.5 rounded"
-              style={{
-                backgroundColor: `${getReputationColor(comment.author.reputationScore)}15`,
-                color: getReputationColor(comment.author.reputationScore),
-              }}
-            >
-              {comment.author.reputationScore}
-            </span> */}
-            <div
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${post.author.reputationScore >= 50 ? 'text-white' : ''}`}
-                style={{
-                  backgroundColor: `${getReputationColor(post.author.reputationScore)}15`,
-                  color: getReputationColor(post.author.reputationScore),
-                }}
-              >
-                <Star className="h-4 w-4 fill-current" /> { /* Ngôi sao luôn hiện */ }
-                <span className="text-sm font-semibold">
-                  {post.author.reputationScore}
-                </span>
-              </div>
+                      
+            <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
+              <span className="text-[#C10007] text-xs font-semibold">⭐ {comment.author.reputationScore}</span>
+            </div>
+              
             <span className="text-sm text-[#99A1AF]">
               • 5 giờ trước
             </span>
@@ -294,45 +262,55 @@ export function PostDetail() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
+        
         {/* Sidebar - Categories */}
-        <aside className="w-[220px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen sticky top-[70px] h-[calc(100vh-70px)] overflow-y-auto">
-          <div className="p-4">
-            <h2 className="font-semibold mb-4">Danh mục lừa đảo</h2>
+        <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen sticky top-[70px] h-[calc(100vh-70px)] overflow-y-auto">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold mb-6">Danh mục lừa đảo</h2>
             <div className="space-y-2">
               <Link
                 to="/"
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-sm transition-colors hover:bg-gray-50`}
+                className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors hover:bg-gray-50"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <div
-                    className="w-8 h-8 rounded-[8px] flex items-center justify-center text-white font-semibold text-xs"
+                    className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
                     style={{ backgroundColor: '#E01515' }}
                   >
                     {approvedPosts.length}
                   </div>
                   <span className="text-left">Tất cả</span>
                 </div>
-                <ChevronRight className="h-4 w-4 text-[#99A1AF]" />
+                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
               </Link>
 
               {scamCategories.map(category => {
                 const categoryPostCount = approvedPosts.filter(p => p.category.id === category.id).length;
+                
+                // Kiểm tra xem bài viết đang xem có thuộc danh mục này không
+                const isActive = category.id === post.category.id;
+
                 return (
                   <Link
                     key={category.id}
                     to={`/?category=${category.id}`}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-sm transition-colors hover:bg-gray-50`}
+                    // Thêm nền xám và chữ in đậm nếu trùng khớp danh mục
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors ${
+                      isActive 
+                        ? 'bg-gray-100 font-semibold' 
+                        : 'hover:bg-gray-50'
+                    }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <div
-                        className="w-8 h-8 rounded-[8px] flex items-center justify-center text-white font-semibold text-xs"
+                        className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
                         style={{ backgroundColor: '#E01515' }}
                       >
                         {categoryPostCount}
                       </div>
-                      <span className="text-left text-xs">{category.name}</span>
+                      <span className="text-left">{category.name}</span>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-[#99A1AF]" />
+                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
                   </Link>
                 );
               })}
@@ -360,27 +338,18 @@ export function PostDetail() {
                   <Link to={`/user/${post.author.id}`} className="w-12 h-12 rounded-full bg-[#E01515] flex items-center justify-center text-white font-semibold text-lg">
                     {post.author.name.charAt(0)}
                   </Link>
-                  <div className="flex flex-col gap-1"> { /* Chuyển thành flex-col để xếp dọc và thêm khoảng cách */ }
-                      { /* Hàng Tên tác giả và Điểm uy tín (vẫn giữ flex items-center) */ }
+                  <div className="flex flex-col gap-1"> 
+                      { /* Hàng Tên tác giả và Điểm uy tín */ }
                       <div className="flex items-center gap-2">
                         <Link to={`/user/${post.author.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
                           {post.author.name}
                         </Link>
-                        { /* Ngôi sao và điểm uy tín từ bước trước - giữ nguyên */ }
-                        <div
-                          className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${post.author.reputationScore >= 50 ? 'text-white' : ''}`}
-                          style={{
-                            backgroundColor: '#FFE4E6'
-                          }}
-                        >
-                          <Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
-                          <span className="text-[#881337]">
-                            {post.author.reputationScore}
-                          </span>
-                        </div>
+                          <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
+                            <span className="text-[#C10007] text-xs font-semibold">⭐ {post.author.reputationScore}</span>
+                          </div>
                       </div>
                       
-                      { /* Ngày đăng - giữ nguyên và tự động xếp xuống dưới */ }
+                      { /* Ngày đăng */ }
                       <p className="text-sm text-[#99A1AF]">
                         Đăng lúc {formatDate(post.createdAt)}
                       </p>

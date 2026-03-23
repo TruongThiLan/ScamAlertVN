@@ -16,10 +16,20 @@ export function Home() {
 
   const approvedPosts = mockPosts.filter(post => post.status === 'approved');
   
-  const filteredPosts = selectedCategory === 'all' 
+  // Bước 1: Lọc theo danh mục
+  const categoryFilteredPosts = selectedCategory === 'all' 
     ? approvedPosts 
     : approvedPosts.filter(post => post.category.id === selectedCategory);
 
+  // Bước 2: Lọc theo từ khóa tìm kiếm (Gõ tới đâu lọc tới đó)
+  const filteredPosts = searchQuery.trim() === ''
+    ? categoryFilteredPosts
+    : categoryFilteredPosts.filter(post => 
+        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.content.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+  // Bước 3: Sắp xếp
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === 'trending') {
       return b.likes - a.likes;
@@ -40,7 +50,7 @@ export function Home() {
                 onClick={() => setSelectedCategory('all')}
                 className={`w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors ${
                   selectedCategory === 'all' 
-                    ? 'bg-gray-100' 
+                    ? 'bg-gray-100 font-semibold' 
                     : 'hover:bg-gray-50'
                 }`}
               >
@@ -64,7 +74,7 @@ export function Home() {
                     onClick={() => setSelectedCategory(category.id)}
                     className={`w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors ${
                       selectedCategory === category.id 
-                        ? 'bg-gray-100' 
+                        ? 'bg-gray-100 font-semibold' 
                         : 'hover:bg-gray-50'
                     }`}
                   >
@@ -134,7 +144,10 @@ export function Home() {
             <div className="space-y-4">
               {sortedPosts.length === 0 ? (
                 <div className="bg-white rounded-[10px] border border-[#D1D5DC] p-8 text-center text-gray-500">
-                  Chưa có bài viết nào trong danh mục này
+                  {searchQuery 
+                    ? `Không tìm thấy kết quả nào cho "${searchQuery}"`
+                    : 'Chưa có bài viết nào trong danh mục này'
+                  }
                 </div>
               ) : (
                 sortedPosts.map(post => (

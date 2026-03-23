@@ -8,6 +8,11 @@ export function MyPosts() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // State quản lý hộp thoại thông báo xóa thành công
+  const [showDeleteSuccessDialog, setShowDeleteSuccessDialog] = useState(false);
+  // State "mẹo" để ép React vẽ lại giao diện sau khi xóa mà không cần F5 tải lại trang
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -48,20 +53,24 @@ export function MyPosts() {
   };
 
   const handleDelete = (postId: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-      // Vì đang dùng mockData, để xóa thật bạn có thể filter mockPosts
+    // Vẫn giữ confirm của trình duyệt để hỏi "Bạn có chắc không?"
+    if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
       const index = mockPosts.findIndex(p => p.id === postId);
       if (index !== -1) {
+        // Xóa chính xác 1 bài viết tại vị trí index
         mockPosts.splice(index, 1);
+        
+        // Hiện hộp thoại thông báo thành công
+        setShowDeleteSuccessDialog(true);
+        // Kích hoạt vẽ lại giao diện để bài viết biến mất khỏi danh sách
+        setRefreshKey(prev => prev + 1);
       }
-      alert('Đã xóa bài viết');
-      // Ép re-render bằng cách reload hoặc dùng state (tạm thời để alert)
-      window.location.reload(); 
     }
   };
 
   const handleEdit = (postId: string) => {
-    alert('Chức năng chỉnh sửa đang được phát triển');
+    // Đã thay thế alert bằng lệnh chuyển hướng sang trang chỉnh sửa bài viết
+    navigate(`/edit-post/${postId}`);
   };
 
   const getPostStatusBadge = (status?: string) => {
@@ -79,7 +88,8 @@ export function MyPosts() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    // Thêm key={refreshKey} vào thẻ div gốc để React biết khi nào cần cập nhật cục bộ
+    <div key={refreshKey} className="min-h-screen bg-[#F9FAFB]">
       <div className="max-w-[1200px] mx-auto px-6 py-8">
         {/* Profile Header */}
         <div className="bg-gradient-to-r from-[#E01515] to-[#C10007] rounded-[10px] p-8 mb-6 text-white">
@@ -170,6 +180,7 @@ export function MyPosts() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {/* Logic bạn viết rất chuẩn: Nếu chưa được duyệt (approved) thì mới hiện nút Sửa */}
                     {post.status !== 'approved' && (
                       <button
                         onClick={() => handleEdit(post.id)}
@@ -212,6 +223,23 @@ export function MyPosts() {
           )}
         </div>
       </div>
+
+      {/* TẠO MỚI: Success Dialog (Hộp thoại báo xóa thành công) */}
+      {showDeleteSuccessDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[10px] p-8 w-full max-w-[360px] text-center shadow-xl">
+            <h2 className="text-xl font-bold text-[#1E293B] mb-4">Thông báo</h2>
+            <p className="text-[#1E293B] mb-8">Xóa bài viết thành công</p>
+            <button
+              onClick={() => setShowDeleteSuccessDialog(false)}
+              className="w-full py-3 bg-[#E01515] hover:bg-[#C10007] text-white font-semibold rounded-[8px] transition-colors"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -16,7 +16,6 @@ import {
 } from '../components/ui/alert-dialog';
 import { User, Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { ReputationBadge } from '../components/ReputationBadge';
 
 export function Profile() {
   const { user, updateUser } = useAuth();
@@ -29,6 +28,9 @@ export function Profile() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Thêm State để lưu lỗi mật khẩu
+  const [passwordError, setPasswordError] = useState('');
 
   const [isUpdateProfileAlertOpen, setIsUpdateProfileAlertOpen] = useState(false);
   const [isChangePasswordAlertOpen, setIsChangePasswordAlertOpen] = useState(false);
@@ -53,7 +55,6 @@ export function Profile() {
 
   const confirmUpdateProfile = async () => {
     try {
-      // Gọi hàm updateUser mock có trả về trạng thái
       const result = await updateUser({ name, email });
       if (result.success) {
         toast.success('Đã cập nhật thông tin cá nhân');
@@ -67,6 +68,33 @@ export function Profile() {
     }
   };
 
+  // Hàm kiểm tra mật khẩu hợp lệ (Tối thiểu 6 ký tự, có chữ, số, ký tự đặc biệt)
+  const validatePassword = (pass: string) => {
+    const minLength = pass.length >= 6;
+    const hasLetter = /[a-zA-Z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecialChar = /[!@#$%]/.test(pass);
+    
+    return minLength && hasLetter && hasNumber && hasSpecialChar;
+  };
+
+  // Xử lý khi người dùng đang nhập Mật khẩu mới
+  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewPassword(value);
+    
+    // Nếu có nhập thì kiểm tra, nếu xóa hết thì ẩn lỗi
+    if (value.length > 0) {
+      if (!validatePassword(value)) {
+        setPasswordError('Mật khẩu không hợp lệ');
+      } else {
+        setPasswordError(''); // Mật khẩu ok thì xóa lỗi
+      }
+    } else {
+      setPasswordError('');
+    }
+  };
+
   const handleChangePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -75,8 +103,8 @@ export function Profile() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      toast.error('Mật khẩu phải có ít nhất 8 ký tự');
+    if (!validatePassword(newPassword)) {
+      toast.error('Mật khẩu chưa đúng định dạng yêu cầu');
       return;
     }
 
@@ -91,6 +119,7 @@ export function Profile() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setPasswordError('');
     } catch (error) {
       toast.error('Đổi mật khẩu không thành công. Vui lòng thử lại sau.');
     } finally {
@@ -125,6 +154,7 @@ export function Profile() {
               </TabsTrigger>
             </TabsList>
 
+            {/* ... (Phần TabsContent profile giữ nguyên) ... */}
             <TabsContent value="profile" className="p-6">
               <form onSubmit={handleUpdateProfileSubmit} className="space-y-6">
                 <div>
@@ -194,8 +224,9 @@ export function Profile() {
             </TabsContent>
 
             <TabsContent value="password" className="p-6">
+              {/* Đã cập nhật câu ghi chú */}
               <p className="text-[#4A5565] italic mb-6">
-                Mật khẩu của bạn phải có tối thiểu 8 ký tự, đồng thời bao gồm cả chữ số, chữ cái và ký tự đặc biệt (!$@%).
+                Mật khẩu của bạn phải có tối thiểu 6 ký tự, bao gồm chữ cái, số và ký tự đặc biệt (!@#$%).
               </p>
 
               <form onSubmit={handleChangePasswordSubmit} className="space-y-6">
@@ -231,8 +262,8 @@ export function Profile() {
                     <Input
                       type={showNewPassword ? 'text' : 'password'}
                       value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                      onChange={handleNewPasswordChange} // Sử dụng hàm bắt lỗi ở đây
+                      className={`pl-10 pr-10 bg-white rounded-[10px] h-12 ${passwordError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                       required
                     />
                     <button
@@ -243,6 +274,12 @@ export function Profile() {
                       {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
+                  {/* Hiển thị lỗi màu đỏ nếu có */}
+                  {passwordError && (
+                    <p className="text-[#E01515] text-sm mt-2 font-medium">
+                      {passwordError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -272,6 +309,7 @@ export function Profile() {
                   <Button 
                     type="submit" 
                     className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[5px] px-12 py-6 h-auto text-2xl"
+                    disabled={!!passwordError} // Vô hiệu hóa nút nếu đang có lỗi
                   >
                     Đổi mật khẩu
                   </Button>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router'; // Thêm Link
+import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { categories, mockPosts, scamCategories } from '../data/mockData'; // Thêm mockPosts và scamCategories
-import { ArrowLeft, Upload, Send, ChevronRight } from 'lucide-react'; // Thêm ChevronRight
+import { categories, mockPosts, scamCategories } from '../data/mockData';
+import { ArrowLeft, Upload, Send, ChevronRight } from 'lucide-react';
 import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
 
 export function CreatePost() {
@@ -13,6 +13,9 @@ export function CreatePost() {
   const [category, setCategory] = useState('');
   const [content, setContent] = useState('');
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  
+  // Trạng thái quản lý hộp thoại thông báo thành công
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -26,7 +29,7 @@ export function CreatePost() {
 
   const hasUnsavedChanges = title.trim() || content.trim() || category;
 
-  // Lấy dữ liệu để đếm số bài viết cho thanh danh mục bên trái
+  // Lấy dữ liệu để đếm số bài viết cho thanh danh mục bên trái (chỉ đếm bài đã duyệt)
   const approvedPosts = mockPosts.filter(post => post.status === 'approved');
 
   const handleBack = () => {
@@ -41,11 +44,40 @@ export function CreatePost() {
     navigate(-1);
   };
 
+  // Xử lý lưu bản nháp thực sự vào hệ thống (Chạy khi bấm Lưu nháp ở Dialog Hủy)
   const handleSaveDraft = () => {
-    alert('Đã lưu bản nháp');
-    navigate(-1);
+    const selectedCategoryData = categories.find(c => c.id === category);
+    
+    // Xử lý tên ẩn danh (kể cả bản nháp)
+    const anonymousCount = mockPosts.filter((p: any) => p.isAnonymous).length + 1;
+    const postAuthor = isAnonymous 
+      ? { ...user, name: `Người tham gia ẩn danh ${anonymousCount}` } 
+      : user;
+
+    const newPost = {
+      id: `p${Date.now()}`,
+      title: title || 'Bài viết chưa có tiêu đề', // Nếu chưa nhập tiêu đề thì dùng chữ mặc định
+      content: content,
+      category: {
+        id: category || 'uncategorized',
+        name: selectedCategoryData ? selectedCategoryData.name : 'Chưa phân loại'
+      },
+      author: postAuthor, 
+      isAnonymous: isAnonymous,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      likes: 0,
+      comments: [],
+      status: 'draft', // <-- Đánh dấu trạng thái là BẢN NHÁP
+    };
+
+    mockPosts.unshift(newPost as any);
+    setShowUnsavedDialog(false); // Tắt hộp thoại hỏi han đi
+    alert('Đã lưu bản nháp thành công!');
+    navigate('/my-posts'); // Chuyển về trang Bài viết của tôi để xem
   };
 
+  // Xử lý đăng bài (Chờ duyệt)
   const handleSubmit = () => {
     if (!title.trim() || !category || !content.trim()) {
       alert('Vui lòng điền đầy đủ thông tin');
@@ -53,6 +85,14 @@ export function CreatePost() {
     }
 
     const selectedCategoryData = categories.find(c => c.id === category);
+
+    // Đếm số bài ẩn danh để tạo tên
+    const anonymousCount = mockPosts.filter((p: any) => p.isAnonymous).length + 1;
+    
+    // Đổi tên nếu bật chế độ ẩn danh
+    const postAuthor = isAnonymous 
+      ? { ...user, name: `Người tham gia ẩn danh ${anonymousCount}` } 
+      : user;
 
     const newPost = {
       id: `p${Date.now()}`,
@@ -62,45 +102,49 @@ export function CreatePost() {
         id: category,
         name: selectedCategoryData ? selectedCategoryData.name : 'Chưa phân loại'
       },
-      author: user,
+      author: postAuthor,
       isAnonymous: isAnonymous,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       likes: 0,
       comments: [],
-      status: 'approved',
+      status: 'pending', // <-- QUAN TRỌNG: Đăng xong phải chờ duyệt (pending)
     };
 
     mockPosts.unshift(newPost as any);
 
-    alert('Đã đăng bài viết thành công!');
-    navigate('/my-posts');
+    // Bật hộp thoại thành công (thay vì dùng alert)
+    setShowSuccessDialog(true);
+  };
+
+  const handleCloseSuccess = () => {
+    setShowSuccessDialog(false);
+    navigate('/my-posts'); // Chuyển về trang quản lý bài viết cá nhân
   };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
-      {/* Bắt đầu chia cột bằng Flex */}
       <div className="flex">
         
-        {/* === THÊM MỚI: CỘT BÊN TRÁI === */}
-        <aside className="w-[220px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen sticky top-[70px] h-[calc(100vh-70px)] overflow-y-auto">
-          <div className="p-4">
-            <h2 className="font-semibold mb-4">Danh mục lừa đảo</h2>
+        {/* === CỘT BÊN TRÁI === */}
+        <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold mb-6">Danh mục lừa đảo</h2>
             <div className="space-y-2">
               <Link
                 to="/"
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-sm transition-colors hover:bg-gray-50`}
+                className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors hover:bg-gray-50"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <div
-                    className="w-8 h-8 rounded-[8px] flex items-center justify-center text-white font-semibold text-xs"
+                    className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
                     style={{ backgroundColor: '#E01515' }}
                   >
                     {approvedPosts.length}
                   </div>
                   <span className="text-left">Tất cả</span>
                 </div>
-                <ChevronRight className="h-4 w-4 text-[#99A1AF]" />
+                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
               </Link>
 
               {scamCategories.map(cat => {
@@ -109,18 +153,18 @@ export function CreatePost() {
                   <Link
                     key={cat.id}
                     to={`/?category=${cat.id}`}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] text-sm transition-colors hover:bg-gray-50`}
+                    className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors hover:bg-gray-50"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <div
-                        className="w-8 h-8 rounded-[8px] flex items-center justify-center text-white font-semibold text-xs"
+                        className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
                         style={{ backgroundColor: '#E01515' }}
                       >
                         {categoryPostCount}
                       </div>
-                      <span className="text-left text-xs">{cat.name}</span>
+                      <span className="text-left">{cat.name}</span>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-[#99A1AF]" />
+                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
                   </Link>
                 );
               })}
@@ -128,11 +172,9 @@ export function CreatePost() {
           </div>
         </aside>
 
-        {/* === GIỮ NGUYÊN HOÀN TOÀN: CỘT BÊN PHẢI (Form tạo bài viết) === */}
+        {/* === CỘT BÊN PHẢI (Form đăng bài) === */}
         <main className="flex-1">
-          {/* Chỗ này giữ y chang class cũ của bạn: max-w-[943px] mx-auto px-6 py-8 */}
           <div className="max-w-[943px] mx-auto px-6 py-8">
-            {/* Back Button */}
             <button
               onClick={handleBack}
               className="flex items-center gap-2 text-[#4A5565] hover:text-[#E01515] mb-6 transition-colors"
@@ -141,7 +183,6 @@ export function CreatePost() {
               <span>Quay lại</span>
             </button>
 
-            {/* Form Card */}
             <div className="bg-white rounded-[10px] border border-[#D1D5DC] p-6">
               <h1 className="text-2xl font-semibold mb-2">Tạo bài viết cảnh báo lừa đảo</h1>
               <p className="text-[#99A1AF] mb-6">
@@ -231,8 +272,8 @@ export function CreatePost() {
                 </button>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-6 border-t border-[#D1D5DC]">
+              {/* Actions (Đã xóa nút Lưu bản nháp ở giữa) */}
+              <div className="flex items-center justify-end gap-4 pt-6 border-t border-[#D1D5DC]">
                 <button
                   onClick={handleBack}
                   className="px-6 py-3 rounded-[10px] border border-[#D1D5DC] text-[#4A5565] hover:bg-[#F3F3F5] transition-colors"
@@ -241,7 +282,7 @@ export function CreatePost() {
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#E01515] text-white hover:bg-[#C10007] transition-colors"
+                  className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#E01515] text-white hover:bg-[#C10007] transition-colors font-medium"
                 >
                   <Send className="h-5 w-5" />
                   Đăng bài
@@ -250,16 +291,32 @@ export function CreatePost() {
             </div>
           </div>
         </main>
-
       </div>
 
-      {/* Unsaved Changes Dialog */}
+      {/* Unsaved Changes Dialog (Nơi chứa nút Lưu bản nháp thực sự) */}
       <UnsavedChangesDialog
         isOpen={showUnsavedDialog}
         onClose={() => setShowUnsavedDialog(false)}
         onDiscard={handleDiscard}
         onSaveDraft={handleSaveDraft}
       />
+
+      {/* Success Dialog (Khi Đăng bài thành công) */}
+      {showSuccessDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[10px] p-8 w-full max-w-[360px] text-center shadow-xl">
+            <h2 className="text-xl font-bold text-[#1E293B] mb-4">Thông báo</h2>
+            <p className="text-[#1E293B] mb-8">Tạo bài viết thành công</p>
+            <button
+              onClick={handleCloseSuccess}
+              className="w-full py-3 bg-[#E01515] hover:bg-[#C10007] text-white font-semibold rounded-[8px] transition-colors"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { AdminCategories } from './pages/admin/Categories';
 import { AdminStatistics } from './pages/admin/Statistics';
 import { Outlet, Navigate } from 'react-router';
 import { Toaster } from './components/ui/sonner';
+import { EditPost } from './pages/EditPost';
 
 // Simple layout for auth pages (no header)
 function AuthLayout() {
@@ -95,4 +96,8 @@ export const router = createBrowserRouter([
       { index: true, Component: ResetPassword },
     ],
   },
+  {
+  path: 'edit-post/:id',
+  element: <EditPost />,
+},
 ]);

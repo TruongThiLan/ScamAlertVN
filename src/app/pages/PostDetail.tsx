@@ -12,10 +12,20 @@ import {
   Send, 
   Flag,
   ThumbsUp,
-  ChevronRight
+  ChevronRight,
+  Star
 } from 'lucide-react';
 import { Comment } from '../types';
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * PostDetail component
+ *
+ * Displays a single post and its comments. Allows users to like, comment, and report the post.
+ *
+ * @param {string} id - The ID of the post to display.
+ */
+/*******  2af65171-5474-4d87-8b2b-b9018096e26d  *******/
 export function PostDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -178,7 +188,7 @@ export function PostDetail() {
             <Link to={`/user/${comment.author.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
               {comment.author.name}
             </Link>
-            <span
+            {/* <span
               className="text-xs font-semibold px-2 py-0.5 rounded"
               style={{
                 backgroundColor: `${getReputationColor(comment.author.reputationScore)}15`,
@@ -186,7 +196,19 @@ export function PostDetail() {
               }}
             >
               {comment.author.reputationScore}
-            </span>
+            </span> */}
+            <div
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${post.author.reputationScore >= 50 ? 'text-white' : ''}`}
+                style={{
+                  backgroundColor: `${getReputationColor(post.author.reputationScore)}15`,
+                  color: getReputationColor(post.author.reputationScore),
+                }}
+              >
+                <Star className="h-4 w-4 fill-current" /> { /* Ngôi sao luôn hiện */ }
+                <span className="text-sm font-semibold">
+                  {post.author.reputationScore}
+                </span>
+              </div>
             <span className="text-sm text-[#99A1AF]">
               • 5 giờ trước
             </span>
@@ -320,7 +342,7 @@ export function PostDetail() {
 
         {/* Main Content */}
         <main className="flex-1 px-8 py-8">
-          <div className="max-w-[900px]">
+          <div className="max-w-[900px] ml-24">
             {/* Back Button */}
             <button
               onClick={() => navigate(-1)}
@@ -338,25 +360,31 @@ export function PostDetail() {
                   <Link to={`/user/${post.author.id}`} className="w-12 h-12 rounded-full bg-[#E01515] flex items-center justify-center text-white font-semibold text-lg">
                     {post.author.name.charAt(0)}
                   </Link>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Link to={`/user/${post.author.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
-                        {post.author.name}
-                      </Link>
-                      <span
-                        className="text-xs font-semibold px-2 py-0.5 rounded"
-                        style={{
-                          backgroundColor: `${getReputationColor(post.author.reputationScore)}15`,
-                          color: getReputationColor(post.author.reputationScore),
-                        }}
-                      >
-                        {post.author.reputationScore}
-                      </span>
+                  <div className="flex flex-col gap-1"> { /* Chuyển thành flex-col để xếp dọc và thêm khoảng cách */ }
+                      { /* Hàng Tên tác giả và Điểm uy tín (vẫn giữ flex items-center) */ }
+                      <div className="flex items-center gap-2">
+                        <Link to={`/user/${post.author.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
+                          {post.author.name}
+                        </Link>
+                        { /* Ngôi sao và điểm uy tín từ bước trước - giữ nguyên */ }
+                        <div
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${post.author.reputationScore >= 50 ? 'text-white' : ''}`}
+                          style={{
+                            backgroundColor: '#FFE4E6'
+                          }}
+                        >
+                          <Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
+                          <span className="text-[#881337]">
+                            {post.author.reputationScore}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      { /* Ngày đăng - giữ nguyên và tự động xếp xuống dưới */ }
+                      <p className="text-sm text-[#99A1AF]">
+                        Đăng lúc {formatDate(post.createdAt)}
+                      </p>
                     </div>
-                    <p className="text-sm text-[#99A1AF]">
-                      Đăng lúc {formatDate(post.createdAt)}
-                    </p>
-                  </div>
                 </div>
 
                 {user && (

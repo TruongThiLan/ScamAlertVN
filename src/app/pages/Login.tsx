@@ -120,7 +120,7 @@ export function Login() {
 
       {/* Footer */}
       <p className="mt-8 text-[#99A1AF] text-xs">
-        © 2028 ScamAlert VN. Diễn đàn chống lừa đảo
+        © 2026 ScamAlert VN. Diễn đàn chống lừa đảo.
       </p>
     </div>
   );

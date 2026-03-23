@@ -49,13 +49,18 @@ export function MyPosts() {
 
   const handleDelete = (postId: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-      // TODO: Delete post
+      // Vì đang dùng mockData, để xóa thật bạn có thể filter mockPosts
+      const index = mockPosts.findIndex(p => p.id === postId);
+      if (index !== -1) {
+        mockPosts.splice(index, 1);
+      }
       alert('Đã xóa bài viết');
+      // Ép re-render bằng cách reload hoặc dùng state (tạm thời để alert)
+      window.location.reload(); 
     }
   };
 
   const handleEdit = (postId: string) => {
-    // TODO: Navigate to edit page
     alert('Chức năng chỉnh sửa đang được phát triển');
   };
 

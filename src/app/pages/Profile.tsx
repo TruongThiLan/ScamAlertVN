@@ -29,7 +29,6 @@ export function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Thêm State để lưu lỗi mật khẩu
   const [passwordError, setPasswordError] = useState('');
 
   const [isUpdateProfileAlertOpen, setIsUpdateProfileAlertOpen] = useState(false);
@@ -68,7 +67,6 @@ export function Profile() {
     }
   };
 
-  // Hàm kiểm tra mật khẩu hợp lệ (Tối thiểu 6 ký tự, có chữ, số, ký tự đặc biệt)
   const validatePassword = (pass: string) => {
     const minLength = pass.length >= 6;
     const hasLetter = /[a-zA-Z]/.test(pass);
@@ -78,17 +76,15 @@ export function Profile() {
     return minLength && hasLetter && hasNumber && hasSpecialChar;
   };
 
-  // Xử lý khi người dùng đang nhập Mật khẩu mới
   const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNewPassword(value);
     
-    // Nếu có nhập thì kiểm tra, nếu xóa hết thì ẩn lỗi
     if (value.length > 0) {
       if (!validatePassword(value)) {
         setPasswordError('Mật khẩu không hợp lệ');
       } else {
-        setPasswordError(''); // Mật khẩu ok thì xóa lỗi
+        setPasswordError(''); 
       }
     } else {
       setPasswordError('');
@@ -154,7 +150,6 @@ export function Profile() {
               </TabsTrigger>
             </TabsList>
 
-            {/* ... (Phần TabsContent profile giữ nguyên) ... */}
             <TabsContent value="profile" className="p-6">
               <form onSubmit={handleUpdateProfileSubmit} className="space-y-6">
                 <div>
@@ -224,7 +219,6 @@ export function Profile() {
             </TabsContent>
 
             <TabsContent value="password" className="p-6">
-              {/* Đã cập nhật câu ghi chú */}
               <p className="text-[#4A5565] italic mb-6">
                 Mật khẩu của bạn phải có tối thiểu 6 ký tự, bao gồm chữ cái, số và ký tự đặc biệt (!@#$%).
               </p>
@@ -309,7 +303,7 @@ export function Profile() {
                   <Button 
                     type="submit" 
                     className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[5px] px-12 py-6 h-auto text-2xl"
-                    disabled={!!passwordError} // Vô hiệu hóa nút nếu đang có lỗi
+                    disabled={!!passwordError} 
                   >
                     Đổi mật khẩu
                   </Button>
@@ -320,7 +314,6 @@ export function Profile() {
         </div>
       </div>
 
-      {/* Cập nhật thông tin Dialog */}
       <AlertDialog open={isUpdateProfileAlertOpen} onOpenChange={setIsUpdateProfileAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -338,7 +331,6 @@ export function Profile() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Đổi mật khẩu Dialog */}
       <AlertDialog open={isChangePasswordAlertOpen} onOpenChange={setIsChangePasswordAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

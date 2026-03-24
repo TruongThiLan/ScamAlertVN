@@ -16,12 +16,10 @@ export function Home() {
 
   const approvedPosts = mockPosts.filter(post => post.status === 'approved');
   
-  // Bước 1: Lọc theo danh mục
   const categoryFilteredPosts = selectedCategory === 'all' 
     ? approvedPosts 
     : approvedPosts.filter(post => post.category.id === selectedCategory);
 
-  // Bước 2: Lọc theo từ khóa tìm kiếm (Gõ tới đâu lọc tới đó)
   const filteredPosts = searchQuery.trim() === ''
     ? categoryFilteredPosts
     : categoryFilteredPosts.filter(post => 
@@ -29,7 +27,6 @@ export function Home() {
         post.content.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-  // Bước 3: Sắp xếp
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === 'trending') {
       return b.likes - a.likes;

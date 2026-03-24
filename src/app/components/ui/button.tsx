@@ -46,9 +46,7 @@ function Button({
   }) {
   const Comp = asChild ? Slot : "button";
 
-  // Filter out Figma inspector props and other non-standard props
   const filteredProps = Object.keys(props).reduce((acc, key) => {
-    // Filter out props that start with underscore (Figma inspector props)
     if (!key.startsWith('_')) {
       acc[key] = props[key as keyof typeof props];
     }

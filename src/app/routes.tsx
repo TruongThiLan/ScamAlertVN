@@ -21,7 +21,6 @@ import { Outlet, Navigate } from 'react-router';
 import { Toaster } from './components/ui/sonner';
 import { EditPost } from './pages/EditPost';
 
-// Simple layout for auth pages (no header)
 function AuthLayout() {
   return (
     <>
@@ -31,21 +30,16 @@ function AuthLayout() {
   );
 }
 
-// Router configuration for ScamAlert VN
 export const router = createBrowserRouter([
   {
     path: '/',
     Component: RootLayout,
     children: [
-      // Home page
       { index: true, Component: Home },
-      // About page
       { path: 'about', Component: About },
-      // Posts
       { path: 'posts/:id', Component: PostDetail },
       { path: 'posts/create', Component: CreatePost },
       { path: 'posts/:id/edit', Component: CreatePost },
-      // User pages
       { path: 'my-posts', Component: MyPosts },
       { path: 'profile', Component: Profile },
       { path: 'search', Component: SearchPage },
@@ -54,7 +48,6 @@ export const router = createBrowserRouter([
       { path: 'create-post', Component: CreatePost },
     ],
   },
-  // Admin section with separate layout
   {
     path: 'admin',
     Component: AdminLayout,
@@ -67,7 +60,6 @@ export const router = createBrowserRouter([
       { path: 'statistics', Component: AdminStatistics },
     ],
   },
-  // Auth pages without header - separate routes
   {
     path: 'login',
     Component: AuthLayout,

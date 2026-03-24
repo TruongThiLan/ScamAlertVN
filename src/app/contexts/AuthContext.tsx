@@ -11,7 +11,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Danh sách user mặc định ban đầu
 const defaultMockUsers: User[] = [
   {
     id: '1',
@@ -34,25 +33,20 @@ const defaultMockUsers: User[] = [
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // 1. Khởi tạo danh sách users từ localStorage (nếu chưa có thì lấy mặc định)
   const [usersList, setUsersList] = useState<User[]>(() => {
     const savedUsers = localStorage.getItem('scamalert_users');
     return savedUsers ? JSON.parse(savedUsers) : defaultMockUsers;
   });
 
-  // 2. Khởi tạo user đang đăng nhập từ localStorage (để F5 không bị văng ra ngoài)
   const [user, setUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('scamalert_current_user');
-    // Mặc định cho "Nguyễn Văn A" đăng nhập lúc đầu giống code cũ của bạn
     return savedUser ? JSON.parse(savedUser) : defaultMockUsers[1]; 
   });
 
-  // 3. Tự động lưu danh sách users vào localStorage mỗi khi có người đăng ký mới
   useEffect(() => {
     localStorage.setItem('scamalert_users', JSON.stringify(usersList));
   }, [usersList]);
 
-  // 4. Tự động lưu trạng thái đăng nhập vào localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('scamalert_current_user', JSON.stringify(user));
@@ -62,7 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Tìm user trong danh sách đã lưu
     const normalizedEmail = email.trim().toLowerCase();
     const foundUser = usersList.find(u => u.email.toLowerCase() === normalizedEmail);
     
@@ -76,9 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     const normalizedEmail = email.trim().toLowerCase();
     
-    // Kiểm tra xem email đã tồn tại chưa
     if (usersList.some(u => u.email.toLowerCase() === normalizedEmail)) {
-      return false; // Email đã được sử dụng
+      return false; 
     }
 
     const newUser: User = {
@@ -91,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       violationCount: 0,
     };
     
-    // Thêm user mới vào danh sách và cho đăng nhập luôn
     setUsersList(prev => [...prev, newUser]);
     setUser(newUser);
     return true;
@@ -113,7 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const updatedUser = { ...user, ...userData };
         setUser(updatedUser);
         
-        // Cập nhật thông tin user này trong cả danh sách tổng
         setUsersList(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
         
         return { success: true };

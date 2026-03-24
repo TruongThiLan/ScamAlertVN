@@ -206,9 +206,9 @@ Họ nói:
 May mắn là tôi đã nhận biết và KHÔNG cung cấp thông tin. Sau đó gọi lại hotline chính thức của ngân hàng, họ xác nhận đây là lừa đảo.
 
 Lưu ý:
-⚠️ Ngân hàng KHÔNG BAO GIỜ gọi yêu cầu mã OTP
-⚠️ KHÔNG cung cấp thông tin thẻ, mật khẩu qua điện thoại
-⚠️ Luôn gọi lại số hotline CHÍNH THỨC để xác minh
+- Ngân hàng KHÔNG BAO GIỜ gọi yêu cầu mã OTP
+- KHÔNG cung cấp thông tin thẻ, mật khẩu qua điện thoại
+- Luôn gọi lại số hotline CHÍNH THỨC để xác minh
 
 Số điện thoại lừa đảo: 19001234 (giả mạo)`,
     category: scamCategories[6],
@@ -263,9 +263,9 @@ Họ nói:
 Đây là thủ đoạn lừa đảo cũ nhưng vẫn có nhiều người mắc bẫy.
 
 LƯU Ý QUAN TRỌNG:
-✅ Công an KHÔNG BAO GIỜ xử lý vụ án qua điện thoại
-✅ KHÔNG có \"tài khoản bảo vệ\" nào cả
-✅ Nếu nghi ngờ, hãy đến trụ sở công an để xác minh
+- Công an KHÔNG BAO GIỜ xử lý vụ án qua điện thoại
+- KHÔNG có \"tài khoản bảo vệ\" nào cả
+- Nếu nghi ngờ, hãy đến trụ sở công an để xác minh
 
 Đừng để sợ hãi khiến bạn mất tiền!`,
     category: scamCategories[6],

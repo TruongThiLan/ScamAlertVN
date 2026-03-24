@@ -9,9 +9,7 @@ export function MyPosts() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   
-  // State quản lý hộp thoại thông báo xóa thành công
   const [showDeleteSuccessDialog, setShowDeleteSuccessDialog] = useState(false);
-  // State "mẹo" để ép React vẽ lại giao diện sau khi xóa mà không cần F5 tải lại trang
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -24,10 +22,8 @@ export function MyPosts() {
     return null;
   }
 
-  // Filter posts by current user
   const myPosts = mockPosts.filter(post => post.author.id === user.id);
   
-  // Filter by search query
   const filteredPosts = searchQuery
     ? myPosts.filter(post =>
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -53,23 +49,18 @@ export function MyPosts() {
   };
 
   const handleDelete = (postId: string) => {
-    // Vẫn giữ confirm của trình duyệt để hỏi "Bạn có chắc không?"
     if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
       const index = mockPosts.findIndex(p => p.id === postId);
       if (index !== -1) {
-        // Xóa chính xác 1 bài viết tại vị trí index
         mockPosts.splice(index, 1);
         
-        // Hiện hộp thoại thông báo thành công
         setShowDeleteSuccessDialog(true);
-        // Kích hoạt vẽ lại giao diện để bài viết biến mất khỏi danh sách
         setRefreshKey(prev => prev + 1);
       }
     }
   };
 
   const handleEdit = (postId: string) => {
-    // Đã thay thế alert bằng lệnh chuyển hướng sang trang chỉnh sửa bài viết
     navigate(`/edit-post/${postId}`);
   };
 
@@ -88,7 +79,6 @@ export function MyPosts() {
   };
 
   return (
-    // Thêm key={refreshKey} vào thẻ div gốc để React biết khi nào cần cập nhật cục bộ
     <div key={refreshKey} className="min-h-screen bg-[#F9FAFB]">
       <div className="max-w-[1200px] mx-auto px-6 py-8">
         {/* Profile Header */}
@@ -180,7 +170,6 @@ export function MyPosts() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Logic bạn viết rất chuẩn: Nếu chưa được duyệt (approved) thì mới hiện nút Sửa */}
                     {post.status !== 'approved' && (
                       <button
                         onClick={() => handleEdit(post.id)}
@@ -224,7 +213,6 @@ export function MyPosts() {
         </div>
       </div>
 
-      {/* TẠO MỚI: Success Dialog (Hộp thoại báo xóa thành công) */}
       {showDeleteSuccessDialog && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[10px] p-8 w-full max-w-[360px] text-center shadow-xl">

@@ -13,8 +13,6 @@ export function CreatePost() {
   const [category, setCategory] = useState('');
   const [content, setContent] = useState('');
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  
-  // Trạng thái quản lý hộp thoại thông báo thành công
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   useEffect(() => {
@@ -29,7 +27,6 @@ export function CreatePost() {
 
   const hasUnsavedChanges = title.trim() || content.trim() || category;
 
-  // Lấy dữ liệu để đếm số bài viết cho thanh danh mục bên trái (chỉ đếm bài đã duyệt)
   const approvedPosts = mockPosts.filter(post => post.status === 'approved');
 
   const handleBack = () => {
@@ -44,11 +41,9 @@ export function CreatePost() {
     navigate(-1);
   };
 
-  // Xử lý lưu bản nháp thực sự vào hệ thống (Chạy khi bấm Lưu nháp ở Dialog Hủy)
   const handleSaveDraft = () => {
     const selectedCategoryData = categories.find(c => c.id === category);
     
-    // Xử lý tên ẩn danh (kể cả bản nháp)
     const anonymousCount = mockPosts.filter((p: any) => p.isAnonymous).length + 1;
     const postAuthor = isAnonymous 
       ? { ...user, name: `Người tham gia ẩn danh ${anonymousCount}` } 
@@ -56,7 +51,7 @@ export function CreatePost() {
 
     const newPost = {
       id: `p${Date.now()}`,
-      title: title || 'Bài viết chưa có tiêu đề', // Nếu chưa nhập tiêu đề thì dùng chữ mặc định
+      title: title || 'Bài viết chưa có tiêu đề', 
       content: content,
       category: {
         id: category || 'uncategorized',
@@ -68,16 +63,15 @@ export function CreatePost() {
       updatedAt: new Date().toISOString(),
       likes: 0,
       comments: [],
-      status: 'draft', // <-- Đánh dấu trạng thái là BẢN NHÁP
+      status: 'draft', 
     };
 
     mockPosts.unshift(newPost as any);
-    setShowUnsavedDialog(false); // Tắt hộp thoại hỏi han đi
+    setShowUnsavedDialog(false); 
     alert('Đã lưu bản nháp thành công!');
-    navigate('/my-posts'); // Chuyển về trang Bài viết của tôi để xem
+    navigate('/my-posts'); 
   };
 
-  // Xử lý đăng bài (Chờ duyệt)
   const handleSubmit = () => {
     if (!title.trim() || !category || !content.trim()) {
       alert('Vui lòng điền đầy đủ thông tin');
@@ -85,11 +79,7 @@ export function CreatePost() {
     }
 
     const selectedCategoryData = categories.find(c => c.id === category);
-
-    // Đếm số bài ẩn danh để tạo tên
     const anonymousCount = mockPosts.filter((p: any) => p.isAnonymous).length + 1;
-    
-    // Đổi tên nếu bật chế độ ẩn danh
     const postAuthor = isAnonymous 
       ? { ...user, name: `Người tham gia ẩn danh ${anonymousCount}` } 
       : user;
@@ -108,25 +98,23 @@ export function CreatePost() {
       updatedAt: new Date().toISOString(),
       likes: 0,
       comments: [],
-      status: 'pending', // <-- QUAN TRỌNG: Đăng xong phải chờ duyệt (pending)
+      status: 'pending', 
     };
 
     mockPosts.unshift(newPost as any);
 
-    // Bật hộp thoại thành công (thay vì dùng alert)
     setShowSuccessDialog(true);
   };
 
   const handleCloseSuccess = () => {
     setShowSuccessDialog(false);
-    navigate('/my-posts'); // Chuyển về trang quản lý bài viết cá nhân
+    navigate('/my-posts');
   };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
         
-        {/* === CỘT BÊN TRÁI === */}
         <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen">
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-6">Danh mục lừa đảo</h2>
@@ -172,7 +160,6 @@ export function CreatePost() {
           </div>
         </aside>
 
-        {/* === CỘT BÊN PHẢI (Form đăng bài) === */}
         <main className="flex-1">
           <div className="max-w-[943px] mx-auto px-6 py-8">
             <button
@@ -272,7 +259,6 @@ export function CreatePost() {
                 </button>
               </div>
 
-              {/* Actions (Đã xóa nút Lưu bản nháp ở giữa) */}
               <div className="flex items-center justify-end gap-4 pt-6 border-t border-[#D1D5DC]">
                 <button
                   onClick={handleBack}
@@ -293,7 +279,6 @@ export function CreatePost() {
         </main>
       </div>
 
-      {/* Unsaved Changes Dialog (Nơi chứa nút Lưu bản nháp thực sự) */}
       <UnsavedChangesDialog
         isOpen={showUnsavedDialog}
         onClose={() => setShowUnsavedDialog(false)}
@@ -301,7 +286,6 @@ export function CreatePost() {
         onSaveDraft={handleSaveDraft}
       />
 
-      {/* Success Dialog (Khi Đăng bài thành công) */}
       {showSuccessDialog && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[10px] p-8 w-full max-w-[360px] text-center shadow-xl">

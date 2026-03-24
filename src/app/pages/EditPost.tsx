@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { categories, mockPosts, scamCategories } from '../data/mockData';
 import { ArrowLeft, Send, ChevronRight } from 'lucide-react';
 import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
-// IMPORT THANH ĐIỀU HƯỚNG MẪU Ở ĐÂY
 import { Header } from '../components/Header'; 
 
 export function EditPost() {
@@ -103,7 +102,6 @@ export function EditPost() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
-      {/* SỬ DỤNG THANH ĐIỀU HƯỚNG MẪU CHUẨN 100% */}
       <Header />
 
       <div className="flex">

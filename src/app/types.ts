@@ -8,8 +8,8 @@ export interface User {
   avatar?: string;
   createdAt: string;
   isLocked?: boolean;
-  reputationScore: number; // Điểm uy tín
-  violationCount: number; // Số lần vi phạm
+  reputationScore: number; 
+  violationCount: number; 
 }
 
 export type PostStatus = 'pending' | 'approved' | 'rejected';
@@ -43,8 +43,8 @@ export interface Comment {
   content: string;
   createdAt: string;
   isReported?: boolean;
-  replies?: Comment[]; // Nested comments for replies
-  parentId?: string; // Reference to parent comment if this is a reply
+  replies?: Comment[]; 
+  parentId?: string; 
 }
 
 export interface Report {

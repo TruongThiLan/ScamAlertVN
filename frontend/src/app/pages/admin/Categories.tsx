@@ -76,7 +76,7 @@ export function AdminCategories() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [dialogType, setDialogType] = useState<DialogType>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  
+
   const [categoryName, setCategoryName] = useState('');
   const [categoryDescription, setCategoryDescription] = useState('');
 
@@ -116,9 +116,9 @@ export function AdminCategories() {
         toast.error('Vui lòng nhập tên danh mục');
         return;
       }
-      setCategories(categories.map(c => 
-        c.id === selectedCategory.id 
-          ? { ...c, name: categoryName, description: categoryDescription } 
+      setCategories(categories.map(c =>
+        c.id === selectedCategory.id
+          ? { ...c, name: categoryName, description: categoryDescription }
           : c
       ));
       toast.success('Đã cập nhật danh mục');

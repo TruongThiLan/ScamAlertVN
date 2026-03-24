@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Eye, Trash2, Lock, EyeOff, Check, X, AlertTriangle } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -14,7 +14,9 @@ import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 
-interface Post {
+import { useOutletContext } from 'react-router';
+
+export interface Post {
   id: string;
   title: string;
   author: {
@@ -32,7 +34,7 @@ interface Post {
   isLocked?: boolean;
 }
 
-const mockPosts: Post[] = [
+export const mockPosts: Post[] = [
   {
     id: '1',
     title: 'Cảnh báo: Lừa đảo giả danh ngân hàng Vietcombank',
@@ -74,18 +76,23 @@ const mockPosts: Post[] = [
 type ActionType = 'approve' | 'reject' | 'hide' | 'unhide' | 'lock' | 'unlock' | 'delete' | null;
 
 export function AdminPosts() {
+  const [searchParams] = useSearchParams();
+  const categoryFilter = searchParams.get('category');
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const { posts, setPosts } = useOutletContext<{ posts: Post[], setPosts: React.Dispatch<React.SetStateAction<Post[]>> }>();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [actionType, setActionType] = useState<ActionType>(null);
   const [actionReason, setActionReason] = useState('');
   const [selectedReasonType, setSelectedReasonType] = useState('');
   const [showDetailDialog, setShowDetailDialog] = useState(false);
 
-  const filteredPosts = posts.filter((post) =>
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.author.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter ? post.category.id === categoryFilter : true;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleAction = (post: Post, type: ActionType) => {
     setSelectedPost(post);

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/postcss.config.mjs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/App.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/AdminHeader.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/Header.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/PostCard.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ReportDialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ReportUserDialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ReputationBadge.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ShareDialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/UnsavedChangesDialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/figma/ImageWithFallback.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/accordion.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/alert-dialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/alert.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/aspect-ratio.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/avatar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/badge.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/breadcrumb.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/button.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/calendar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/card.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/carousel.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/chart.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/checkbox.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/collapsible.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/command.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/context-menu.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/dialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/drawer.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/dropdown-menu.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/form.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/hover-card.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/input-otp.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/input.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/label.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/menubar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/navigation-menu.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/pagination.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/popover.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/progress.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/radio-group.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/resizable.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/scroll-area.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/select.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/separator.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/sheet.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/sidebar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/skeleton.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/slider.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/sonner.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/switch.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/table.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/tabs.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/textarea.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/toggle-group.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/toggle.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/tooltip.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/use-mobile.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/ui/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/contexts/AuthContext.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/data/mockData.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/layouts/RootLayout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/About.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/CreatePost.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/EditPost.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/ForgotPassword.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/Home.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/Login.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/MyPosts.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/PostDetail.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/Profile.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/Register.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/ResetPassword.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/SearchPage.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/UserProfile.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/admin/AdminLayout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/admin/Categories.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/admin/Posts.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/admin/Statistics.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pages/admin/Users.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/routes.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/account-registration-form.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/account-verification.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/change-password.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/create-post-page.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/create-post-ui.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/scam-alert-vn-1.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/scam-alert-vn-header.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/scam-alert-vn-homepage.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/scam-alert-vn.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/user-profile-update.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/imports/pasted_text/user-report.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/fonts.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/index.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/tailwind.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/theme.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vite.config.ts" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="3BNWJyoD114EQyWjeHvWWM3OraX" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "to.speed.mode.migration.done": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="" />
+      <created>1774329941457</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774329941457</updated>
+    </task>
+    <servers />
+  </component>
+</project>

@@ -14,7 +14,6 @@ export function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate sending reset email
     setTimeout(() => {
       toast.success('Đã gửi email khôi phục mật khẩu!');
       setLoading(false);
@@ -66,9 +65,9 @@ export function ForgotPassword() {
             </div>
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
+          <Button
+            type="submit"
+            className="w-full bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium"
             disabled={loading}
           >
             {loading ? 'Đang gửi...' : 'Gửi yêu cầu'}
@@ -78,7 +77,7 @@ export function ForgotPassword() {
 
       {/* Footer */}
       <p className="mt-8 text-[#99A1AF] text-xs">
-        © 2028 ScamAlert VN. Diễn đàn chống lừa đảo
+        © 2026 ScamAlert VN. Diễn đàn chống lừa đảo
       </p>
     </div>
   );

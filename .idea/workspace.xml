@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/admin/AdminLayout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/admin/AdminLayout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/admin/Categories.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/admin/Categories.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/admin/Posts.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/admin/Posts.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,6 +37,7 @@
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/Hoctap/năm 3/kì 2/Lập trình web (Bem)/Scam Alert Management System&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>

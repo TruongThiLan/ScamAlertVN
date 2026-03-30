@@ -17,6 +17,7 @@ import { AdminUsers } from './pages/admin/Users';
 import { AdminPosts } from './pages/admin/Posts';
 import { AdminCategories } from './pages/admin/Categories';
 import { AdminStatistics } from './pages/admin/Statistics';
+import { ReputationHistory } from './pages/ReputationHistory';
 import { Outlet, Navigate } from 'react-router';
 import { Toaster } from './components/ui/sonner';
 import { EditPost } from './pages/EditPost';
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: 'posts/:id/edit', Component: CreatePost },
       { path: 'my-posts', Component: MyPosts },
       { path: 'profile', Component: Profile },
+      { path: 'reputation-history', Component: ReputationHistory },
       { path: 'search', Component: SearchPage },
       { path: 'user/:userId', Component: UserProfile },
       { path: 'post/:id', Component: PostDetail },

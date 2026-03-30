@@ -70,16 +70,16 @@ export function Header() {
               Bài viết của tôi
             </Link>
           )}
-          <Link 
-            to="/about" 
-            className={`text-base transition-colors ${
-              isActive('/about') 
-                ? 'text-[#E01515] font-bold' 
-                : 'text-black font-medium hover:text-[#E01515]'
-            }`}
-          >
-            Về chúng tôi
-          </Link>
+            <Link 
+              to="/about" 
+              className={`text-base transition-colors ${
+                isActive('/about') 
+                  ? 'text-[#E01515] font-bold' 
+                  : 'text-black font-medium hover:text-[#E01515]'
+              }`}
+            >
+              Về chúng tôi
+            </Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
@@ -123,8 +123,8 @@ export function Header() {
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
                     <Link to="/profile">Tài khoản của tôi</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                   </DropdownMenuItem>
+                   <DropdownMenuItem asChild>
                     <Link to="/my-posts">Bài viết của tôi</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

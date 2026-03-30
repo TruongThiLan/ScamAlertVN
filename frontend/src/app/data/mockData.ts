@@ -1,4 +1,4 @@
-import { ScamCategory, Post, User } from '../types';
+import { ScamCategory, Post, User, ReputationHistoryEntry, ReputationStat } from '../types';
 
 export const scamCategories: ScamCategory[] = [
   {
@@ -276,4 +276,19 @@ LƯU Ý QUAN TRỌNG:
     likes: 89,
     comments: [],
   },
+];
+
+export const reputationHistory: ReputationHistoryEntry[] = [
+  { id: 'rh1', userId: '2', points: 10, reason: 'Bài viết được duyệt', createdAt: '2025-01-20T10:00:00Z' },
+  { id: 'rh2', userId: '2', points: 5, reason: 'Đóng góp bình luận hữu ích', createdAt: '2025-02-15T14:30:00Z' },
+  { id: 'rh3', userId: '3', points: -10, reason: 'Bài viết vi phạm bị xóa', createdAt: '2025-03-01T09:15:00Z' },
+  { id: 'rh4', userId: '2', points: 15, reason: 'Bài viết đạt 50 lượt thích', createdAt: '2025-03-10T11:00:00Z' },
+  { id: 'rh5', userId: '4', points: 50, reason: 'Điểm thưởng báo cáo scam chính xác', createdAt: '2025-03-11T16:45:00Z' },
+];
+
+export const reputationStats: ReputationStat[] = [
+  { userId: '2', userName: 'Nguyễn Văn A', userEmail: 'user@example.com', currentScore: 1250, totalGained: 1300, totalLost: 50 },
+  { userId: '3', userName: 'Lê Thị Bích', userEmail: 'user2@example.com', currentScore: 42, totalGained: 52, totalLost: 10 },
+  { userId: '4', userName: 'Trần Minh Tâm', userEmail: 'user3@example.com', currentScore: 128, totalGained: 150, totalLost: 22 },
+  { userId: '5', userName: 'Lê Văn C', userEmail: 'user4@example.com', currentScore: 200, totalGained: 200, totalLost: 0 },
 ];

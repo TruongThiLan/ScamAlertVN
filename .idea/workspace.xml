@@ -6,6 +6,17 @@
   <component name="ChangeListManager">
     <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/account-registration-form.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/account-registration-form.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/account-verification.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/account-verification.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/change-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/change-password.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/create-post-page.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/create-post-page.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/create-post-ui.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/create-post-ui.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn-1.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn-1.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn-header.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn-header.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn-homepage.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn-homepage.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/user-profile-update.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/user-profile-update.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/user-report.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/user-report.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

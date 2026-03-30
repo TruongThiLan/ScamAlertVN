@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { mockPosts } from '../data/mockData';
-import { Search, Plus, Edit, Trash2, Heart, MessageCircle, Share2, Calendar } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Heart, MessageCircle, Share2, Calendar, History } from 'lucide-react';
 
 export function MyPosts() {
   const navigate = useNavigate();
@@ -96,9 +96,18 @@ export function MyPosts() {
                 </div>
               </div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-[10px] px-4 py-2 flex items-center gap-2">
-              <span className="text-sm">Điểm uy tín:</span>
-              <span className="text-2xl font-bold">{user.reputationScore}</span>
+            <div className="flex flex-col items-end gap-2">
+              <div className="bg-white/20 backdrop-blur-sm rounded-[10px] px-4 py-2 flex items-center gap-2">
+                <span className="text-sm">Điểm uy tín:</span>
+                <span className="text-2xl font-bold">{user.reputationScore}</span>
+              </div>
+              <Link 
+                to="/reputation-history"
+                className="text-xs text-white/90 hover:text-white underline underline-offset-2 transition-colors flex items-center gap-1"
+              >
+                <History className="w-3.5 h-3.5" />
+                Xem lịch sử điểm
+              </Link>
             </div>
           </div>
         </div>

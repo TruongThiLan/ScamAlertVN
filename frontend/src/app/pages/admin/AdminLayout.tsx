@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
 import { Category, mockCategories } from './Categories';
 import { Post, mockPosts } from './Posts';
+import { getCategoryBadgeStyle } from '../../utils/colorUtils';
 
 export function AdminLayout() {
   const location = useLocation();
@@ -31,6 +32,9 @@ export function AdminLayout() {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  const categoryCounts = categories.map(c => getPendingCount(c.id));
+  const maxCategoryCount = Math.max(...categoryCounts, 1);
+
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Admin Header */}
@@ -38,7 +42,7 @@ export function AdminLayout() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-[220px] bg-white border-r border-[#D1D5DC] min-h-[calc(100vh-73px)]">
+        <aside className="w-[320px] bg-white border-r border-[#D1D5DC] min-h-[calc(100vh-73px)]">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-[#1E293B] mb-4">Danh mục lừa đảo</h2>
             <div className="space-y-2">
@@ -51,7 +55,10 @@ export function AdminLayout() {
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="w-10 h-10 rounded-lg bg-[#E01515] text-white flex items-center justify-center font-semibold text-sm">
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-sm"
+                    style={getCategoryBadgeStyle(maxCategoryCount, maxCategoryCount)}
+                  >
                     {getPendingCount()}
                   </div>
                   <span className={`text-sm transition-colors ${
@@ -79,7 +86,10 @@ export function AdminLayout() {
                   }`}
                 >
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-lg bg-[#E01515] text-white flex items-center justify-center font-semibold text-sm">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-sm"
+                      style={getCategoryBadgeStyle(getPendingCount(category.id), maxCategoryCount)}
+                    >
                       {getPendingCount(category.id)}
                     </div>
                     <span className={`text-sm transition-colors ${

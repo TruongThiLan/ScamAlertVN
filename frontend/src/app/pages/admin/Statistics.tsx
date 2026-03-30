@@ -1,5 +1,6 @@
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { FileText, Users, TrendingUp, AlertTriangle } from 'lucide-react';
+import { ReputationStatsSection } from './ReputationStats';
 
 const statsCards = [
   {
@@ -216,6 +217,8 @@ export function AdminStatistics() {
           </tbody>
         </table>
       </div>
+
+      <ReputationStatsSection />
     </div>
   );
 }

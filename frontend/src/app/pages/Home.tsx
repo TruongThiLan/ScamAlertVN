@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../components/ui/input';
 import { Search, ChevronRight, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getCategoryBadgeStyle } from '../utils/colorUtils';
 
 export function Home() {
   const { user } = useAuth();
@@ -34,6 +35,9 @@ export function Home() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  const categoryCounts = scamCategories.map(c => approvedPosts.filter(p => p.category.id === c.id).length);
+  const maxCategoryCount = Math.max(...categoryCounts, 1);
+
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
@@ -53,8 +57,8 @@ export function Home() {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
-                    style={{ backgroundColor: '#E01515' }}
+                    className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                    style={getCategoryBadgeStyle(maxCategoryCount, maxCategoryCount)}
                   >
                     {approvedPosts.length}
                   </div>
@@ -77,8 +81,8 @@ export function Home() {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
-                        style={{ backgroundColor: '#E01515' }}
+                        className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                        style={getCategoryBadgeStyle(categoryPostCount, maxCategoryCount)}
                       >
                         {categoryPostCount}
                       </div>

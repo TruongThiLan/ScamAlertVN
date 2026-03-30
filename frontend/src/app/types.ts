@@ -56,3 +56,20 @@ export interface Report {
   status: 'pending' | 'resolved' | 'dismissed';
   createdAt: string;
 }
+
+export interface ReputationHistoryEntry {
+  id: string;
+  userId: string;
+  points: number;
+  reason: string;
+  createdAt: string;
+}
+
+export interface ReputationStat {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  currentScore: number;
+  totalGained: number;
+  totalLost: number;
+}

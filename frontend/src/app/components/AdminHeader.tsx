@@ -51,49 +51,43 @@ export function AdminHeader() {
           <nav className="flex items-center gap-6">
             <Link
               to="/admin/users"
-              className={`text-base transition-colors ${
-                isActive('/admin/users')
+              className={`text-base transition-colors ${isActive('/admin/users')
                   ? 'text-[#E01515] font-bold'
                   : 'text-black font-medium hover:text-[#E01515]'
-              }`}
+                }`}
             >
               Quản lý người dùng
             </Link>
             <Link
               to="/admin/posts"
-              className={`text-base transition-colors ${
-                isActive('/admin/posts')
+              className={`text-base transition-colors ${isActive('/admin/posts')
                   ? 'text-[#E01515] font-bold'
                   : 'text-black font-medium hover:text-[#E01515]'
-              }`}
+                }`}
             >
               Quản lý bài viết
             </Link>
             <Link
               to="/admin/categories"
-              className={`text-base transition-colors ${
-                isActive('/admin/categories')
+              className={`text-base transition-colors ${isActive('/admin/categories')
                   ? 'text-[#E01515] font-bold'
                   : 'text-black font-medium hover:text-[#E01515]'
-              }`}
+                }`}
             >
               Quản lý danh mục
             </Link>
             <Link
               to="/admin/statistics"
-              className={`text-base transition-colors ${
-                isActive('/admin/statistics')
+              className={`text-base transition-colors ${isActive('/admin/statistics')
                   ? 'text-[#E01515] font-bold'
                   : 'text-black font-medium hover:text-[#E01515]'
-              }`}
+                }`}
             >
               Báo cáo thống kê
             </Link>
           </nav>
 
-          {/* User Menu and Back to User View Button */}
           <div className="flex items-center gap-3">
-            {/* Back to User View Button */}
             <Link to="/">
               <button className="flex items-center gap-2 px-3 py-2 bg-white rounded-[10px] border border-[#D1D5DC] hover:bg-gray-50 transition-colors">
                 <Home className="h-4 w-4 text-[#4A5565]" />

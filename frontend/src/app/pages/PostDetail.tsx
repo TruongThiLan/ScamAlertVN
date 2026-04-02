@@ -4,6 +4,7 @@ import { mockPosts, scamCategories } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
 import { ReportDialog } from '../components/ReportDialog';
 import { ShareDialog } from '../components/ShareDialog';
+import { toast } from 'sonner';
 import { 
   ArrowLeft, 
   Heart, 
@@ -13,9 +14,13 @@ import {
   Flag,
   ThumbsUp,
   ChevronRight,
-  Star
+  Star,
+  Bookmark,
+  MoreHorizontal
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { Comment } from '../types';
+import { getCategoryBadgeStyle } from '../utils/colorUtils';
 
 export function PostDetail() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +39,7 @@ export function PostDetail() {
   const [reportTarget, setReportTarget] = useState<{ type: 'post' | 'comment'; id: string } | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post?.likes || 0);
+  const [isSaved, setIsSaved] = useState(false);
 
   if (!post) {
     return (
@@ -52,6 +58,9 @@ export function PostDetail() {
   }
 
   const approvedPosts = mockPosts.filter(p => p.status === 'approved');
+  
+  const categoryCounts = scamCategories.map(c => approvedPosts.filter(p => p.category.id === c.id).length);
+  const maxCategoryCount = Math.max(...categoryCounts, 1);
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
@@ -274,8 +283,8 @@ export function PostDetail() {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
-                    style={{ backgroundColor: '#E01515' }}
+                    className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                    style={getCategoryBadgeStyle(approvedPosts.length, maxCategoryCount)}
                   >
                     {approvedPosts.length}
                   </div>
@@ -303,8 +312,8 @@ export function PostDetail() {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
-                        style={{ backgroundColor: '#E01515' }}
+                        className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                        style={getCategoryBadgeStyle(categoryPostCount, maxCategoryCount)}
                       >
                         {categoryPostCount}
                       </div>
@@ -357,13 +366,35 @@ export function PostDetail() {
                 </div>
 
                 {user && (
-                  <button
-                    onClick={handleReportPost}
-                    className="flex items-center gap-2 px-3 py-2 rounded-[8px] border border-[#E01515] text-[#E01515] hover:bg-[#FFF5F5] transition-colors"
-                  >
-                    <Flag className="h-4 w-4" />
-                    Báo cáo
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none">
+                        <MoreHorizontal className="h-6 w-6" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 bg-white border border-[#D1D5DC] rounded-[8px] shadow-lg overflow-hidden p-1">
+                      <DropdownMenuItem 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setIsSaved(!isSaved);
+                          if (!isSaved) toast.success('Đã lưu bài viết');
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 cursor-pointer outline-none hover:bg-slate-50 transition-colors"
+                      >
+                        <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-amber-500 text-amber-500' : 'text-gray-600'}`} />
+                        <span className={`text-sm ${isSaved ? 'text-amber-600' : 'text-gray-700'}`}>
+                          {isSaved ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={handleReportPost}
+                        className="flex items-center gap-2 px-3 py-2 cursor-pointer outline-none hover:bg-red-50 text-[#E01515] transition-colors"
+                      >
+                        <Flag className="h-4 w-4" />
+                        <span className="text-sm">Báo cáo bài viết</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
 

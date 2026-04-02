@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Register() {
@@ -60,10 +60,16 @@ export function Register() {
         <p className="text-[#4A5565] text-sm">Diễn đàn chống lừa đảo</p>
       </div>
 
-      {/* Register Card */}
-      <div className="w-full max-w-md bg-white rounded-[10px] shadow-sm p-8">
-        <div className="mb-6">
-          <h2 className="text-[#101828] text-[28px] font-bold mb-2">Tạo tài khoản mới</h2>
+      <div className="w-full max-w-md">
+        <Link to="/" className="flex items-center gap-2 text-[#4A5565] hover:text-[#E01515] mb-4 transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+          <span className="font-medium">Quay lại</span>
+        </Link>
+
+        {/* Register Card */}
+        <div className="w-full bg-white rounded-[10px] shadow-sm p-8">
+          <div className="mb-6">
+            <h2 className="text-[#101828] text-[28px] font-bold mb-2">Tạo tài khoản mới</h2>
           <p className="text-[#4A5565] text-sm">Đăng ký để tham gia cộng đồng chống lừa đảo</p>
         </div>
 
@@ -169,6 +175,7 @@ export function Register() {
           </div>
         </form>
       </div>
+    </div>
 
       {/* Footer */}
       <p className="mt-8 text-[#99A1AF] text-xs">

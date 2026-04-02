@@ -49,15 +49,16 @@ export function ResetPassword() {
         <p className="text-[#4A5565] text-sm">Diễn đàn chống lừa đảo</p>
       </div>
 
-      {/* Reset Password Card */}
-      <div className="w-full max-w-md bg-white rounded-[10px] shadow-sm p-8">
-        <Link to="/login" className="flex items-center gap-2 text-[#4A5565] hover:text-[#E01515] mb-6">
-          <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Quay lại</span>
+      <div className="w-full max-w-md">
+        <Link to="/login" className="flex items-center gap-2 text-[#4A5565] hover:text-[#E01515] mb-4 transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+          <span className="font-medium">Quay lại</span>
         </Link>
 
-        <div className="mb-6">
-          <h2 className="text-[#101828] text-[28px] font-bold mb-2">Đặt lại mật khẩu</h2>
+        {/* Reset Password Card */}
+        <div className="w-full bg-white rounded-[10px] shadow-sm p-8">
+          <div className="mb-6">
+            <h2 className="text-[#101828] text-[28px] font-bold mb-2">Đặt lại mật khẩu</h2>
           <p className="text-[#4A5565] text-sm">Vui lòng thiết lập mật khẩu mới cho tài khoản</p>
         </div>
 
@@ -121,6 +122,7 @@ export function ResetPassword() {
           </Button>
         </form>
       </div>
+    </div>
 
       {/* Footer */}
       <p className="mt-8 text-[#99A1AF] text-xs">

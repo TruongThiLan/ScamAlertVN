@@ -73,3 +73,11 @@ export interface ReputationStat {
   totalGained: number;
   totalLost: number;
 }
+
+export interface Notification {
+  id: string;
+  userId: string;
+  content: string;
+  isRead: boolean;
+  createdTime: string;
+}

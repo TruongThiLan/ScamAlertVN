@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { ShieldAlert, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { ShieldAlert, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Login() {
@@ -46,10 +46,16 @@ export function Login() {
         <p className="text-[#4A5565] text-sm">Diễn đàn chống lừa đảo</p>
       </div>
 
-      {/* Login Card */}
-      <div className="w-full max-w-md bg-white rounded-[10px] shadow-sm p-8">
-        <div className="mb-6">
-          <h2 className="text-[#101828] text-[28px] font-bold mb-2">Chào mừng trở lại</h2>
+      <div className="w-full max-w-md">
+        <Link to="/" className="flex items-center gap-2 text-[#4A5565] hover:text-[#E01515] mb-4 transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+          <span className="font-medium">Quay lại</span>
+        </Link>
+        
+        {/* Login Card */}
+        <div className="w-full bg-white rounded-[10px] shadow-sm p-8">
+          <div className="mb-6">
+            <h2 className="text-[#101828] text-[28px] font-bold mb-2">Chào mừng trở lại</h2>
           <p className="text-[#4A5565] text-sm">Đăng nhập để tiếp tục cập nhật các thông tin</p>
         </div>
 
@@ -117,6 +123,7 @@ export function Login() {
           </div>
         </form>
       </div>
+    </div>
 
       {/* Footer */}
       <p className="mt-8 text-[#99A1AF] text-xs">

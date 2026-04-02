@@ -116,13 +116,7 @@ export function AdminHeader() {
                     <p className="text-xs text-[#99A1AF]">admin@scamalert.vn</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/" className="cursor-pointer">
-                      <Home className="h-4 w-4 mr-2" />
-                      Xem trang người dùng
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+
                   <DropdownMenuItem onClick={() => setShowLogoutDialog(true)} className="text-[#E01515] cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     Đăng xuất

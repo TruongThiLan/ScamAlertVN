@@ -10,19 +10,14 @@ export function getCategoryBadgeStyle(count: number, maxCount: number): React.CS
 
   const ratio = count / maxCount;
 
-  if (ratio <= 0.25) {
+  if (ratio <= 0.33) {
     return {
-      backgroundColor: '#FEF08A',
-      color: '#854D0E',
-    };
-  }
-  if (ratio <= 0.5) {
-    return {
-      backgroundColor: '#FB923C',
+      backgroundColor: '#F87171',
       color: '#FFFFFF',
     };
   }
-  if (ratio <= 0.75) {
+  
+  if (ratio <= 0.66) {
     return {
       backgroundColor: '#EF4444',
       color: '#FFFFFF',

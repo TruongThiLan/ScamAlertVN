@@ -1,4 +1,4 @@
-import { ScamCategory, Post, User, ReputationHistoryEntry, ReputationStat } from '../types';
+import { ScamCategory, Post, User, ReputationHistoryEntry, ReputationStat, Notification } from '../types';
 
 export const scamCategories: ScamCategory[] = [
   {
@@ -291,4 +291,28 @@ export const reputationStats: ReputationStat[] = [
   { userId: '3', userName: 'Lê Thị Bích', userEmail: 'user2@example.com', currentScore: 42, totalGained: 52, totalLost: 10 },
   { userId: '4', userName: 'Trần Minh Tâm', userEmail: 'user3@example.com', currentScore: 128, totalGained: 150, totalLost: 22 },
   { userId: '5', userName: 'Lê Văn C', userEmail: 'user4@example.com', currentScore: 200, totalGained: 200, totalLost: 0 },
+];
+
+export const mockNotifications: Notification[] = [
+  {
+    id: 'n1',
+    userId: '2',
+    content: 'Bài viết "Chiêu trò lừa đảo việc làm online" của bạn đã được duyệt.',
+    isRead: false,
+    createdTime: '2026-04-02T08:30:00Z',
+  },
+  {
+    id: 'n2',
+    userId: '2',
+    content: 'Quản trị viên đã cộng 5 điểm uy tín cho bạn vì hoạt động tích cực.',
+    isRead: false,
+    createdTime: '2026-04-01T15:00:00Z',
+  },
+  {
+    id: 'n3',
+    userId: '2',
+    content: 'Có một bình luận mới trên bài viết của bạn.',
+    isRead: true,
+    createdTime: '2026-03-31T09:12:00Z',
+  },
 ];

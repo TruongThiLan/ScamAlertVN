@@ -5,6 +5,7 @@ import { categories, mockPosts, scamCategories } from '../data/mockData';
 import { ArrowLeft, Send, ChevronRight } from 'lucide-react';
 import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
 import { Header } from '../components/Header'; 
+import { getCategoryBadgeStyle } from '../utils/colorUtils';
 
 export function EditPost() {
   const { id } = useParams<{ id: string }>(); 
@@ -45,6 +46,9 @@ export function EditPost() {
 
   const hasUnsavedChanges = title.trim() || content.trim() || category;
   const approvedPosts = mockPosts.filter(post => post.status === 'approved');
+
+  const categoryCounts = scamCategories.map(c => approvedPosts.filter(p => p.category.id === c.id).length);
+  const maxCategoryCount = Math.max(...categoryCounts, 1);
 
   const handleBack = () => {
     setShowUnsavedDialog(true);
@@ -112,7 +116,10 @@ export function EditPost() {
             <div className="space-y-2">
               <button onClick={() => navigate('/')} className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base hover:bg-gray-50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm bg-[#E01515]">
+                  <div 
+                    className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                    style={getCategoryBadgeStyle(approvedPosts.length, maxCategoryCount)}
+                  >
                     {approvedPosts.length}
                   </div>
                   <span>Tất cả</span>
@@ -122,7 +129,10 @@ export function EditPost() {
               {scamCategories.map(cat => (
                 <button key={cat.id} onClick={() => navigate(`/?category=${cat.id}`)} className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base hover:bg-gray-50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm bg-[#E01515]">
+                    <div 
+                      className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                      style={getCategoryBadgeStyle(approvedPosts.filter(p => p.category.id === cat.id).length, maxCategoryCount)}
+                    >
                       {approvedPosts.filter(p => p.category.id === cat.id).length}
                     </div>
                     <span>{cat.name}</span>

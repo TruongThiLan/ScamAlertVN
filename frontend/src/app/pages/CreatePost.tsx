@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { categories, mockPosts, scamCategories } from '../data/mockData';
 import { ArrowLeft, Upload, Send, ChevronRight } from 'lucide-react';
 import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
+import { getCategoryBadgeStyle } from '../utils/colorUtils';
 
 export function CreatePost() {
   const navigate = useNavigate();
@@ -28,6 +29,9 @@ export function CreatePost() {
   const hasUnsavedChanges = title.trim() || content.trim() || category;
 
   const approvedPosts = mockPosts.filter(post => post.status === 'approved');
+  
+  const categoryCounts = scamCategories.map(c => approvedPosts.filter(p => p.category.id === c.id).length);
+  const maxCategoryCount = Math.max(...categoryCounts, 1);
 
   const handleBack = () => {
     if (hasUnsavedChanges) {
@@ -125,8 +129,8 @@ export function CreatePost() {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
-                    style={{ backgroundColor: '#E01515' }}
+                    className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                    style={getCategoryBadgeStyle(approvedPosts.length, maxCategoryCount)}
                   >
                     {approvedPosts.length}
                   </div>
@@ -145,8 +149,8 @@ export function CreatePost() {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white font-semibold text-sm"
-                        style={{ backgroundColor: '#E01515' }}
+                        className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
+                        style={getCategoryBadgeStyle(categoryPostCount, maxCategoryCount)}
                       >
                         {categoryPostCount}
                       </div>

@@ -9,6 +9,7 @@ import { ResetPassword } from './pages/ResetPassword';
 import { PostDetail } from './pages/PostDetail';
 import { CreatePost } from './pages/CreatePost';
 import { MyPosts } from './pages/MyPosts';
+import { SavedPosts } from './pages/SavedPosts';
 import { Profile } from './pages/Profile';
 import { SearchPage } from './pages/SearchPage';
 import { UserProfile } from './pages/UserProfile';
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: 'posts/create', Component: CreatePost },
       { path: 'posts/:id/edit', Component: CreatePost },
       { path: 'my-posts', Component: MyPosts },
+      { path: 'saved-posts', Component: SavedPosts },
       { path: 'profile', Component: Profile },
       { path: 'reputation-history', Component: ReputationHistory },
       { path: 'search', Component: SearchPage },

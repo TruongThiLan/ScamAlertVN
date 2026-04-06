@@ -42,53 +42,99 @@ export function Home() {
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
         {/* Sidebar - Categories */}
+        
         <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen">
           <div className="p-6">
-            <h2 className="text-lg font-semibold mb-6">Danh mục lừa đảo</h2>
-            <div className="space-y-2">
-              {/* All Categories Button */}
+            <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
+
+            <div className="space-y-3">
+              {/* Tất cả */}
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors ${
-                  selectedCategory === 'all' 
-                    ? 'bg-gray-100 font-semibold' 
-                    : 'hover:bg-gray-50'
+                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${
+                  selectedCategory === 'all'
+                    ? 'bg-[#FFF1F1] border-[#F7BABA]'
+                    : 'bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
-                    style={getCategoryBadgeStyle(maxCategoryCount, maxCategoryCount)}
-                  >
-                    {approvedPosts.length}
-                  </div>
-                  <span className="text-left">Tất cả</span>
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${
+                    selectedCategory === 'all'
+                      ? 'bg-[#E01515] text-white'
+                      : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
+                  }`}
+                >
+                  {approvedPosts.length}
                 </div>
-                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+
+                <span
+                  className={`text-left font-medium transition-colors duration-200 ${
+                    selectedCategory === 'all'
+                      ? 'text-[#E01515] font-semibold'
+                      : 'text-[#111827] group-hover:text-[#E01515]'
+                  }`}
+                >
+                  Tất cả
+                </span>
+              </div>
+
+              <ChevronRight
+                className={`h-5 w-5 shrink-0 transition-colors duration-200 ${
+                  selectedCategory === 'all'
+                    ? 'text-[#E01515]'
+                    : 'text-[#99A1AF] group-hover:text-[#E01515]'
+                }`}
+              />
               </button>
 
-              {scamCategories.map(category => {
-                const categoryPostCount = approvedPosts.filter(p => p.category.id === category.id).length;
+              {/* Các danh mục */}
+              {scamCategories.map((category) => {
+                const categoryPostCount = approvedPosts.filter(
+                  (p) => p.category.id === category.id
+                ).length;
+
+                const isActive = selectedCategory === category.id;
+
                 return (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors ${
-                      selectedCategory === category.id 
-                        ? 'bg-gray-100 font-semibold' 
-                        : 'hover:bg-gray-50'
+                    className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${
+                      isActive
+                        ? 'bg-[#FFF1F1] border-[#F7BABA]'
+                        : 'bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
-                        style={getCategoryBadgeStyle(categoryPostCount, maxCategoryCount)}
+                        className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${
+                          isActive
+          ? 'bg-[#E01515] text-white'
+          : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
+                        }`}
                       >
                         {categoryPostCount}
                       </div>
-                      <span className="text-left">{category.name}</span>
+
+                      <span
+                        className={`text-left font-medium transition-colors duration-200 ${
+                          isActive
+                            ? 'text-[#E01515] font-semibold'
+                            : 'text-[#111827] group-hover:text-[#E01515]'
+                        }`}
+                      >
+                        {category.name}
+                      </span>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+
+                    <ChevronRight
+                      className={`h-5 w-5 shrink-0 transition-colors duration-200 ${
+                        isActive
+                          ? 'text-[#E01515]'
+                          : 'text-[#99A1AF] group-hover:text-[#E01515]'
+                      }`}
+                    />
                   </button>
                 );
               })}

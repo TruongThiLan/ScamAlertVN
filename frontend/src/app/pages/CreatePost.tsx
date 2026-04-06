@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { categories, mockPosts, scamCategories } from '../data/mockData';
 import { ArrowLeft, Upload, Send, ChevronRight } from 'lucide-react';
 import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
-import { getCategoryBadgeStyle } from '../utils/colorUtils';
 
 export function CreatePost() {
   const navigate = useNavigate();
@@ -121,42 +120,50 @@ export function CreatePost() {
         
         <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen">
           <div className="p-6">
-            <h2 className="text-lg font-semibold mb-6">Danh mục lừa đảo</h2>
-            <div className="space-y-2">
+            <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
+
+            <div className="space-y-3">
+              {/* Tất cả */}
               <Link
                 to="/"
-                className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors hover:bg-gray-50"
+                className="group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]"
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
-                    style={getCategoryBadgeStyle(approvedPosts.length, maxCategoryCount)}
-                  >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
                     {approvedPosts.length}
                   </div>
-                  <span className="text-left">Tất cả</span>
+
+                  <span className="text-left font-medium transition-colors duration-200 text-[#111827] group-hover:text-[#E01515]">
+                    Tất cả
+                  </span>
                 </div>
-                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+
+                <ChevronRight className="h-5 w-5 shrink-0 transition-colors duration-200 text-[#99A1AF] group-hover:text-[#E01515]" />
               </Link>
 
-              {scamCategories.map(cat => {
-                const categoryPostCount = approvedPosts.filter(p => p.category.id === cat.id).length;
+              {/* Các danh mục */}
+              {scamCategories.map((cat) => {
+                const categoryPostCount = approvedPosts.filter(
+                  (p) => p.category.id === cat.id
+                ).length;
+
                 return (
                   <Link
                     key={cat.id}
                     to={`/?category=${cat.id}`}
-                    className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base transition-colors hover:bg-gray-50"
+                    className="group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-[10px] flex items-center justify-center font-semibold text-sm"
-                        style={getCategoryBadgeStyle(categoryPostCount, maxCategoryCount)}
-                      >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
                         {categoryPostCount}
                       </div>
-                      <span className="text-left">{cat.name}</span>
+
+                      <span className="text-left font-medium transition-colors duration-200 text-[#111827] group-hover:text-[#E01515]">
+                        {cat.name}
+                      </span>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+
+                    <ChevronRight className="h-5 w-5 shrink-0 transition-colors duration-200 text-[#99A1AF] group-hover:text-[#E01515]" />
                   </Link>
                 );
               })}

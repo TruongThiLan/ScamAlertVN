@@ -81,36 +81,70 @@ export function UserProfile() {
           <span>Quay lại</span>
         </button>
 
+        
+
         {/* Profile Header */}
-        <div className="bg-gradient-to-r from-[#E01515] to-[#C10007] rounded-[10px] p-8 mb-6 text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-[#E01515] font-bold text-3xl">
-                {profileUser.name.charAt(0)}
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{profileUser.name}</h1>
-                <p className="text-white/90">Tham gia từ 20/1/2025</p>
-              </div>
+  <div className="bg-[#FFF7F7] rounded-[18px] border border-[#F3C4C4] px-8 py-5 mb-6 shadow-[0_4px_4px_rgba(0,0,0,0.25)]">
+    <div className="flex items-center justify-between gap-6">
+
+      {/* LEFT */}
+      <div className="flex items-center gap-5">
+        <div className="w-16 h-16 rounded-full bg-[#E60012] flex items-center justify-center text-white font-bold text-xl shadow-md">
+          {profileUser.name
+            .split(' ')
+            .slice(-2)
+            .map(word => word.charAt(0).toUpperCase())
+            .join('')}
+        </div>
+
+        <div>
+          <h1 className="text-[22px] font-bold text-[#111827] mb-1">
+            {profileUser.name}
+          </h1>
+
+          <div className="flex items-center gap-2 text-[14px] text-[#4B5563]">
+            <span>Tham gia từ 20/1/2025</span>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT */}
+      <div className="flex items-center gap-3">
+
+        {/* Reputation */}
+        <div className="flex items-center gap-3 rounded-[16px] border border-[#F3C4C4] bg-white px-4 py-2">
+          <div className="w-10 h-10 rounded-full bg-[#F0000F] flex items-center justify-center">
+            <ShieldAlert className="w-5 h-5 text-white" />
+          </div>
+
+          <div className="leading-tight">
+            <div className="text-[13px] text-[#4B5563]">
+              Điểm uy tín
             </div>
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 backdrop-blur-sm rounded-[10px] px-4 py-2 flex items-center gap-2">
-                <span className="text-sm">Điểm uy tín:</span>
-                <span className="text-2xl font-bold">{profileUser.reputationScore}</span>
-              </div>
-              {!isOwnProfile && currentUser && (
-                <button
-                  onClick={() => setIsReportDialogOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-[10px] bg-white text-[#E01515] hover:bg-white/90 transition-colors"
-                >
-                  <ShieldAlert className="h-5 w-5" />
-                  Báo cáo người dùng
-                </button>
-              )}
+            <div className="text-[20px] font-bold text-[#F0000F]">
+              {profileUser.reputationScore}
             </div>
           </div>
         </div>
 
+      {/* Report Button */}
+      {!isOwnProfile && currentUser && (
+        <button
+          onClick={() => setIsReportDialogOpen(true)}
+          className="h-[42px] px-5 rounded-[14px] border border-[#D1D5DB] bg-[#F3F4F6]
+          flex items-center gap-2
+          text-[14px] font-medium text-[#374151]
+          transition-all duration-200
+          hover:bg-[#FFECEC] hover:text-[#E01515] hover:border-[#E01515]"
+        >
+          <ShieldAlert className="w-4 h-4" />
+          Báo cáo người dùng
+        </button>
+      )}
+    </div>
+
+  </div>
+</div>
         {/* Stats */}
         <div className="grid grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-[10px] border border-[#D1D5DC] p-6 text-center">

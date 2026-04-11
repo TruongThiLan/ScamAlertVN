@@ -129,13 +129,13 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
                 <ThumbsUp className="h-4 w-4" />
                 <span className="text-sm">{post.likes}</span>
               </button>
-              <Link to={`/post/${post.id}`} className="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors">
+              <Link to={`/post/${post.id}`} className="flex items-center gap-1 text-gray-600 hover:text-[#E01515] transition-colors">
                 <MessageCircle className="h-4 w-4" />
                 <span className="text-sm">{post.comments.length} bình luận</span>
               </Link>
-              <button className="flex items-center gap-1 text-gray-600 hover:text-green-600 transition-colors">
+              <button className="ml-auto flex items-center gap-2 text-[#99A1AF] hover:text-[#E01515] transition-colors">
                 <Share2 className="h-4 w-4" />
-                <span className="text-sm">28 chia sẻ</span>
+                <span className="text-sm">Chia sẻ</span>
               </button>
             </div>
 

@@ -80,6 +80,7 @@ export function AdminPosts() {
   const categoryFilter = searchParams.get('category');
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
   const { posts, setPosts } = useOutletContext<{ posts: Post[], setPosts: React.Dispatch<React.SetStateAction<Post[]>> }>();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [actionType, setActionType] = useState<ActionType>(null);
@@ -88,10 +89,22 @@ export function AdminPosts() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   const filteredPosts = posts.filter((post) => {
-    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesCategory = categoryFilter ? post.category.id === categoryFilter : true;
-    return matchesSearch && matchesCategory;
+
+    const matchesStatus =
+      filterStatus === 'all'
+        ? true
+        : filterStatus === 'hidden'
+        ? !!post.isHidden
+        : filterStatus === 'locked'
+        ? !!post.isLocked
+        : post.status === filterStatus;
+
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const handleAction = (post: Post, type: ActionType) => {
@@ -238,17 +251,33 @@ export function AdminPosts() {
     <div className="p-8">
       <h1 className="text-2xl font-bold text-[#1E293B] mb-6">Kiểm duyệt và quản lý nội dung</h1>
 
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative max-w-2xl">
+      {/* Search and Filter */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
           <input
             type="text"
             placeholder="Tìm kiếm bài viết..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-2.5 rounded-[10px] border border-[#D1D5DC] focus:outline-none focus:border-[#E01515] transition-colors"
+            className="w-full pl-12 pr-4 py-3 rounded-[10px] border border-[#D1D5DC] focus:outline-none focus:border-[#E01515] transition-colors"
           />
+        </div>
+
+        <div className="w-[190px]">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="px-5 py-3 h-[50px] rounded-[10px] border border-[#D1D5DC] focus:border-[#E01515] bg-white text-[#1E293B]">
+              <SelectValue placeholder="Tất cả trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="pending">Chờ duyệt</SelectItem>
+              <SelectItem value="approved">Đã duyệt</SelectItem>
+              <SelectItem value="rejected">Đã từ chối</SelectItem>
+              <SelectItem value="hidden">Đã ẩn</SelectItem>
+              <SelectItem value="locked">Đã khóa</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

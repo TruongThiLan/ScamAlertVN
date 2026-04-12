@@ -29,6 +29,9 @@ export function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
   const [isUpdateProfileAlertOpen, setIsUpdateProfileAlertOpen] = useState(false);
@@ -47,8 +50,44 @@ export function Profile() {
     );
   }
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setName(val);
+    if (val.length > 0 && (val.length < 6 || val.length > 20)) {
+      setNameError('Tên đăng nhập phải có độ dài từ 6-20 ký tự và duy nhất trong hệ thống');
+    } else {
+      setNameError('');
+    }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setEmail(val);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (val.length > 0 && !emailRegex.test(val)) {
+      setEmailError('Email phải đúng định dạng và không trùng với email đã tồn tại');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPhone(val);
+    const phoneRegex = /^0\d{9}$/;
+    if (val.length > 0 && !phoneRegex.test(val)) {
+      setPhoneError('Số điện thoại phải gồm 10 chữ số và bắt đầu từ số 0');
+    } else {
+      setPhoneError('');
+    }
+  };
+
   const handleUpdateProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (nameError || emailError || phoneError || !name || !email || !phone) {
+      toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
+      return;
+    }
     setIsUpdateProfileAlertOpen(true);
   };
 
@@ -160,12 +199,12 @@ export function Profile() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
                     <Input
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="pl-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                      onChange={handleNameChange}
+                      className={`pl-10 bg-white rounded-[10px] h-12 ${nameError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                       required
                     />
                   </div>
-                  <p className="text-[#6A7282] text-sm mt-2">
+                  <p className={`text-sm mt-2 font-medium ${nameError ? 'text-[#E01515]' : 'text-[#6A7282]'}`}>
                     Tên đăng nhập phải có độ dài từ 6-20 ký tự và duy nhất trong hệ thống
                   </p>
                 </div>
@@ -179,12 +218,12 @@ export function Profile() {
                     <Input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                      onChange={handleEmailChange}
+                      className={`pl-10 bg-white rounded-[10px] h-12 ${emailError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                       required
                     />
                   </div>
-                  <p className="text-[#6A7282] text-sm mt-2">
+                  <p className={`text-sm mt-2 font-medium ${emailError ? 'text-[#E01515]' : 'text-[#6A7282]'}`}>
                     Email phải đúng định dạng và không trùng với email đã tồn tại
                   </p>
                 </div>
@@ -198,11 +237,11 @@ export function Profile() {
                     <Input
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="pl-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                      onChange={handlePhoneChange}
+                      className={`pl-10 bg-white rounded-[10px] h-12 ${phoneError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                     />
                   </div>
-                  <p className="text-[#6A7282] text-sm mt-2">
+                  <p className={`text-sm mt-2 font-medium ${phoneError ? 'text-[#E01515]' : 'text-[#6A7282]'}`}>
                     Số điện thoại phải gồm 10 chữ số và bắt đầu từ số 0
                   </p>
                 </div>
@@ -210,7 +249,8 @@ export function Profile() {
                 <div className="flex justify-center pt-4">
                   <Button 
                     type="submit" 
-                    className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[5px] px-16 py-6 h-auto text-2xl"
+                    className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[8px] px-8 py-2 h-11 text-base font-medium shadow-sm transition-all"
+                    disabled={!!nameError || !!emailError || !!phoneError}
                   >
                     Lưu
                   </Button>
@@ -302,7 +342,7 @@ export function Profile() {
                 <div className="flex justify-center pt-4">
                   <Button 
                     type="submit" 
-                    className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[5px] px-12 py-6 h-auto text-2xl"
+                    className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[8px] px-8 py-2 h-11 text-base font-medium shadow-sm transition-all"
                     disabled={!!passwordError} 
                   >
                     Đổi mật khẩu

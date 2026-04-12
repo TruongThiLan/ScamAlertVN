@@ -3,30 +3,99 @@ import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const validatePassword = (pass: string) => {
+    const minLength = pass.length >= 6;
+    const hasLetter = /[a-zA-Z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecialChar = /[!@#$%]/.test(pass);
+    return minLength && hasLetter && hasNumber && hasSpecialChar;
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setName(val);
+    if (val.length > 0 && (val.length < 6 || val.length > 20)) {
+      setNameError('Tên đăng nhập phải có độ dài từ 6-20 ký tự và duy nhất trong hệ thống');
+    } else {
+      setNameError('');
+    }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setEmail(val);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (val.length > 0 && !emailRegex.test(val)) {
+      setEmailError('Email phải đúng định dạng và không trùng với email đã tồn tại');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPhone(val);
+    const phoneRegex = /^0\d{9}$/;
+    if (val.length > 0 && !phoneRegex.test(val)) {
+      setPhoneError('Số điện thoại phải gồm 10 chữ số và bắt đầu từ số 0');
+    } else {
+      setPhoneError('');
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPassword(val);
+    if (val.length > 0 && !validatePassword(val)) {
+      setPasswordError('Mật khẩu tối thiểu 6 ký tự, bao gồm chữ cái, số và ký tự đặc biệt (!@#$%)');
+    } else {
+      setPasswordError('');
+    }
+    
+    if (confirmPassword && val !== confirmPassword) {
+      setConfirmPasswordError('Mật khẩu xác nhận không khớp');
+    } else if (val === confirmPassword) {
+      setConfirmPasswordError('');
+    }
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setConfirmPassword(val);
+    if (val.length > 0 && password !== val) {
+      setConfirmPasswordError('Mật khẩu xác nhận không khớp');
+    } else {
+      setConfirmPasswordError('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error('Mật khẩu xác nhận không khớp');
-      return;
-    }
-
-    if (password.length < 8) {
-      toast.error('Mật khẩu phải có ít nhất 8 ký tự');
+    if (nameError || emailError || phoneError || passwordError || confirmPasswordError || !name || !email || !phone || !password || !confirmPassword) {
+      toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
       return;
     }
 
@@ -76,53 +145,74 @@ export function Register() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="name" className="block text-[#364153] font-medium mb-2">
-              Họ và tên
+              Tên đăng nhập <span className="text-[#E01515]">*</span>
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
               <Input
                 id="name"
                 type="text"
-                placeholder="Nguyễn Văn A"
-                className="pl-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                placeholder="Nhập tên đăng nhập (6-20 kí tự)"
+                className={`pl-10 bg-white rounded-[10px] h-12 ${nameError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
                 required
               />
             </div>
+            {nameError && <p className="text-[#E01515] text-sm mt-2 font-medium">{nameError}</p>}
           </div>
 
           <div>
             <label htmlFor="email" className="block text-[#364153] font-medium mb-2">
-              Email
+              Email <span className="text-[#E01515]">*</span>
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
-                className="pl-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                placeholder="Nhập email phải đúng định dạng và không trùng với email đã tồn tại"
+                className={`pl-10 bg-white rounded-[10px] h-12 ${emailError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 required
               />
             </div>
+            {emailError && <p className="text-[#E01515] text-sm mt-2 font-medium">{emailError}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="block text-[#364153] font-medium mb-2">
+              Số điện thoại <span className="text-[#E01515]">*</span>
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Nhập số điện thoại có 10 chữ số, bắt đầu từ số 0"
+                className={`pl-10 bg-white rounded-[10px] h-12 ${phoneError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
+                value={phone}
+                onChange={handlePhoneChange}
+                required
+              />
+            </div>
+            {phoneError && <p className="text-[#E01515] text-sm mt-2 font-medium">{phoneError}</p>}
           </div>
 
           <div>
             <label htmlFor="password" className="block text-[#364153] font-medium mb-2">
-              Mật khẩu
+              Mật khẩu <span className="text-[#E01515]">*</span>
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Tối thiểu 8 ký tự"
-                className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                placeholder="Nhập mật khẩu tối thiểu 6 ký tự, bao gồm chữ cái, số và ký tự đặc biệt"
+                className={`pl-10 pr-10 bg-white rounded-[10px] h-12 ${passwordError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 required
               />
               <button
@@ -133,21 +223,22 @@ export function Register() {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
+            {passwordError && <p className="text-[#E01515] text-sm mt-2 font-medium">{passwordError}</p>}
           </div>
 
           <div>
             <label htmlFor="confirmPassword" className="block text-[#364153] font-medium mb-2">
-              Xác nhận mật khẩu
+              Xác nhận mật khẩu <span className="text-[#E01515]">*</span>
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Nhập lại mật khẩu"
-                className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                placeholder="Nhập lại mật khẩu mới"
+                className={`pl-10 pr-10 bg-white rounded-[10px] h-12 ${confirmPasswordError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={handleConfirmPasswordChange}
                 required
               />
               <button
@@ -158,15 +249,26 @@ export function Register() {
                 {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
+            {confirmPasswordError && <p className="text-[#E01515] text-sm mt-2 font-medium">{confirmPasswordError}</p>}
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
-            disabled={loading}
-          >
-            {loading ? 'Đang đăng ký...' : 'Đăng ký'}
-          </Button>
+          <div className="flex gap-4 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/login')}
+              className="flex-1 bg-white border-[#D1D5DC] text-[#101828] h-12 rounded-[10px] hover:bg-gray-50 text-base font-medium"
+            >
+              Hủy
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-1 bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
+              disabled={loading || !!nameError || !!emailError || !!phoneError || !!passwordError || !!confirmPasswordError}
+            >
+              {loading ? 'Đang xử lý...' : 'Đăng ký'}
+            </Button>
+          </div>
 
           <div className="text-center">
             <Link to="/login" className="text-[#E01515] text-sm hover:underline">

@@ -5,23 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/Scam Alert Management System.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Scam Alert Management System.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/account-registration-form.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/account-registration-form.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/account-verification.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/account-verification.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/change-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/change-password.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/create-post-page.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/create-post-page.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/create-post-ui.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/create-post-ui.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn-1.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn-1.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn-header.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn-header.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn-homepage.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn-homepage.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/scam-alert-vn.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/scam-alert-vn.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/user-profile-update.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/user-profile-update.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/imports/pasted_text/user-report.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/imports/screen/user-report.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="64823" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -55,7 +49,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
+        <option value="bundled-python-sdk-ca5e2b39c7df-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.308" />
       </set>
     </attachedChunks>
   </component>

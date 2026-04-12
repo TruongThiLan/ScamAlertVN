@@ -89,8 +89,10 @@ export function AdminPosts() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   const filteredPosts = posts.filter((post) => {
-    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesCategory = categoryFilter ? post.category.id === categoryFilter : true;
     const matchesStatus = statusFilter === 'all' || post.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
@@ -249,7 +251,7 @@ export function AdminPosts() {
             placeholder="Tìm kiếm bài viết..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-2.5 rounded-[10px] border border-[#D1D5DC] focus:outline-none focus:border-[#E01515] transition-colors"
+            className="w-full pl-12 pr-4 py-3 rounded-[10px] border border-[#D1D5DC] focus:outline-none focus:border-[#E01515] transition-colors"
           />
         </div>
 

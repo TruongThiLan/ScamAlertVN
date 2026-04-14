@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { mockPosts, scamCategories } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,7 +16,9 @@ import {
   ChevronRight,
   Star,
   Bookmark,
-  MoreHorizontal
+  MoreHorizontal,
+  Camera,
+  X
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { Comment } from '../types';
@@ -30,6 +32,9 @@ export function PostDetail() {
   const post = mockPosts.find(p => p.id === id);
   const [comments, setComments] = useState<Comment[]>(post?.comments || []);
   const [newComment, setNewComment] = useState('');
+  const [newCommentImage, setNewCommentImage] = useState<{
+    previewUrl: string;
+  } | null>(null);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
@@ -40,6 +45,14 @@ export function PostDetail() {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post?.likes || 0);
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (newCommentImage) {
+        URL.revokeObjectURL(newCommentImage.previewUrl);
+      }
+    };
+  }, [newCommentImage]);
 
   if (!post) {
     return (
@@ -63,19 +76,47 @@ export function PostDetail() {
   const maxCategoryCount = Math.max(...categoryCounts, 1);
 
   const handleAddComment = () => {
-    if (!newComment.trim() || !user) return;
+    if ((!newComment.trim() && !newCommentImage) || !user) return;
 
     const comment: Comment = {
       id: `c${Date.now()}`,
       postId: post.id,
       author: user,
       content: newComment,
+      imageUrl: newCommentImage?.previewUrl,
       createdAt: new Date().toISOString(),
       replies: [],
     };
 
     setComments([...comments, comment]);
     setNewComment('');
+    setNewCommentImage(null);
+  };
+
+  const handleCommentImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!selectedFile.type.startsWith('image/')) {
+      toast.error('Chỉ hỗ trợ tệp ảnh cho bình luận.');
+      e.target.value = '';
+      return;
+    }
+
+    if (newCommentImage) {
+      URL.revokeObjectURL(newCommentImage.previewUrl);
+    }
+
+    const previewUrl = URL.createObjectURL(selectedFile);
+    setNewCommentImage({ previewUrl });
+    e.target.value = '';
+  };
+
+  const removeCommentImage = () => {
+    if (newCommentImage) {
+      URL.revokeObjectURL(newCommentImage.previewUrl);
+    }
+    setNewCommentImage(null);
   };
 
   const handleAddReply = (parentId: string) => {
@@ -190,7 +231,16 @@ export function PostDetail() {
               • 5 giờ trước
             </span>
           </div>
-          <p className="text-[#4A5565] mb-2">{comment.content}</p>
+          {comment.content && <p className="text-[#4A5565] mb-2">{comment.content}</p>}
+          {comment.imageUrl && (
+            <div className="mb-3">
+              <img
+                src={comment.imageUrl}
+                alt="Ảnh bình luận"
+                className="max-h-72 w-auto max-w-full rounded-lg border border-[#D1D5DC] object-cover"
+              />
+            </div>
+          )}
           <div className="flex items-center gap-4">
             <button
               onClick={() => handleLikeComment(comment.id)}
@@ -478,28 +528,60 @@ export function PostDetail() {
               {/* Add Comment */}
               {user ? (
                 <div className="mb-6">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Viết bình luận của bạn..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleAddComment();
-                        }
-                      }}
-                      className="w-full px-4 py-3 pr-12 rounded-[10px] bg-[#F3F3F5] border border-[#D1D5DC] focus:outline-none focus:border-[#E01515] transition-colors"
-                    />
-                    <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#E01515] hover:bg-[#C10007] disabled:bg-gray-300 flex items-center justify-center transition-colors"
-                    >
-                      <Send className="h-4 w-4 text-white" />
-                    </button>
+                  <div className="rounded-xl border border-[#D1D5DC] bg-[#FAFAFB] p-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Viết bình luận của bạn..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddComment();
+                          }
+                        }}
+                        className="w-full rounded-[10px] border border-[#D1D5DC] bg-white px-4 py-3 pr-24 focus:outline-none focus:border-[#E01515] transition-colors"
+                      />
+                      <label
+                        title="Thêm 1 ảnh hoặc thêm 1 video"
+                        className="absolute right-12 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[#99A1AF] hover:text-[#E01515] transition-colors"
+                      >
+                        <Camera className="h-4.5 w-4.5" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleCommentImageChange}
+                        />
+                      </label>
+                      <button
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim() && !newCommentImage}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#E01515] hover:bg-[#C10007] disabled:bg-gray-300 flex items-center justify-center transition-colors"
+                      >
+                        <Send className="h-4 w-4 text-white" />
+                      </button>
+                    </div>
                   </div>
+
+                  {newCommentImage && (
+                    <div className="mt-3 relative w-fit">
+                      <img
+                        src={newCommentImage.previewUrl}
+                        alt="Ảnh xem trước"
+                        className="max-h-52 w-auto max-w-full rounded-lg border border-[#D1D5DC] object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeCommentImage}
+                        className="absolute -right-2 -top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#111827] text-white hover:bg-[#E01515] transition-colors"
+                        aria-label="Xóa ảnh"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="mb-6 p-4 bg-[#F3F3F5] rounded-[10px] text-center text-[#99A1AF]">

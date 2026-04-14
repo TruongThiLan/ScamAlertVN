@@ -41,6 +41,7 @@ export interface Comment {
   postId: string;
   author: User;
   content: string;
+  imageUrl?: string;
   createdAt: string;
   isReported?: boolean;
   replies?: Comment[]; 

@@ -7,7 +7,8 @@ import { ShieldAlert, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Login() {
-  const [email, setEmail] = useState('');
+  // Nguyệt giữ tên biến là email cũng được, nhưng nó sẽ đại diện cho Username/Email gửi sang Django
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,15 +20,15 @@ export function Login() {
     setLoading(true);
 
     try {
-      const success = await login(email, password);
+      // Gửi identifier (username adscamalert) sang hàm login của AuthContext
+      const success = await login(identifier, password);
       if (success) {
-        toast.success('Đăng nhập thành công!');
+        // Thông báo sẽ được hiện bởi toast.success bên trong AuthContext hoặc ở đây
         navigate('/');
-      } else {
-        toast.error('Email hoặc mật khẩu không đúng');
       }
+      // Lỗi 401 đã được xử lý bằng toast.error bên trong AuthContext rồi Nguyệt nhé
     } catch (error) {
-      toast.error('Đã có lỗi xảy ra');
+      toast.error('Máy chủ Backend đang gặp sự cố');
     } finally {
       setLoading(false);
     }
@@ -51,83 +52,83 @@ export function Login() {
           <ArrowLeft className="h-5 w-5" />
           <span className="font-medium">Quay lại</span>
         </Link>
-        
+
         {/* Login Card */}
         <div className="w-full bg-white rounded-[10px] shadow-sm p-8">
           <div className="mb-6">
             <h2 className="text-[#101828] text-[28px] font-bold mb-2">Chào mừng trở lại</h2>
-          <p className="text-[#4A5565] text-sm">Đăng nhập để tiếp tục cập nhật các thông tin</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-[#364153] font-medium mb-2">
-              Tên đăng nhập / Email
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="Tên đăng nhập hoặc email của bạn"
-                className="pl-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+            <p className="text-[#4A5565] text-sm">Đăng nhập bằng tài khoản hệ thống của bạn</p>
           </div>
 
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label htmlFor="password" className="block text-[#364153] font-medium">
-                Mật khẩu
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="identifier" className="block text-[#364153] font-medium mb-2">
+                Tên đăng nhập / Email
               </label>
-              <Link to="/forgot-password" className="text-[#E01515] text-sm hover:underline">
-                Quên mật khẩu?
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
+                <Input
+                  id="identifier"
+                  type="text" // ĐÃ SỬA: Để "text" để Nguyệt nhập được "adscamalert"
+                  placeholder="Nhập username hoặc email..."
+                  className="pl-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="password" className="block text-[#364153] font-medium">
+                  Mật khẩu
+                </label>
+                <Link to="/forgot-password" className="text-[#E01515] text-sm hover:underline">
+                  Quên mật khẩu?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99A1AF] hover:text-[#4A5565]"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium"
+              disabled={loading}
+            >
+              {loading ? 'Đang xác thực...' : 'Đăng nhập'}
+            </Button>
+
+            <div className="text-center">
+              <Link to="/register" className="text-[#E01515] text-sm hover:underline">
+                Chưa có tài khoản? Đăng ký ngay
               </Link>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99A1AF] hover:text-[#4A5565]"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
-            disabled={loading}
-          >
-            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-          </Button>
-
-          <div className="text-center">
-            <Link to="/register" className="text-[#E01515] text-sm hover:underline">
-              Đăng ký tài khoản?
-            </Link>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
 
       {/* Footer */}
       <p className="mt-8 text-[#99A1AF] text-xs">
-        © 2026 ScamAlert VN. Diễn đàn chống lừa đảo.
+        © 2026 ScamAlert VN. Dự án thực tập của Nguyệt và nhóm.
       </p>
     </div>
   );

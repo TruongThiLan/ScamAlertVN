@@ -1,83 +1,117 @@
-export type UserRole = 'guest' | 'user' | 'admin';
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED';
+export type PostStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ReportStatus = 'PENDING' | 'PROCESSED' | 'DISMISSED';
+export type ReactionType = 'UPVOTE' | 'DOWNVOTE';
+export type TargetType = 'POST' | 'COMMENT';
+export type MediaType = 'IMAGE' | 'VIDEO' | 'DOCUMENT';
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  avatar?: string;
-  createdAt: string;
-  isLocked?: boolean;
-  reputationScore: number; 
-  violationCount: number; 
+export interface Role {
+  id: number;
+  role_name: string;
+  description?: string;
 }
 
-export type PostStatus = 'pending' | 'approved' | 'rejected';
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  status: UserStatus;
+  reputation_score: number;
+  role?: number;
+  created_date: string;
+  updated_date: string;
+}
 
 export interface ScamCategory {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
+  id: number;
+  category_name: string;
+  description?: string;
 }
 
 export interface Post {
-  id: string;
+  id: number;
   title: string;
   content: string;
-  category: ScamCategory;
-  author: User;
+  created_time: string;
+  updated_time: string;
+  published_time?: string | null;
   status: PostStatus;
-  createdAt: string;
-  updatedAt: string;
-  likes: number;
-  comments: Comment[];
-  isReported?: boolean;
-  reportCount?: number;
+  user_detail: User;
+  category_detail: ScamCategory | null;
+  likes_count: number;
+  comments_count: number;
 }
 
 export interface Comment {
-  id: string;
-  postId: string;
-  author: User;
+  id: number;
   content: string;
-  createdAt: string;
-  isReported?: boolean;
-  replies?: Comment[]; 
-  parentId?: string; 
+  created_time: string;
+  status: 'ACTIVE' | 'HIDDEN';
+  user_detail: User;
+  post: number;
+  parent_comment?: number | null;
+  replies?: Comment[];
 }
 
-export interface Report {
-  id: string;
-  postId?: string;
-  commentId?: string;
-  reportedBy: User;
+export interface Bookmark {
+  id: number;
+  created_time: string;
+  user: number;
+  post_detail: Post;
+}
+
+export interface Reaction {
+  id: number;
+  reaction_type: ReactionType;
+  target_type: TargetType;
+  target_id: number;
+  created_time: string;
+  user: number;
+}
+
+export interface ContentReport {
+  id: number;
   reason: string;
-  status: 'pending' | 'resolved' | 'dismissed';
-  createdAt: string;
+  reported_time: string;
+  processing_status: ReportStatus;
+  target_type: TargetType;
+  target_id: number;
+  reporter_user_detail: User;
 }
 
-export interface ReputationHistoryEntry {
-  id: string;
-  userId: string;
-  points: number;
-  reason: string;
-  createdAt: string;
-}
-
-export interface ReputationStat {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  currentScore: number;
-  totalGained: number;
-  totalLost: number;
+export interface Media {
+  id: number;
+  url: string;
+  media_type: MediaType;
+  created_time: string;
 }
 
 export interface Notification {
-  id: string;
-  userId: string;
+  id: number;
   content: string;
-  isRead: boolean;
-  createdTime: string;
+  is_read: boolean;
+  created_time: string;
+  user: number;
+}
+
+export interface ActivityLog {
+  id: number;
+  action: string;
+  created_time: string;
+  user: number;
+}
+
+export interface ReputationHistory {
+  id: number;
+  action_type: string;
+  score_change: number;
+  created_time: string;
+  user: number;
+}
+
+export interface ReputationStat {
+  user_id: number;
+  current_score: number;
+  total_gained: number;
+  total_lost: number;
 }

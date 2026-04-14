@@ -1,140 +1,118 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { mockPosts, scamCategories } from '../data/mockData';
+// 1. Nhảy ra 2 lần (../../) để từ pages -> app -> src rồi vào api
+import api from '../../api/axiosInstance';
+// 2. Tương tự cho file types
+import { Post, ScamCategory } from '../../types';
+// 3. Vì components nằm trong src/app/ nên chỉ cần nhảy ra 1 lần (../)
 import { PostCard } from '../components/PostCard';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Input } from '../components/ui/input';
 import { Search, ChevronRight, Plus } from 'lucide-react';
+// 4. Contexts cũng nằm trong src/app/ nên dùng ../
 import { useAuth } from '../contexts/AuthContext';
-import { getCategoryBadgeStyle } from '../utils/colorUtils';
 
 export function Home() {
   const { user } = useAuth();
+
+  // --- STATE DỮ LIỆU THẬT ---
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<ScamCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // --- STATE UI ---
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('latest');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const approvedPosts = mockPosts.filter(post => post.status === 'approved');
-  
-  const categoryFilteredPosts = selectedCategory === 'all' 
-    ? approvedPosts 
-    : approvedPosts.filter(post => post.category.id === selectedCategory);
+  // --- GỌI API KHI VÀO TRANG ---
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [postsRes, categoriesRes] = await Promise.all([
+          api.get('posts/'),
+          api.get('categories/')
+        ]);
+
+        setPosts(postsRes.data);
+        setCategories(categoriesRes.data);
+      } catch (err) {
+        console.error("Lỗi lấy dữ liệu từ Backend:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // --- LOGIC LỌC & SẮP XẾP ---
+  const categoryFilteredPosts = selectedCategory === 'all'
+    ? posts
+    : posts.filter(post => post.category_detail?.id.toString() === selectedCategory);
 
   const filteredPosts = searchQuery.trim() === ''
     ? categoryFilteredPosts
-    : categoryFilteredPosts.filter(post => 
+    : categoryFilteredPosts.filter(post =>
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         post.content.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === 'trending') {
-      return b.likes - a.likes;
+      return (b.likes_count || 0) - (a.likes_count || 0);
     }
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    return new Date(b.created_time).getTime() - new Date(a.created_time).getTime();
   });
 
-  const categoryCounts = scamCategories.map(c => approvedPosts.filter(p => p.category.id === c.id).length);
-  const maxCategoryCount = Math.max(...categoryCounts, 1);
+  if (loading) return <div className="p-10 text-center">Đang tải dữ liệu từ hệ thống...</div>;
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
         {/* Sidebar - Categories */}
-        
         <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen">
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
-
             <div className="space-y-3">
-              {/* Tất cả */}
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${
-                  selectedCategory === 'all'
-                    ? 'bg-[#FFF1F1] border-[#F7BABA]'
-                    : 'bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]'
+                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${
+                  selectedCategory === 'all' ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
                 }`}
               >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${
-                    selectedCategory === 'all'
-                      ? 'bg-[#E01515] text-white'
-                      : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
-                  }`}
-                >
-                  {approvedPosts.length}
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${
+                    selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                  }`}>
+                    {posts.length}
+                  </div>
+                  <span className={`font-medium ${selectedCategory === 'all' ? 'text-[#E01515]' : 'text-[#111827]'}`}>Tất cả</span>
                 </div>
-
-                <span
-                  className={`text-left font-medium transition-colors duration-200 ${
-                    selectedCategory === 'all'
-                      ? 'text-[#E01515] font-semibold'
-                      : 'text-[#111827] group-hover:text-[#E01515]'
-                  }`}
-                >
-                  Tất cả
-                </span>
-              </div>
-
-              <ChevronRight
-                className={`h-5 w-5 shrink-0 transition-colors duration-200 ${
-                  selectedCategory === 'all'
-                    ? 'text-[#E01515]'
-                    : 'text-[#99A1AF] group-hover:text-[#E01515]'
-                }`}
-              />
+                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
               </button>
 
-              {/* Các danh mục */}
-              {scamCategories.map((category) => {
-                const categoryPostCount = approvedPosts.filter(
-                  (p) => p.category.id === category.id
-                ).length;
-
-                const isActive = selectedCategory === category.id;
-
+              {categories.map((category) => {
+                const count = posts.filter(p => p.category_detail?.id === category.id).length;
+                const isActive = selectedCategory === category.id.toString();
                 return (
                   <button
                     key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${
-                      isActive
-                        ? 'bg-[#FFF1F1] border-[#F7BABA]'
-                        : 'bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]'
+                    onClick={() => setSelectedCategory(category.id.toString())}
+                    className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${
+                      isActive ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${
-                          isActive
-          ? 'bg-[#E01515] text-white'
-          : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
-                        }`}
-                      >
-                        {categoryPostCount}
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${
+                        isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                      }`}>
+                        {count}
                       </div>
-
-                      <span
-                        className={`text-left font-medium transition-colors duration-200 ${
-                          isActive
-                            ? 'text-[#E01515] font-semibold'
-                            : 'text-[#111827] group-hover:text-[#E01515]'
-                        }`}
-                      >
-                        {category.name}
-                      </span>
+                      <span className={`font-medium ${isActive ? 'text-[#E01515]' : 'text-[#111827]'}`}>{category.category_name}</span>
                     </div>
-
-                    <ChevronRight
-                      className={`h-5 w-5 shrink-0 transition-colors duration-200 ${
-                        isActive
-                          ? 'text-[#E01515]'
-                          : 'text-[#99A1AF] group-hover:text-[#E01515]'
-                      }`}
-                    />
+                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
                   </button>
                 );
               })}
@@ -145,38 +123,33 @@ export function Home() {
         {/* Main Content */}
         <main className="flex-1 px-[88px] py-8">
           <div className="max-w-[943px]">
-            {/* Header */}
             <div className="mb-8">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-[28px] font-semibold mb-1">Cảnh báo lừa đảo</h1>
-                  <p className="text-[#4A5565] text-sm">
-                    Cập nhật các thông tin cảnh báo mới nhất từ cộng đồng
-                  </p>
+                  <p className="text-[#4A5565] text-sm">Dữ liệu thời gian thực từ Backend</p>
                 </div>
                 {user && (
                   <Link to="/create-post">
-                    <Button className="flex items-center gap-2 bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px]">
-                      <Plus className="h-5 w-5" />
-                      Tạo bài viết
+                    <Button className="bg-[#E01515] text-white rounded-[10px] gap-2">
+                      <Plus className="h-5 w-5" /> Tạo bài viết
                     </Button>
                   </Link>
                 )}
               </div>
-              
-              {/* Search and Filter */}
+
               <div className="flex gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
                   <Input
-                    placeholder="Tìm kiếm bài viết, danh mục..."
-                    className="pl-10 bg-[#F3F3F5] border-[#D1D5DC] rounded-[10px] h-9"
+                    placeholder="Tìm kiếm bài viết..."
+                    className="pl-10 bg-[#F3F3F5] rounded-[10px]"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[200px] bg-[#F3F3F5] border-[#D1D5DC] rounded-[10px] h-9">
+                  <SelectTrigger className="w-[200px] bg-[#F3F3F5] rounded-[10px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -187,14 +160,10 @@ export function Home() {
               </div>
             </div>
 
-            {/* Posts */}
             <div className="space-y-4">
               {sortedPosts.length === 0 ? (
-                <div className="bg-white rounded-[10px] border border-[#D1D5DC] p-8 text-center text-gray-500">
-                  {searchQuery 
-                    ? `Không tìm thấy kết quả nào cho "${searchQuery}"`
-                    : 'Chưa có bài viết nào trong danh mục này'
-                  }
+                <div className="bg-white rounded-[10px] border p-8 text-center text-gray-500">
+                  Không tìm thấy bài viết nào phù hợp.
                 </div>
               ) : (
                 sortedPosts.map(post => (

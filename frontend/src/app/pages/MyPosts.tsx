@@ -1,35 +1,50 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { mockPosts } from '../data/mockData';
-import { Search, Plus, Edit, Trash2, Heart, MessageCircle, Share2, Calendar, History, Shield } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Heart, MessageCircle, Share2, Calendar, History, Shield, Loader2 } from 'lucide-react';
+import api from '../../api/axiosInstance';
+import { toast } from 'sonner';
 
 export function MyPosts() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const [showDeleteSuccessDialog, setShowDeleteSuccessDialog] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
+    } else {
+      fetchMyPosts();
     }
-  }, [user, navigate]);
+  }, [user, navigate, refreshKey]);
+
+  const fetchMyPosts = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('posts/mine/');
+      // API return: { count, next, previous, results: [...] } OR directly [...]
+      const data = res.data.results || res.data;
+      setPosts(data);
+    } catch (error) {
+      console.error("Lỗi khi tải bài viết của tôi:", error);
+      toast.error("Không thể tải danh sách bài viết.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) return null;
 
-  const myPosts = mockPosts.filter(post => post.author.id === user.id);
-
-  const filteredPosts = searchQuery
-    ? myPosts.filter(post =>
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : myPosts;
+  const filteredPosts = posts.filter(post =>
+    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Chưa có ngày';
     const date = new Date(dateString);
     return date.toLocaleString('vi-VN', {
       hour: '2-digit',
@@ -40,107 +55,87 @@ export function MyPosts() {
     });
   };
 
-  const handleDelete = (postId: string) => {
+  const handleDelete = async (postId: number) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-      const index = mockPosts.findIndex(p => p.id === postId);
-      if (index !== -1) {
-        mockPosts.splice(index, 1);
-        setShowDeleteSuccessDialog(true);
+      try {
+        await api.delete(`posts/${postId}/`);
+        toast.success("Xóa bài viết thành công!");
         setRefreshKey(prev => prev + 1);
+      } catch (error) {
+        toast.error("Xóa thất bại. Vui lòng thử lại.");
       }
     }
   };
 
-  const handleEdit = (postId: string) => {
+  const handleEdit = (postId: number) => {
     navigate(`/edit-post/${postId}`);
   };
 
   const getPostStatusBadge = (status?: string) => {
     switch (status) {
-      case 'approved':
+      case 'APPROVED':
         return <span className="px-2.5 py-1 rounded-[6px] bg-[#DCFCE7] text-[#16A34A] text-[13px] font-medium">Đã đăng</span>;
-      case 'pending':
+      case 'PENDING':
         return <span className="px-2.5 py-1 rounded-[6px] bg-[#DBEAFE] text-[#2563EB] text-[13px] font-medium">Chờ duyệt</span>;
-      case 'rejected':
+      case 'REJECTED':
         return <span className="px-2.5 py-1 rounded-[6px] bg-[#FEE2E2] text-[#DC2626] text-[13px] font-medium">Từ chối</span>;
       default:
-        return <span className="px-2.5 py-1 rounded-[6px] bg-[#F1F5F9] text-[#475569] text-[13px] font-medium">Nháp</span>;
+        return <span className="px-2.5 py-1 rounded-[6px] bg-[#F1F5F9] text-[#475569] text-[13px] font-medium">{status || 'Lạ'}</span>;
     }
   };
 
+  // Helper để lấy tên viết tắt (Avatar)
+  const getInitials = (name: string) => {
+    if (!name) return '??';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[parts.length - 2].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
-    <div key={refreshKey} className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-[#F9FAFB]">
       <div className="max-w-[1200px] mx-auto px-6 py-8">
 
-        {/* ===== PROFILE HEADER (UPDATED) ===== */}
+        {/* ===== PROFILE HEADER ===== */}
         <div className="bg-[#FFF7F7] rounded-[18px] border border-[#F3C4C4] px-8 py-5 mb-6 shadow-[0_4px_4px_rgba(0,0,0,0.25)]">
           <div className="flex items-center justify-between gap-6">
 
             {/* LEFT */}
             <div className="flex items-center gap-5">
               <div className="w-16 h-16 rounded-full bg-[#E60012] flex items-center justify-center text-white font-bold text-xl shadow-md">
-                {user.name
-                  .split(' ')
-                  .slice(-2)
-                  .map(word => word.charAt(0).toUpperCase())
-                  .join('')}
+                {getInitials(user.name || user.username)}
               </div>
 
               <div>
                 <h1 className="text-[22px] font-bold text-[#111827] mb-1">
-                  {user.name}
+                  {user.name || user.username}
                 </h1>
 
                 <div className="flex items-center gap-2 text-[14px] text-[#4B5563]">
                   <Calendar className="w-4 h-4 text-[#6B7280]" />
-                  <span>Tham gia từ 20/1/2025</span>
+                  <span>Tham gia từ {user.created_date ? new Date(user.created_date).toLocaleDateString('vi-VN') : 'Đang cập nhật'}</span>
                 </div>
               </div>
             </div>
 
             {/* RIGHT */}
             <div className="flex items-center gap-3">
-
-              {/* Reputation */}
               <div className="flex items-center gap-3 rounded-[16px] border border-[#F3C4C4] bg-white px-4 py-2">
                 <div className="w-10 h-10 rounded-full bg-[#F0000F] flex items-center justify-center">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
-
                 <div className="leading-tight">
-                  <div className="text-[13px] text-[#4B5563]">
-                    Điểm uy tín
-                  </div>
+                  <div className="text-[13px] text-[#4B5563]">Điểm uy tín</div>
                   <div className="text-[20px] font-bold text-[#F0000F]">
-                    {user.reputationScore}
+                    {user.reputationScore ?? user.reputation_score ?? 0}
                   </div>
                 </div>
               </div>
 
-              {/* History */}
-              <Link
-                to="/reputation-history"
-                className="h-[42px] px-5 rounded-[14px] border border-[#D1D5DB] bg-[#F3F4F6]
-                  flex items-center gap-2
-
-                  text-[14px] font-medium
-                  text-[#374151]
-
-                  transition-all duration-200 ease-in-out
-
-                  hover:bg-[#FFECEC]
-                  hover:text-[#E01515]
-                  hover:border-[#E01515]
-                  hover:shadow-sm
-                  hover:-translate-y-[1px]
-                "
-              >
-                <History
-                  className="w-4 h-4 transition-colors duration-200"
-                />
+              <Link to="/reputation-history" className="h-[42px] px-5 rounded-[14px] border border-[#D1D5DB] bg-[#F3F4F6] flex items-center gap-2 text-[14px] font-medium text-[#374151] transition-all hover:bg-[#FFECEC] hover:text-[#E01515] hover:border-[#E01515]">
+                <History className="w-4 h-4" />
                 Xem lịch sử
               </Link>
-
             </div>
           </div>
         </div>
@@ -158,10 +153,7 @@ export function MyPosts() {
             />
           </div>
 
-          <Link
-            to="/create-post"
-            className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#E01515] text-white"
-          >
+          <Link to="/create-post" className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#E01515] text-white">
             <Plus className="h-5 w-5" />
             Tạo bài viết
           </Link>
@@ -169,7 +161,12 @@ export function MyPosts() {
 
         {/* Posts */}
         <div className="space-y-4">
-          {filteredPosts.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-[#E01515] mb-2" />
+              <p className="text-gray-500">Đang tải bài viết...</p>
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <div className="bg-white rounded-[10px] border p-12 text-center">
               <p className="text-[#99A1AF] mb-4">
                 {searchQuery ? 'Không tìm thấy bài viết nào' : 'Bạn chưa có bài viết nào'}
@@ -177,34 +174,35 @@ export function MyPosts() {
             </div>
           ) : (
             filteredPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-[10px] border p-6">
-
+              <div key={post.id} className="bg-white rounded-[10px] border p-6 hover:shadow-sm transition-all duration-200">
                 <div className="flex justify-between mb-4">
                   <div>
-                    <Link to={`/post/${post.id}`} className="text-[18px] font-bold">
+                    <Link to={`/post/${post.id}`} className="text-[18px] font-bold hover:text-[#E01515] transition-colors">
                       {post.title}
                     </Link>
-                    {getPostStatusBadge(post.status)}
+                    <div className="mt-1 flex items-center gap-3">
+                      {getPostStatusBadge(post.status)}
+                      <span className="text-[13px] text-[#99A1AF]">{formatDate(post.created_time)}</span>
+                    </div>
                   </div>
 
                   <div className="flex gap-2">
-                    <button onClick={() => handleEdit(post.id)}>
+                    <button onClick={() => handleEdit(post.id)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
                       <Edit className="h-4 w-4" />
                     </button>
-                    <button onClick={() => handleDelete(post.id)}>
+                    <button onClick={() => handleDelete(post.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
-                <p className="text-[#64748B] mb-4">{post.content}</p>
+                <p className="text-[#64748B] mb-4 line-clamp-2">{post.content}</p>
 
                 <div className="flex gap-6 text-[#99A1AF]">
-                  <div className="flex gap-1"><Heart className="h-5 w-5" />{post.likes}</div>
-                  <div className="flex gap-1"><MessageCircle className="h-5 w-5" />{post.comments?.length || 0}</div>
-                  <div className="flex gap-1"><Share2 className="h-5 w-5" />28</div>
+                  <div className="flex gap-1 items-center"><Heart className="h-4 w-4" />{post.likes_count || 0}</div>
+                  <div className="flex gap-1 items-center"><MessageCircle className="h-4 w-4" />{post.comments_count || 0}</div>
+                  <div className="flex gap-1 items-center"><Share2 className="h-4 w-4" />0</div>
                 </div>
-
               </div>
             ))
           )}

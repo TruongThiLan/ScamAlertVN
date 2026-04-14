@@ -182,6 +182,29 @@ class PostViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     # ---------------------------------------------------------
+    # Bài viết của tôi (Người dùng xem lại bài của mình)
+    # ---------------------------------------------------------
+    @action(
+        detail=False, methods=['get'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='mine'
+    )
+    def mine(self, request):
+        """Lấy danh sách bài viết do chính người dùng hiện tại đăng."""
+        posts = Post.objects.filter(
+            user=request.user
+        ).select_related('category').order_by('-created_time')
+
+        page = self.paginate_queryset(posts)
+        if page is not None:
+            # Dùng PostSerializer hoặc PostModerationSerializer tùy nhu cầu hiện thông tin
+            serializer = PostSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)
+
+    # ---------------------------------------------------------
     # UC 3.1 — Duyệt bài
     # ---------------------------------------------------------
     @action(

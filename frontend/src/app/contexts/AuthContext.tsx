@@ -26,7 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           // Gọi API lấy thông tin người dùng hiện tại dựa trên token
           const res = await api.get('users/me/');
-          setUser(res.data);
+          const userData = res.data;
+          // Ánh xạ để tương thích với frontend cũ dùng .name và .reputationScore
+          userData.name = userData.username;
+          userData.reputationScore = userData.reputation_score;
+          // Ánh xạ role string cho frontend (ví dụ 'Admin' -> 'admin')
+          userData.role = userData.role_name ? userData.role_name.toLowerCase() : 'user';
+          setUser(userData);
         } catch (error) {
           console.error("Token hết hạn hoặc không hợp lệ");
           logout(); // Xóa sạch dấu vết nếu token hỏng
@@ -49,18 +55,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
 
-        // 3. Tạm thời tạo một object user giả từ cái username mình vừa nhập
-        // để React không bị crash khi Backend chưa kịp trả về user_data
-        const mockUser = { id: '1', username: username, role: 'admin' };
-        setUser(mockUser as any);
+        // 3. Gọi API lấy thông tin User thật ngay lập tức
+        const userRes = await api.get('users/me/');
+        const userData = userRes.data;
+        userData.name = userData.username;
+        userData.reputationScore = userData.reputation_score;
+        // Ánh xạ role string cho frontend
+        userData.role = userData.role_name ? userData.role_name.toLowerCase() : 'user';
+        
+        setUser(userData);
 
         toast.success('Đăng nhập thành công!');
         return true;
 
       } catch (error: any) {
         console.error("Lỗi đăng nhập:", error);
-        // Chỉ báo lỗi nếu thực sự là lỗi từ Server (401, 404, ...)
-        const errorMsg = error.response?.data?.detail || "Đã có lỗi xảy ra khi xử lý dữ liệu";
+        const errorMsg = error.response?.data?.detail || "Sai tài khoản hoặc mật khẩu.";
         toast.error(errorMsg);
         return false;
       }

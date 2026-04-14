@@ -58,6 +58,11 @@ export interface Bookmark {
   created_time: string;
   user: number;
   post_detail: Post;
+  imageUrl?: string;
+  createdAt: string;
+  isReported?: boolean;
+  replies?: Comment[];
+  parentId?: string;
 }
 
 export interface Reaction {

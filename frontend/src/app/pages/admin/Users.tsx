@@ -58,24 +58,23 @@ export function AdminUsers() {
   const [deleteDetails, setDeleteDetails] = useState('');
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
-  const fetchUsers = async () => {
-    try {
-      const response = await api.get('users/');
-      setUsers(response.data);
-    } catch (error) {
-      toast.error('Không thể tải danh sách người dùng');
-    }
-  };
+ const fetchUsers = async () => {
+  try {
+    const response = await api.get('users/');
+    setUsers(Array.isArray(response.data) ? response.data : (response.data.results || []));
+  } catch (error) {
+    toast.error('Không thể tải danh sách người dùng');
+  }
+};
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+useEffect(() => {
+  fetchUsers();
+}, []);
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    
+const filteredUsers = (Array.isArray(users) ? users : []).filter((user) => {
+  const matchesSearch =
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase());
     // UI mapping: UI uses 'locked', backend uses 'banned'
     const backendStatus = filterStatus === 'locked' ? 'banned' : filterStatus;
     const matchesStatus = filterStatus === 'all' || user.status === backendStatus;

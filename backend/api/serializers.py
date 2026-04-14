@@ -1,104 +1,166 @@
-from rest_framework import serializers
-from django.db import models
 from django.utils import timezone
+from django.db import models
 from datetime import timedelta
-from .models import User, Post, ScamCategory, ActivityLog, ContentReport, Comment
+import re
 
-# Serializer cho danh mục (để khi lấy bài viết hiện luôn tên danh mục)
-class ScamCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ScamCategory
-        fields = ['id', 'category_name']
+from rest_framework import viewsets, permissions, status, filters
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
-# Serializer cho Người dùng
-class UserSerializer(serializers.ModelSerializer):
-    remaining_lock_time = serializers.SerializerMethodField()
-    password = serializers.CharField(write_only=True)
-    report_count = serializers.SerializerMethodField()
+from .models import (
+    User, Post, ScamCategory, Comment,
+    ContentReport, Notification, TargetType, ActivityLog
+)
 
-    class Meta:
-        model = User
-        # Chọn các trường muốn gửi lên Frontend (không nên gửi password ở đây)
-        fields = ['id', 'username', 'email', 'password', 'reputation_score', 'status', 'created_date', 'remaining_lock_time', 'report_count']
-        extra_kwargs = {'password': {'write_only': True}}
+from .serializers import (
+    UserSerializer, UserBriefSerializer,
+    PostSerializer, PostModerationSerializer,
+    ApprovePostSerializer, RejectPostSerializer,
+    HidePostSerializer, LockPostSerializer, AdminDeletePostSerializer,
+    ScamCategorySerializer,
+    CommentSerializer,
+    ContentReportSerializer, ContentReportCreateSerializer,
+)
 
-    def create(self, validated_data):
-        # Sử dụng create_user để mật khẩu được mã hóa tự động
-        return User.objects.create_user(**validated_data)
+from .permissions import IsAdminRole, IsAdminOrReadOnly
 
-    def get_report_count(self, obj):
-        # Đếm báo cáo từ các bài viết của user
-        post_reports = ContentReport.objects.filter(
-            target_type='POST', 
-            target_id__in=Post.objects.filter(user=obj).values_list('id', flat=True)
-        ).count()
-        
-        # Đếm báo cáo từ các bình luận của user
-        comment_reports = ContentReport.objects.filter(
-            target_type='COMMENT',
-            target_id__in=Comment.objects.filter(user=obj).values_list('id', flat=True)
-        ).count()
-        
-        return post_reports + comment_reports
 
-    def get_remaining_lock_time(self, obj):
-        if obj.status != 'banned':
-            return None
-        
-        # Tìm log mới nhất liên quan đến việc Khóa hoặc Mở khóa của user này
-        latest_log = ActivityLog.objects.filter(
-            action__contains=f"target={obj.username}"
-        ).filter(
-            models.Q(action__contains="LOCK_INFO") | models.Q(action__contains="UNLOCK_INFO")
-        ).order_by('-created_time').first()
+# ========================================================
+# HELPER
+# ========================================================
 
-        if not latest_log or "UNLOCK_INFO" in latest_log.action:
-            return None
+def _send_notification(user: User, message: str):
+    Notification.objects.create(user=user, content=message)
 
-        try:
-            # Parse duration từ log: [LOCK_INFO:target=username,duration=X]
-            import re
+
+def _mark_reviewed(post: Post, admin_user: User, reason: str = None):
+    post.reviewed_by = admin_user
+    post.reviewed_at = timezone.now()
+    if reason:
+        post.rejection_reason = reason
+
+
+# ========================================================
+# USER VIEW
+# ========================================================
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().select_related('role')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        self._auto_unlock_expired_users()
+        return super().list(request, *args, **kwargs)
+
+    def _auto_unlock_expired_users(self):
+        banned_users = User.objects.filter(status=User.UserStatus.BANNED)
+        for user in banned_users:
+            latest_log = ActivityLog.objects.filter(
+                action__contains=f"target={user.username}"
+            ).filter(
+                models.Q(action__contains="LOCK_INFO") |
+                models.Q(action__contains="UNLOCK_INFO")
+            ).order_by('-created_time').first()
+
+            if not latest_log or "UNLOCK_INFO" in latest_log.action:
+                continue
+
             match = re.search(r"duration=([^ \],]+)", latest_log.action)
             if not match:
-                return "Không rõ"
-            
+                continue
+
             duration_str = match.group(1)
             if duration_str == 'forever':
-                return "Vĩnh viễn"
-            
-            duration_days = int(duration_str)
-            expiry_date = latest_log.created_time + timedelta(days=duration_days)
-            remaining = expiry_date - timezone.now()
+                continue
 
-            if remaining.total_seconds() <= 0:
-                return "Đã hết hạn"
-            
-            days = remaining.days
-            hours = remaining.seconds // 3600
-            
-            result = []
-            if days > 0:
-                result.append(f"{days} ngày")
-            if hours > 0:
-                result.append(f"{hours} giờ")
-            
-            return " ".join(result) if result else "Dưới 1 giờ"
-            
-        except Exception:
-            return "Lỗi tính toán"
+            try:
+                duration_days = int(duration_str)
+                expiry_date = latest_log.created_time + timedelta(days=duration_days)
+                if timezone.now() >= expiry_date:
+                    user.status = User.UserStatus.ACTIVE
+                    user.save(update_fields=['status'])
+            except:
+                continue
 
-# Serializer cho Bài viết
-class PostSerializer(serializers.ModelSerializer):
-    # Kỹ thuật đổ dữ liệu liên kết: Hiện tên thay vì hiện ID số
-    user_detail = UserSerializer(source='user', read_only=True)
-    category_detail = ScamCategorySerializer(source='category', read_only=True)
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
 
-    likes_count = serializers.SerializerMethodField()
-    comments_count = serializers.SerializerMethodField()
+    # ===== giữ logic của bạn =====
+    @action(detail=True, methods=['post'])
+    def lock(self, request, pk=None):
+        user = self.get_object()
+        user.status = User.UserStatus.BANNED
+        user.save()
 
-    class Meta:
-        model = Post
-        fields = [
-            'id', 'title', 'content', 'created_time', 'status',
-            'user', 'user_detail', 'category', 'category_detail'
-        ]
+        admin_user = request.user if request.user.is_authenticated else User.objects.get(pk=1)
+        reason = request.data.get('reason', 'Không có lý do')
+        duration = request.data.get('duration', '3')
+
+        ActivityLog.objects.create(
+            user=admin_user,
+            action=f"[LOCK_INFO:target={user.username},duration={duration}]"
+        )
+        return Response({'status': 'user locked'})
+
+    @action(detail=True, methods=['post'])
+    def unlock(self, request, pk=None):
+        user = self.get_object()
+        user.status = User.UserStatus.ACTIVE
+        user.save()
+
+        admin_user = request.user if request.user.is_authenticated else User.objects.get(pk=1)
+
+        ActivityLog.objects.create(
+            user=admin_user,
+            action=f"[UNLOCK_INFO:target={user.username}]"
+        )
+        return Response({'status': 'user unlocked'})
+
+    @action(detail=True, methods=['post'])
+    def warn(self, request, pk=None):
+        user = self.get_object()
+        user.status = User.UserStatus.WARNING
+        user.save()
+
+        admin_user = request.user if request.user.is_authenticated else User.objects.get(pk=1)
+
+        ActivityLog.objects.create(
+            user=admin_user,
+            action=f"Cảnh báo {user.username}"
+        )
+        return Response({'status': 'user warned'})
+
+
+# ========================================================
+# SCAM CATEGORY VIEW
+# ========================================================
+
+class ScamCategoryViewSet(viewsets.ModelViewSet):
+    queryset = ScamCategory.objects.all()
+    serializer_class = ScamCategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+
+# ========================================================
+# POST VIEW (GIỮ NGUYÊN CODE MAIN)
+# ========================================================
+
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all().select_related('user', 'category', 'reviewed_by')
+    serializer_class = PostSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def _is_admin(self):
+        user = self.request.user
+        return user and user.is_authenticated and (
+            user.is_staff or (user.role and user.role.role_name == 'Admin')
+        )
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def mine(self, request):
+        posts = Post.objects.filter(user=request.user)
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)

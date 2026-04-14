@@ -9,7 +9,7 @@ from .models import (
 )
 from .serializers import (
     UserSerializer, UserBriefSerializer,
-    PostSerializer, PostModerationSerializer,
+    PostSerializer, PostModerationSerializer, PostCreateSerializer,
     ApprovePostSerializer, RejectPostSerializer,
     HidePostSerializer, LockPostSerializer, AdminDeletePostSerializer,
     ScamCategorySerializer,
@@ -90,9 +90,15 @@ class PostViewSet(viewsets.ModelViewSet):
     """
     Quản lý bài viết + kiểm duyệt.
 
-    Public endpoints (read-only):
+    Public endpoints (read-only, không cần đăng nhập):
       GET /api/posts/        → Danh sách bài APPROVED
       GET /api/posts/{id}/   → Chi tiết bài APPROVED
+
+    User đã đăng nhập:
+      POST   /api/posts/           → Đăng bài mới (status tự động = PENDING)
+      PUT    /api/posts/{id}/      → Sửa bài của chính mình (chỉ khi PENDING)
+      DELETE /api/posts/{id}/      → Xóa bài của chính mình
+      GET    /api/posts/mine/      → Xem lại tất cả bài của mình
 
     Admin-only endpoints:
       GET  /api/posts/pending/            → UC 3.1 — Danh sách bài chờ duyệt
@@ -105,10 +111,11 @@ class PostViewSet(viewsets.ModelViewSet):
     """
     queryset = Post.objects.all().select_related('user', 'category', 'reviewed_by')
     serializer_class = PostSerializer
-    permission_classes = [permissions.AllowAny]
+    # IsAuthenticatedOrReadOnly: GET tự do, POST/PUT/DELETE phải đăng nhập
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        # Mặc định: chỉ bài APPROVED cho public
+        """Mặc định chỉ trả bài APPROVED cho public. Admin thấy tất cả."""
         if self.action in ['list', 'retrieve'] and not self._is_admin():
             return Post.objects.filter(
                 status=Post.PostStatus.APPROVED
@@ -116,7 +123,11 @@ class PostViewSet(viewsets.ModelViewSet):
         return Post.objects.all().select_related('user', 'category', 'reviewed_by')
 
     def get_serializer_class(self):
-        # Các action admin dùng PostModerationSerializer
+        """Chọn serializer phù hợp từng action."""
+        # Dùng PostCreateSerializer khi tạo hoặc sửa bài (user thường)
+        if self.action in ['create', 'update', 'partial_update']:
+            return PostCreateSerializer
+        # Admin dùng PostModerationSerializer để kiểm duyệt
         if self.action in [
             'pending_list', 'all_posts',
             'approve', 'reject', 'hide', 'lock', 'admin_delete'
@@ -132,6 +143,35 @@ class PostViewSet(viewsets.ModelViewSet):
             user.is_staff
             or (user.role is not None and user.role.role_name == 'Admin')
         )
+
+    def perform_create(self, serializer):
+        """
+        Tự động gán user = người đang đăng nhập.
+        User không cần (và không thể) tự điền trường 'user'.
+        Status mặc định PENDING theo model — chờ Admin duyệt.
+        """
+        serializer.save(user=self.request.user)
+
+    def get_object(self):
+        """
+        Override để kiểm tra object-level permission:
+        User chỉ được sửa/xóa bài của chính mình.
+        Admin được sửa/xóa bất kỳ bài nào.
+        """
+        obj = super().get_object()
+        if self.action in ['update', 'partial_update', 'destroy']:
+            if not self._is_admin() and obj.user != self.request.user:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('Bạn chỉ có thể chỉnh sửa hoặc xóa bài viết của chính mình.')
+            # Không cho sửa bài đã được duyệt / từ chối / bị khóa
+            if self.action in ['update', 'partial_update'] and not self._is_admin():
+                if obj.status not in [Post.PostStatus.PENDING, Post.PostStatus.REJECTED]:
+                    from rest_framework.exceptions import PermissionDenied
+                    raise PermissionDenied(
+                        f'Không thể sửa bài đang ở trạng thái "{obj.status}". '
+                        'Chỉ được sửa bài PENDING hoặc REJECTED.'
+                    )
+        return obj
 
     # ---------------------------------------------------------
     # UC 3.1 — Danh sách bài chờ duyệt

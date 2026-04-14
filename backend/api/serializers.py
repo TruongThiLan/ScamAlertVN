@@ -101,6 +101,40 @@ class PostModerationSerializer(serializers.ModelSerializer):
         read_only_fields = fields  # Tất cả read-only trên serializer này
 
 
+class PostCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer dùng khi User đăng bài mới (POST /api/posts/).
+
+    Quy tắc:
+    - User chỉ cần gửi: title, content, category
+    - Trường 'user' được gán tự động từ request.user trong perform_create()
+    - Trường 'status' mặc định là PENDING, không để user tự chọn
+    - Các trường kiểm duyệt (reviewed_by, reviewed_at, rejection_reason) là read-only
+    """
+    user_detail = UserBriefSerializer(source='user', read_only=True)
+    category_detail = ScamCategorySerializer(source='category', read_only=True)
+
+    class Meta:
+        model = Post
+        fields = [
+            'id', 'title', 'content',
+            'created_time', 'status',
+            'user', 'user_detail',
+            'category', 'category_detail',
+        ]
+        read_only_fields = ['status', 'created_time', 'user', 'user_detail', 'category_detail']
+
+    def validate_title(self, value):
+        if len(value.strip()) < 10:
+            raise serializers.ValidationError('Tiêu đề bài viết phải có ít nhất 10 ký tự.')
+        return value.strip()
+
+    def validate_content(self, value):
+        if len(value.strip()) < 30:
+            raise serializers.ValidationError('Nội dung bài viết phải có ít nhất 30 ký tự.')
+        return value.strip()
+
+
 # =============================================================
 # ACTION SERIALIZERS (dùng cho request body của custom actions)
 # =============================================================

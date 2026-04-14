@@ -1,14 +1,14 @@
-<<<<<<< HEAD
+
 import re
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import action # <--- Vừa thêm
-from rest_framework.response import Response # Đảm bảo có cả cái này để dùng trong hàm me()
+from rest_framework.decorators import action  # <--- Vừa thêm
+from rest_framework.response import Response  # Đảm bảo có cả cái này để dùng trong hàm me()
 from .models import User, Post, ScamCategory, ActivityLog
 from .serializers import UserSerializer, PostSerializer, ScamCategorySerializer
-=======
+
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
@@ -46,11 +46,9 @@ def _mark_reviewed(post: Post, admin_user: User, reason: str = None):
     if reason:
         post.rejection_reason = reason
 
-
 # ========================================================
 # USER VIEW
 # ========================================================
->>>>>>> origin/main
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().select_related('role')
@@ -98,18 +96,18 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-<<<<<<< HEAD
+
     @action(detail=True, methods=['post'])
     def lock(self, request, pk=None):
         user = self.get_object()
         user.status = User.UserStatus.BANNED
         user.save()
-        
+
         # Lưu log (Giả sử admin là request.user, nếu không thì lấy mặc định user id 1 để test)
         admin_user = request.user if request.user.is_authenticated else User.objects.get(pk=1)
         reason = request.data.get('reason', 'Không có lý do')
         duration = request.data.get('duration', '3')
-        
+
         # Log cấu trúc: [LOCK_INFO:target=username,duration=X] để Backend dễ parse
         ActivityLog.objects.create(
             user=admin_user,
@@ -122,7 +120,6 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         user.status = User.UserStatus.ACTIVE
         user.save()
-        
         admin_user = request.user if request.user.is_authenticated else User.objects.get(pk=1)
         # Log cấu trúc: [UNLOCK_INFO:target=username] để ngắt thời hạn khóa
         ActivityLog.objects.create(
@@ -130,13 +127,11 @@ class UserViewSet(viewsets.ModelViewSet):
             action=f"[UNLOCK_INFO:target={user.username}] Mở khóa người dùng {user.username}"
         )
         return Response({'status': 'user unlocked'})
-
     @action(detail=True, methods=['post'])
     def warn(self, request, pk=None):
         user = self.get_object()
         user.status = User.UserStatus.WARNING
         user.save()
-        
         admin_user = request.user if request.user.is_authenticated else User.objects.get(pk=1)
         reason = request.data.get('warning_type', 'Cảnh báo vi phạm')
         ActivityLog.objects.create(
@@ -145,11 +140,11 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         return Response({'status': 'user warned'})
 
+
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
         user.status = User.UserStatus.INACTIVE
         user.save()
-        
         admin_user = request.user if request.user.is_authenticated else User.objects.get(pk=1)
         reason = request.data.get('reason', 'Xóa tài khoản (xóa mềm)')
         ActivityLog.objects.create(
@@ -159,7 +154,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'status': 'user deleted (soft delete)'})
 
 # View xử lý bài viết
-=======
 
 # ========================================================
 # SCAM CATEGORY VIEW
@@ -190,12 +184,13 @@ class ScamCategoryViewSet(viewsets.ModelViewSet):
             )
         return super().destroy(request, *args, **kwargs)
 
-
 # ========================================================
 # POST VIEW
 # ========================================================
 
->>>>>>> origin/main
+
+
+
 class PostViewSet(viewsets.ModelViewSet):
     """
     Quản lý bài viết + kiểm duyệt.
@@ -239,8 +234,8 @@ class PostViewSet(viewsets.ModelViewSet):
         if not user or not user.is_authenticated:
             return False
         return (
-            user.is_staff
-            or (user.role is not None and user.role.role_name == 'Admin')
+                user.is_staff
+                or (user.role is not None and user.role.role_name == 'Admin')
         )
 
     # ---------------------------------------------------------

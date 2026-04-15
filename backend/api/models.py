@@ -16,10 +16,9 @@ class Role(models.Model):
 
 class User(AbstractUser):
     class UserStatus(models.TextChoices):
-        ACTIVE = 'active', 'Active'
-        INACTIVE = 'inactive', 'Inactive'
-        BANNED = 'banned', 'Banned'
-        WARNING = 'warning', 'Warning'
+        ACTIVE = 'ACTIVE', 'Active'
+        INACTIVE = 'INACTIVE', 'Inactive'
+        BANNED = 'BANNED', 'Banned'
 
     email = models.EmailField(unique=True)
 

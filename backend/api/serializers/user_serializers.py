@@ -23,7 +23,9 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_role_name(self, obj):
-        """Lấy tên vai trò từ quan hệ ForeignKey Role."""
+        """Lấy tên vai trò từ quan hệ ForeignKey Role hoặc kiểm tra superuser."""
+        if obj.is_superuser:
+            return "Admin"
         return obj.role.role_name if obj.role else "User"
 
     def create(self, validated_data):

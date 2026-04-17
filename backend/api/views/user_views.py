@@ -38,18 +38,18 @@ class UserViewSet(viewsets.ModelViewSet):
         if status and status != 'all':
             # Map 'locked' (UI) sang 'banned' (Backend) nếu cần
             backend_status = 'banned' if status == 'locked' else status
-            queryset = queryset.filter(status=backend_status)
+            queryset = queryset.filter(status__iexact=backend_status)
             
         # 3. Lọc theo Vai trò (Role)
-        role = self.request.query_params.get('role', None)
-        if role and role != 'all':
-            if role == 'admin':
+        role_param = self.request.query_params.get('role', None)
+        if role_param and role_param != 'all':
+            role_val = role_param.lower()
+            if role_val == 'admin':
                 queryset = queryset.filter(
-                    models.Q(role__role_name='Admin') | models.Q(is_superuser=True)
+                    models.Q(role__role_name__iexact='Admin') | models.Q(is_superuser=True)
                 )
-            elif role == 'user':
-                queryset = queryset.exclude(role__role_name='Admin').exclude(is_superuser=True)
-                
+            elif role_val == 'user':
+                queryset = queryset.exclude(role__role_name__iexact='Admin').exclude(is_superuser=True)
         return queryset
 
     def get_permissions(self):
@@ -64,12 +64,33 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         """
-        Ghi đè phương thức list để mỗi khi tải danh sách người dùng,
-        hệ thống sẽ tự động quét và mở khóa các tài khoản đã hết hạn.
+        Ghi đè phương thức list để:
+        1. Tự động mở khóa các tài khoản hết hạn.
+        2. Bổ sung globalStats vào response để Frontend hiển thị thanh thống kê.
         """
-        # UC 2.1: Tự động mở khóa các tài khoản hết hạn
         self._auto_unlock_expired_users()
-        return super().list(request, *args, **kwargs)
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        
+        # Tính toán thống kê nhanh (Quét tất cả biến thể hoa/thường để tránh sót dữ liệu)
+        stats = {
+            'active': User.objects.filter(models.Q(status__iexact='active') | models.Q(status__iexact='ACTIVE')).count(),
+            'banned': User.objects.filter(models.Q(status__iexact='banned') | models.Q(status__iexact='BANNED')).count(),
+            'inactive': User.objects.filter(models.Q(status__iexact='inactive') | models.Q(status__iexact='INACTIVE')).count(),
+        }
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            response.data['status_summary'] = stats
+            return response
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'results': serializer.data,
+            'status_summary': stats
+        })
 
     def _auto_unlock_expired_users(self):
         """

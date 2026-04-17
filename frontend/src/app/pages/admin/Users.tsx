@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search, Lock, AlertTriangle, Trash2, LockOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../../api/axiosInstance';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -26,15 +27,17 @@ interface User {
   created_date: string;
   reputation_score: number;
   report_count: number;
-  status: 'active' | 'banned' | 'warning';
+  status: 'active' | 'banned' | 'warning' | 'inactive';
   remaining_lock_time?: string;
   avatar?: string;
+  role_name?: string;
 }
 
 
 type DialogType = 'lock' | 'unlock' | 'warning' | 'delete' | null;
 
 export function AdminUsers() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -58,10 +61,43 @@ export function AdminUsers() {
   const [deleteDetails, setDeleteDetails] = useState('');
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
+  // Các state mới cho phân trang và lọc server-side
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterRole, setFilterRole] = useState('all');
+  const [totalCount, setTotalCount] = useState(0);
+  const [globalStats, setGlobalStats] = useState({
+    active: 0,
+    banned: 0,
+    inactive: 0
+  });
+
+  // Reset về trang 1 khi thay đổi bộ lọc hoặc tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus, filterRole]);
+
   const fetchUsers = async () => {
     try {
-      const response = await api.get('users/');
-      setUsers(response.data);
+      // Gửi các tham số lọc lên server
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (filterStatus !== 'all') {
+        const backendStatus = filterStatus === 'locked' ? 'banned' : filterStatus;
+        params.append('status', backendStatus);
+      }
+      if (filterRole !== 'all') params.append('role', filterRole);
+      params.append('page', currentPage.toString());
+
+      const response = await api.get(`users/?${params.toString()}`);
+      
+      // Cập nhật dữ liệu từ kết quả phân trang
+      setUsers(response.data.results || []);
+      setTotalCount(response.data.count || 0);
+      
+      // Cập nhật thống kê tổng quát từ metadata
+      if (response.data.status_summary) {
+        setGlobalStats(response.data.status_summary);
+      }
     } catch (error) {
       toast.error('Không thể tải danh sách người dùng');
     }
@@ -69,18 +105,10 @@ export function AdminUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, searchQuery, filterStatus, filterRole]);
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // UI mapping: UI uses 'locked', backend uses 'banned'
-    const backendStatus = filterStatus === 'locked' ? 'banned' : filterStatus;
-    const matchesStatus = filterStatus === 'all' || user.status === backendStatus;
-    return matchesSearch && matchesStatus;
-  });
+  // Vì đã lọc từ Server, filteredUsers chỉ đơn giản là danh sách users hiện tại
+  const filteredUsers = users;
 
   const openDialog = (type: DialogType, user: User) => {
     setSelectedUser(user);
@@ -166,18 +194,19 @@ export function AdminUsers() {
     closeDialog();
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (statusParam: string) => {
+    const status = (statusParam || '').toLowerCase();
     switch (status) {
       case 'active':
         return <span className="text-xs font-medium text-[#22C55E]">ĐANG HOẠT ĐỘNG</span>;
       case 'banned':
-        return <span className="text-xs font-medium text-[#4A5565]">TẠM KHÓA BỊ KHÓA</span>;
+        return <span className="text-xs font-medium text-[#4A5565]">BỊ KHÓA</span>;
       case 'warning':
         return <span className="text-xs font-medium text-[#F59E0B]">CẢNH BÁO</span>;
       case 'inactive':
-        return <span className="text-xs font-medium text-[#94A3B8]">ĐÃ XÓA</span>;
+        return <span className="text-xs font-medium text-[#99A1AF]">ĐÃ XÓA</span>;
       default:
-        return null;
+        return <span className="text-xs font-medium text-[#99A1AF] italic uppercase">{status}</span>;
     }
   };
 
@@ -212,16 +241,44 @@ export function AdminUsers() {
         <div className="w-[180px]">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="px-5 py-3 h-[50px] rounded-[10px] border border-[#D1D5DC] focus:border-[#E01515] bg-white text-[#1E293B]">
-              <SelectValue placeholder="Tất cả trạng thái" />
+              <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
               <SelectItem value="active">Đang hoạt động</SelectItem>
-              <SelectItem value="locked">Tạm khóa bị khóa</SelectItem>
+              <SelectItem value="locked">Bị khóa</SelectItem>
               <SelectItem value="warning">Cảnh báo</SelectItem>
               <SelectItem value="inactive">Đã xóa</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="w-[180px]">
+          <Select value={filterRole} onValueChange={setFilterRole}>
+            <SelectTrigger className="px-5 py-3 h-[50px] rounded-[10px] border border-[#D1D5DC] focus:border-[#E01515] bg-white text-[#1E293B]">
+              <SelectValue placeholder="Vai trò" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả vai trò</SelectItem>
+              <SelectItem value="User">User</SelectItem>
+              <SelectItem value="Admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Stats Summary Bar */}
+      <div className="bg-[#F8FAFC] border border-[#D1D5DC] rounded-[10px] p-4 mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <span className="font-medium text-[#1E293B]">
+            Tổng: <span className="text-[#E01515] font-bold">{totalCount}</span> người dùng
+          </span>
+          <span className="text-[#D1D5DC]">|</span>
+          <span className="text-[#22C55E] font-medium">Hoạt động: {globalStats.active}</span>
+          <span className="text-[#4A5565] font-medium">Bị khóa: {globalStats.banned}</span>
+          <span className="text-[#94A3B8] font-medium">Đã xóa: {globalStats.inactive}</span>
+        </div>
+        <div className="text-sm text-[#99A1AF]">
+          Trang hiện tại: {users.length} người dùng
         </div>
       </div>
 
@@ -242,7 +299,14 @@ export function AdminUsers() {
                 {/* User Info */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-[#1E293B]">{user.username}</h3>
+                    <h3 className="font-semibold text-[#1E293B] flex items-center gap-2">
+                      {user.username}
+                      {user.role_name === 'Admin' && (
+                        <span className="px-2 py-0.5 rounded bg-[#E01515]/10 text-[#E01515] text-[10px] font-bold uppercase tracking-wider">
+                          Admin
+                        </span>
+                      )}
+                    </h3>
                     {getStatusBadge(user.status)}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-[#99A1AF]">
@@ -269,7 +333,9 @@ export function AdminUsers() {
 
               {/* Actions */}
               <div className="flex items-center gap-2">
-                {user.status === 'inactive' ? (
+                {String(user.id) === String(currentUser?.id) ? (
+                  <span className="text-sm text-[#94A3B8] italic font-medium">Tài khoản của bạn</span>
+                ) : user.status === 'inactive' ? (
                   <span className="text-sm text-[#94A3B8] italic">Tài khoản đã bị xóa</span>
                 ) : (
                   <>
@@ -310,6 +376,38 @@ export function AdminUsers() {
             </div>
           </div>
         ))}
+
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-[10px] border border-[#D1D5DC] text-[#99A1AF]">
+            Không tìm thấy người dùng nào phù hợp.
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalCount > 10 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="border-[#D1D5DC] text-[#1E293B]"
+            >
+              Trước
+            </Button>
+            <div className="flex items-center gap-1 mx-2">
+              <span className="text-sm font-medium text-[#1E293B]">Trang {currentPage}</span>
+              <span className="text-sm text-[#99A1AF]">/ {Math.ceil(totalCount / 10)}</span>
+            </div>
+            <Button
+              variant="outline"
+              disabled={currentPage >= Math.ceil(totalCount / 10)}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="border-[#D1D5DC] text-[#1E293B]"
+            >
+              Sau
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Lock Account Dialog */}
@@ -342,9 +440,14 @@ export function AdminUsers() {
                   <SelectValue placeholder="Chọn lý do" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spam">Spam</SelectItem>
+                  <SelectItem value="spam-content">Spam nội dung</SelectItem>
                   <SelectItem value="fake-info">Thông tin giả mạo</SelectItem>
-                  <SelectItem value="violation">Vi phạm quy định</SelectItem>
+                  <SelectItem value="scam">Lừa đảo</SelectItem>
+                  <SelectItem value="system-abuse">Lạm dụng hệ thống</SelectItem>
+                  <SelectItem value="rule-violation">Vi phạm quy định</SelectItem>
+                  <SelectItem value="malicious-links">Chia sẻ liên kết độc hại</SelectItem>
+                  <SelectItem value="unusual-behavior">Hành vi bất thường</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -413,9 +516,12 @@ export function AdminUsers() {
                   <SelectValue placeholder="Chọn lý do" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="appeal">Khiếu nại thành công</SelectItem>
-                  <SelectItem value="mistake">Khóa nhầm</SelectItem>
-                  <SelectItem value="improved">Đã cải thiện</SelectItem>
+                  <SelectItem value="mistake">Khóa nhầm tài khoản</SelectItem>
+                  <SelectItem value="valid-appeal">Khiếu nại và cung cấp bằng chứng hợp lệ</SelectItem>
+                  <SelectItem value="expired">Đã hết thời hạn khóa</SelectItem>
+                  <SelectItem value="secured">Tài khoản đã bảo mật lại</SelectItem>
+                  <SelectItem value="committed">Cam kết tuân thủ quy định</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -463,8 +569,13 @@ export function AdminUsers() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="spam">Spam</SelectItem>
-                  <SelectItem value="fake-info">Thông tin sai lệch</SelectItem>
-                  <SelectItem value="inappropriate">Nội dung không phù hợp</SelectItem>
+                  <SelectItem value="misinformation">Thông tin sai lệch</SelectItem>
+                  <SelectItem value="inappropriate-content">Nội dung không phù hợp</SelectItem>
+                  <SelectItem value="harassment">Quấy rối người dùng</SelectItem>
+                  <SelectItem value="suspected-scam">Nghi ngờ lừa đảo</SelectItem>
+                  <SelectItem value="wrong-category">Sai danh mục / nội dung</SelectItem>
+                  <SelectItem value="inappropriate-language">Ngôn từ không phù hợp</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -516,7 +627,11 @@ export function AdminUsers() {
                 <SelectContent>
                   <SelectItem value="serious-violation">Vi phạm nghiêm trọng</SelectItem>
                   <SelectItem value="fake-account">Tài khoản giả mạo</SelectItem>
-                  <SelectItem value="user-request">Yêu cầu của người dùng</SelectItem>
+                  <SelectItem value="repeated-violation">Tái phạm nhiều lần</SelectItem>
+                  <SelectItem value="legal-request">Yêu cầu pháp lý</SelectItem>
+                  <SelectItem value="user-request">Người dùng yêu cầu</SelectItem>
+                  <SelectItem value="inactive-long-time">Không hoạt động lâu ngày</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -12,10 +12,10 @@ class IsAdminRole(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
             
-        # Kiểm tra vai trò của người dùng (Staff hoặc Role Admin)
-        # Kiểm tra vai trò của người dùng (Staff hoặc Role Admin)
+        # Kiểm tra vai trò của người dùng (Staff, Superuser hoặc Role Admin)
         return (
             request.user.is_staff
+            or request.user.is_superuser
             or (request.user.role is not None and request.user.role.role_name.lower() == 'admin')
         )
 
@@ -31,8 +31,9 @@ class IsAdminOrReadOnly(BasePermission):
             return False
         if request.method in SAFE_METHODS:
             return True
-        # Kiểm tra vai trò của người dùng (Staff hoặc Role Admin)
+        # Kiểm tra vai trò của người dùng (Staff, Superuser hoặc Role Admin)
         return (
             request.user.is_staff
+            or request.user.is_superuser
             or (request.user.role is not None and request.user.role.role_name.lower() == 'admin')
         )

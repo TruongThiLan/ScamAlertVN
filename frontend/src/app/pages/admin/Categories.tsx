@@ -64,7 +64,6 @@ export function AdminCategories() {
           category_name: categoryName,
           description: categoryDescription,
         });
-        // Thêm ngay vào state local, không cần fetch lại toàn bộ
         const raw = res.data;
         setCategories((prev) => [
           ...prev,
@@ -114,7 +113,6 @@ export function AdminCategories() {
       toast.success('Đã xóa danh mục');
       closeDialog();
     } catch (err: any) {
-      // Backend sẽ trả 400 nếu danh mục còn bài viết
       const msg =
         err?.response?.data?.detail ||
         'Không thể xóa danh mục này. Vui lòng thử lại.';

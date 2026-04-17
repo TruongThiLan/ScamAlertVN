@@ -58,7 +58,7 @@ function adaptCategory(raw: any): Category {
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, is_admin } = useAuth();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -100,12 +100,12 @@ export function AdminLayout() {
 
   // Kiểm tra quyền admin (dùng role từ AuthContext)
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
+    if (!is_admin) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [is_admin, navigate]);
 
-  if (!user || user.role !== 'admin') return null;
+  if (!user || !is_admin) return null;
 
   const getPendingCount = (categoryId?: string) =>
     posts.filter(

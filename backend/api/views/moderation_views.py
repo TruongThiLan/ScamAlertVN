@@ -43,7 +43,30 @@ def _mark_reviewed(post: Post, admin_user: User, reason: str = None):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().select_related('role')
     serializer_class = UserSerializer
-    permission_classes = [permissions.AllowAny]  # Sẽ siết lại khi làm Auth
+
+    def _is_admin(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return False
+        return (
+            user.is_staff
+            or (user.role is not None and user.role.role_name == 'Admin')
+        )
+
+    def get_permissions(self):
+        if self.action == 'me':
+            return [permissions.IsAuthenticated()]
+        if self.action in ['list', 'create', 'destroy']:
+            return [IsAdminRole()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        queryset = User.objects.all().select_related('role')
+        if self._is_admin():
+            return queryset
+        if self.request.user and self.request.user.is_authenticated:
+            return queryset.filter(pk=self.request.user.pk)
+        return queryset.none()
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):

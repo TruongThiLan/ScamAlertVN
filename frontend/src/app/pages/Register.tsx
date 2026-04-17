@@ -3,13 +3,12 @@ import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { ShieldAlert, User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,7 +16,6 @@ export function Register() {
 
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
@@ -54,16 +52,6 @@ export function Register() {
     }
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setPhone(val);
-    const phoneRegex = /^0\d{9}$/;
-    if (val.length > 0 && !phoneRegex.test(val)) {
-      setPhoneError('Số điện thoại phải gồm 10 chữ số và bắt đầu từ số 0');
-    } else {
-      setPhoneError('');
-    }
-  };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -94,7 +82,7 @@ export function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (nameError || emailError || phoneError || passwordError || confirmPasswordError || !name || !email || !phone || !password || !confirmPassword) {
+    if (nameError || emailError || passwordError || confirmPasswordError || !name || !email || !password || !confirmPassword) {
       toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
       return;
     }
@@ -181,24 +169,6 @@ export function Register() {
             {emailError && <p className="text-[#E01515] text-sm mt-2 font-medium">{emailError}</p>}
           </div>
 
-          <div>
-            <label htmlFor="phone" className="block text-[#364153] font-medium mb-2">
-              Số điện thoại <span className="text-[#E01515]">*</span>
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="Nhập số điện thoại có 10 chữ số, bắt đầu từ số 0"
-                className={`pl-10 bg-white rounded-[10px] h-12 ${phoneError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
-                value={phone}
-                onChange={handlePhoneChange}
-                required
-              />
-            </div>
-            {phoneError && <p className="text-[#E01515] text-sm mt-2 font-medium">{phoneError}</p>}
-          </div>
 
           <div>
             <label htmlFor="password" className="block text-[#364153] font-medium mb-2">
@@ -253,6 +223,13 @@ export function Register() {
           </div>
 
           <div className="flex gap-4 pt-2">
+            <Button 
+              type="submit" 
+              className="flex-1 bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
+              disabled={loading || !!nameError || !!emailError || !!passwordError || !!confirmPasswordError}
+            >
+              {loading ? 'Đang xử lý...' : 'Đăng ký'}
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -260,13 +237,6 @@ export function Register() {
               className="flex-1 bg-white border-[#D1D5DC] text-[#101828] h-12 rounded-[10px] hover:bg-gray-50 text-base font-medium"
             >
               Hủy
-            </Button>
-            <Button 
-              type="submit" 
-              className="flex-1 bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
-              disabled={loading || !!nameError || !!emailError || !!phoneError || !!passwordError || !!confirmPasswordError}
-            >
-              {loading ? 'Đang xử lý...' : 'Đăng ký'}
             </Button>
           </div>
 

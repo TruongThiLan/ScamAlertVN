@@ -3,11 +3,11 @@ from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import (
+from api.models import (
     User, Post, ScamCategory, Comment,
     ContentReport, Notification, TargetType
 )
-from .serializers import (
+from api.serializers import (
     UserSerializer, UserBriefSerializer,
     PostSerializer, PostModerationSerializer, PostCreateSerializer,
     ApprovePostSerializer, RejectPostSerializer,
@@ -16,7 +16,7 @@ from .serializers import (
     CommentSerializer,
     ContentReportSerializer, ContentReportCreateSerializer,
 )
-from .permissions import IsAdminRole, IsAdminOrReadOnly
+from api.permissions import IsAdminRole, IsAdminOrReadOnly
 
 
 # ========================================================

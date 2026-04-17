@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PostViewSet, UserViewSet, ScamCategoryViewSet, ContentReportViewSet
+from api.views import PostViewSet, UserViewSet, ScamCategoryViewSet, ContentReportViewSet
 
 # Router của REST Framework giúp tự động tạo các đường dẫn chuẩn
 router = DefaultRouter()

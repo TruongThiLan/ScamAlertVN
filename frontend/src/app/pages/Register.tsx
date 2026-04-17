@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
 
 export function Register() {
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [usernameError, setUsernameError] = useState('');
+  const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const validatePassword = (pass: string) => {
@@ -30,24 +33,35 @@ export function Register() {
     return minLength && hasLetter && hasNumber && hasSpecialChar;
   };
 
-  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.trim();
-    setUsername(val);
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setName(val);
     if (val.length > 0 && (val.length < 6 || val.length > 20)) {
-      setUsernameError('Tên đăng nhập phải có độ dài từ 6-20 ký tự và duy nhất trong hệ thống');
+      setNameError('Tên đăng nhập phải có độ dài từ 6-20 ký tự và duy nhất trong hệ thống');
     } else {
-      setUsernameError('');
+      setNameError('');
     }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.trim();
+    const val = e.target.value;
     setEmail(val);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (val.length > 0 && !emailRegex.test(val)) {
       setEmailError('Email phải đúng định dạng và không trùng với email đã tồn tại');
     } else {
       setEmailError('');
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPhone(val);
+    const phoneRegex = /^0\d{9}$/;
+    if (val.length > 0 && !phoneRegex.test(val)) {
+      setPhoneError('Số điện thoại phải gồm 10 chữ số và bắt đầu từ số 0');
+    } else {
+      setPhoneError('');
     }
   };
 
@@ -80,7 +94,7 @@ export function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (usernameError || emailError || passwordError || confirmPasswordError || !username || !email || !password || !confirmPassword) {
+    if (nameError || emailError || phoneError || passwordError || confirmPasswordError || !name || !email || !phone || !password || !confirmPassword) {
       toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
       return;
     }
@@ -88,16 +102,15 @@ export function Register() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/register/', {
-        username: username.trim(),
-        email: email.trim(),
-        password,
-      });
-      toast.success('Đăng ký thành công!');
-      navigate('/');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.username?.[0] || error.response?.data?.email?.[0] || 'Đã có lỗi xảy ra';
-      toast.error(errorMessage);
+      const success = await register(email, password, name);
+      if (success) {
+        toast.success('Đăng ký thành công!');
+        navigate('/');
+      } else {
+        toast.error('Email đã được sử dụng');
+      }
+    } catch (error) {
+      toast.error('Đã có lỗi xảy ra');
     } finally {
       setLoading(false);
     }
@@ -131,22 +144,22 @@ export function Register() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="username" className="block text-[#364153] font-medium mb-2">
+            <label htmlFor="name" className="block text-[#364153] font-medium mb-2">
               Tên đăng nhập <span className="text-[#E01515]">*</span>
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
               <Input
-                id="username"
+                id="name"
                 type="text"
                 placeholder="Nhập tên đăng nhập (6-20 kí tự)"
-                className={`pl-10 bg-white rounded-[10px] h-12 ${usernameError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
-                value={username}
-                onChange={handleUsernameChange}
+                className={`pl-10 bg-white rounded-[10px] h-12 ${nameError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
+                value={name}
+                onChange={handleNameChange}
                 required
               />
             </div>
-            {usernameError && <p className="text-[#E01515] text-sm mt-2 font-medium">{usernameError}</p>}
+            {nameError && <p className="text-[#E01515] text-sm mt-2 font-medium">{nameError}</p>}
           </div>
 
           <div>
@@ -166,6 +179,25 @@ export function Register() {
               />
             </div>
             {emailError && <p className="text-[#E01515] text-sm mt-2 font-medium">{emailError}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="block text-[#364153] font-medium mb-2">
+              Số điện thoại <span className="text-[#E01515]">*</span>
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Nhập số điện thoại có 10 chữ số, bắt đầu từ số 0"
+                className={`pl-10 bg-white rounded-[10px] h-12 ${phoneError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
+                value={phone}
+                onChange={handlePhoneChange}
+                required
+              />
+            </div>
+            {phoneError && <p className="text-[#E01515] text-sm mt-2 font-medium">{phoneError}</p>}
           </div>
 
           <div>
@@ -220,21 +252,21 @@ export function Register() {
             {confirmPasswordError && <p className="text-[#E01515] text-sm mt-2 font-medium">{confirmPasswordError}</p>}
           </div>
 
-          <div className="flex flex-col gap-4 pt-2">
-            <Button 
-              type="submit" 
-              className="w-full bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
-              disabled={loading || !!usernameError || !!emailError || !!passwordError || !!confirmPasswordError}
-            >
-              {loading ? 'Đang xử lý...' : 'Đăng ký'}
-            </Button>
+          <div className="flex gap-4 pt-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/')}
-              className="w-full bg-white border-[#D1D5DC] text-[#101828] h-12 rounded-[10px] hover:bg-gray-50 text-base font-medium"
+              onClick={() => navigate('/login')}
+              className="flex-1 bg-white border-[#D1D5DC] text-[#101828] h-12 rounded-[10px] hover:bg-gray-50 text-base font-medium"
             >
               Hủy
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-1 bg-[#E01515] hover:bg-[#C10007] text-white rounded-[10px] h-12 text-base font-medium" 
+              disabled={loading || !!nameError || !!emailError || !!phoneError || !!passwordError || !!confirmPasswordError}
+            >
+              {loading ? 'Đang xử lý...' : 'Đăng ký'}
             </Button>
           </div>
 

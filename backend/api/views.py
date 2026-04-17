@@ -15,7 +15,6 @@ from .serializers import (
     ScamCategorySerializer,
     CommentSerializer,
     ContentReportSerializer, ContentReportCreateSerializer,
-    RegisterSerializer,
 )
 from .permissions import IsAdminRole, IsAdminOrReadOnly
 
@@ -51,17 +50,6 @@ class UserViewSet(viewsets.ModelViewSet):
         """Trả về thông tin của user đang đăng nhập."""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
-
-
-class RegisterViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.AllowAny]
-
-    def create(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ========================================================

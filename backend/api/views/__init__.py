@@ -1,10 +1,15 @@
-from .user_views import UserViewSet
-from .report_views import PostViewSet, ScamCategoryViewSet
-from .moderation_views import ContentReportViewSet
+from api.views.moderation_views import (
+    UserViewSet,
+    ScamCategoryViewSet,
+    PostViewSet,
+    ContentReportViewSet,
+    NotificationViewSet,
+)
 
 __all__ = [
     'UserViewSet',
-    'PostViewSet',
     'ScamCategoryViewSet',
+    'PostViewSet',
     'ContentReportViewSet',
+    'NotificationViewSet',
 ]

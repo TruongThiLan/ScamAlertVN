@@ -69,6 +69,8 @@ class Post(models.Model):
         PENDING = 'PENDING', 'Pending'
         APPROVED = 'APPROVED', 'Approved'
         REJECTED = 'REJECTED', 'Rejected'
+        HIDDEN = 'HIDDEN', 'Hidden'
+        LOCKED = 'LOCKED', 'Locked'
 
     title = models.CharField(max_length=255)
     content = models.TextField()
@@ -94,6 +96,23 @@ class Post(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         related_name='posts'
+    )
+
+    # --- Tracking kiểm duyệt ---
+    rejection_reason = models.TextField(
+        null=True, blank=True,
+        help_text='Lý do từ chối / ẩn / khóa / xóa'
+    )
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='reviewed_posts',
+        help_text='Admin đã xử lý bài viết này'
+    )
+    reviewed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Thời điểm Admin xử lý'
     )
 
     class Meta:

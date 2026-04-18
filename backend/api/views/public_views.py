@@ -14,13 +14,10 @@ class RegisterView(generics.CreateAPIView):
 
 
 class PublicPostSearchFilter(filters.SearchFilter):
-    """Search public linh hoat voi model hien tai va field phone_number neu co."""
+    """Search public theo tieu de va noi dung bai viet."""
 
     def get_search_fields(self, view, request):
-        search_fields = ['title', 'content']
-        if any(field.name == 'phone_number' for field in Post._meta.get_fields()):
-            search_fields.append('phone_number')
-        return search_fields
+        return ['title', 'content']
 
 
 class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):

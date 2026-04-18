@@ -47,7 +47,6 @@ class PublicPostSerializer(serializers.ModelSerializer):
     user_detail = PublicUserSerializer(source='user', read_only=True)
     category_detail = PublicCategorySerializer(source='category', read_only=True)
     comments_count = serializers.SerializerMethodField()
-    phone_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -55,7 +54,6 @@ class PublicPostSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'content',
-            'phone_number',
             'created_time',
             'published_time',
             'status',
@@ -67,10 +65,6 @@ class PublicPostSerializer(serializers.ModelSerializer):
 
     def get_comments_count(self, obj):
         return obj.comments.filter(status=Comment.CommentStatus.ACTIVE).count()
-
-    def get_phone_number(self, obj):
-        # Model hien tai co the chua co phone_number; giu API on dinh khi bo sung field sau nay.
-        return getattr(obj, 'phone_number', '')
 
 
 class PublicCommentSerializer(serializers.ModelSerializer):

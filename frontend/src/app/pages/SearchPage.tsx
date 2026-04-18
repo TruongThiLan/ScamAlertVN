@@ -10,7 +10,6 @@ type PublicPost = {
   id: number;
   title: string;
   content: string;
-  phone_number?: string;
   created_time: string;
   published_time?: string | null;
   comments_count?: number;
@@ -94,7 +93,7 @@ export function SearchPage() {
         <div className="mb-8">
           <h1 className="mb-3 text-3xl font-bold text-[#101828]">{title}</h1>
           <p className="text-[#4A5565]">
-            Tra cuu cac bai canh bao da duoc duyet theo tieu de, noi dung hoac so dien thoai.
+            Tra cuu cac bai canh bao da duoc duyet theo tieu de va noi dung.
           </p>
         </div>
 
@@ -105,7 +104,7 @@ export function SearchPage() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Nhap tu khoa, noi dung hoac so dien thoai..."
+              placeholder="Nhap tu khoa hoac noi dung can tim..."
               className="h-12 rounded-[10px] border-[#D1D5DC] bg-white pl-10 text-base"
             />
           </div>
@@ -128,7 +127,7 @@ export function SearchPage() {
           <Card>
             <CardContent className="py-10 text-center">
               <p className="font-medium text-[#1E293B]">Khong tim thay ket qua phu hop</p>
-              <p className="mt-2 text-sm text-[#6A7282]">Thu lai voi tu khoa khac hoac kiem tra so dien thoai.</p>
+              <p className="mt-2 text-sm text-[#6A7282]">Thu lai voi tu khoa hoac noi dung khac.</p>
             </CardContent>
           </Card>
         ) : (
@@ -152,9 +151,7 @@ export function SearchPage() {
                 <h2 className="mb-2 text-xl font-semibold text-[#1E293B]">{post.title}</h2>
                 <p className="mb-4 text-[#4A5565]">{makeExcerpt(post.content)}</p>
 
-                <div className="rounded-[8px] bg-[#FFF1F1] px-3 py-2 text-sm font-medium text-[#C10007]">
-                  So dien thoai lua dao: {post.phone_number || 'Dang cap nhat'}
-                </div>
+                <span className="text-sm font-medium text-[#E01515]">Xem chi tiet canh bao</span>
               </Link>
             ))}
           </div>

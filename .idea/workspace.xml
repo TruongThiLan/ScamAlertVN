@@ -6,17 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/serializers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/serializers/moderation_serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/moderation_serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/serializers/public_serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/public_serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/urls/public_urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/urls/public_urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/views/moderation_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/views/moderation_views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/views/public_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/views/public_views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/backend/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/contexts/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/contexts/AuthContext.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/PostDetail.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/PostDetail.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/Profile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/Profile.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/SearchPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/SearchPage.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,7 +47,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "dangki__v2",
+    "git-widget-placeholder": "Capnhatthonngtin",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "E:/ScamAlertVN",

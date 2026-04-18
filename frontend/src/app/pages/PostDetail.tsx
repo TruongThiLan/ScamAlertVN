@@ -10,7 +10,6 @@ type PublicPost = {
   id: number;
   title: string;
   content: string;
-  phone_number?: string;
   created_time: string;
   published_time?: string | null;
   comments_count?: number;
@@ -183,10 +182,6 @@ export function PostDetail() {
           </div>
 
           <h1 className="mb-4 text-3xl font-bold leading-tight text-[#101828]">{post.title}</h1>
-
-          <div className="mb-6 rounded-[8px] bg-[#FFF1F1] px-4 py-3 text-[#C10007]">
-            <span className="font-semibold">So dien thoai lua dao:</span> {post.phone_number || 'Dang cap nhat'}
-          </div>
 
           <div className="whitespace-pre-wrap text-base leading-7 text-[#364153]">{post.content}</div>
 

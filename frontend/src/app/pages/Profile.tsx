@@ -14,14 +14,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { User, Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Profile() {
   const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState('0123456789');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,7 +30,6 @@ export function Profile() {
 
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
   const [isUpdateProfileAlertOpen, setIsUpdateProfileAlertOpen] = useState(false);
@@ -71,20 +69,9 @@ export function Profile() {
     }
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setPhone(val);
-    const phoneRegex = /^0\d{9}$/;
-    if (val.length > 0 && !phoneRegex.test(val)) {
-      setPhoneError('Số điện thoại phải gồm 10 chữ số và bắt đầu từ số 0');
-    } else {
-      setPhoneError('');
-    }
-  };
-
   const handleUpdateProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (nameError || emailError || phoneError || !name || !email || !phone) {
+    if (nameError || emailError || !name || !email) {
       toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
       return;
     }
@@ -228,29 +215,11 @@ export function Profile() {
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-[#364153] font-medium mb-2">
-                    Số điện thoại <span className="text-[#E01515]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-                    <Input
-                      type="tel"
-                      value={phone}
-                      onChange={handlePhoneChange}
-                      className={`pl-10 bg-white rounded-[10px] h-12 ${phoneError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
-                    />
-                  </div>
-                  <p className={`text-sm mt-2 font-medium ${phoneError ? 'text-[#E01515]' : 'text-[#6A7282]'}`}>
-                    Số điện thoại phải gồm 10 chữ số và bắt đầu từ số 0
-                  </p>
-                </div>
-
                 <div className="flex justify-center pt-4">
                   <Button 
                     type="submit" 
                     className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[8px] px-8 py-2 h-11 text-base font-medium shadow-sm transition-all"
-                    disabled={!!nameError || !!emailError || !!phoneError}
+                    disabled={!!nameError || !!emailError}
                   >
                     Lưu
                   </Button>

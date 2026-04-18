@@ -248,12 +248,31 @@ class CommentViewSet(viewsets.ModelViewSet):
         - Không giới hạn cấp reply (FE gửi parent_comment để tạo reply).
         - Hỗ trợ đính kèm ảnh qua request.FILES['attachments'].
         """
-        post = serializer.validated_data.get('post')
+        # FIX: Lấy post trực tiếp từ DB thay vì dùng object từ validated_data
+        # Lý do: DRF validate FK bằng cách query Post.objects.all() không có
+        # select_related('user'), nên post.user_id có thể không được load đúng.
+        # Để chắc chắn, query lại với select_related('user') trước khi so sánh.
+        post_raw = serializer.validated_data.get('post')
+        post = None
+        if post_raw is not None:
+            post = Post.objects.select_related('user').filter(pk=post_raw.pk).first()
+
         if post and post.status in [Post.PostStatus.LOCKED, Post.PostStatus.HIDDEN]:
             raise PermissionDenied('Không thể bình luận vào bài viết đã bị khóa hoặc bị ẩn.')
 
+        # --- Xác định is_anonymous cho comment ---
+        # Chỉ ẩn danh khi: bài viết ẩn danh VÀ người comment là chính tác giả bài viết
+        # So sánh int với int (cả hai đều là integer primary key)
+        is_anonymous = (
+            post is not None
+            and post.is_anonymous is True
+            and int(post.user_id) == int(self.request.user.pk)
+        )
         # Lưu comment, tự gán user từ request
-        instance = serializer.save(user=self.request.user)
+        instance = serializer.save(
+            user=self.request.user,
+            is_anonymous=is_anonymous,
+        )
 
         # Xử lý upload ảnh đính kèm (nếu có)
         self._handle_file_uploads(instance)
@@ -377,22 +396,6 @@ class ContentReportViewSet(viewsets.ModelViewSet):
         is_auto_approved = True
         if is_auto_approved:
             self._apply_report_logic(report, is_auto=True)
-    #
-    # @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='dismiss')
-    # def dismiss(self, request, pk=None):
-        # """
-    #     Admin bác bỏ báo cáo (không có cơ sở).
-    #     Trạng thái: PENDING → DISMISSED
-    #     """
-    #     report = self.get_object()
-    #     if report.processing_status != ContentReport.ProcessStatus.PENDING:
-    #         return Response(
-    #             {'detail': 'Chỉ có thể bác bỏ báo cáo đang ở trạng thái PENDING.'},
-    #             status=status.HTTP_400_BAD_REQUEST,
-    #         )
-    #     report.processing_status = ContentReport.ProcessStatus.DISMISSED
-    #     report.save()
-    #     return Response({'detail': 'Báo cáo đã bị bác bỏ.'})
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='process')
     def process(self, request, pk=None):

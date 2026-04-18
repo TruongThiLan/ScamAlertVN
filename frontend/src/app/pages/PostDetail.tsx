@@ -315,8 +315,8 @@ export function PostDetail() {
               }`}
               title={!user ? 'Vui lòng đăng nhập để thích bình luận' : ''}
             >
-              <ThumbsUp className={`h-4 w-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
-              <span>{commentLikes[comment.id] || 0} Thích</span>
+              <Heart className={`h-4 w-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
+              <span>{commentLikes[comment.id] || 0} </span>
             </button>
             <button 
               onClick={() => setReplyTo(comment.id)}
@@ -329,7 +329,11 @@ export function PostDetail() {
               title={!user ? 'Vui lòng đăng nhập để phản hồi' : ''}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>Phản hồi</span>
+              <span>
+                {comment.replies && comment.replies.length > 0
+                  ? `${comment.replies.length} Phản hồi`
+                  : 'Phản hồi'}
+              </span>
             </button>
             {user && (
               <button

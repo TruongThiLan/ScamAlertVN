@@ -34,14 +34,58 @@ class CommentSerializer(serializers.ModelSerializer):
             # Ghi: chỉ gửi 'user' (int FK) / 'post' (int FK) / 'parent_comment' (int FK)
             'user', 'user_detail',
             'post', 'parent_comment',
+            'is_anonymous',
             'replies_count', 'replies',
             'images',
         ]
         # 'user' & 'status' do server tự set, không cho phép FE ghi
-        read_only_fields = ['user', 'status']
+        read_only_fields = ['user', 'status', 'is_anonymous']
+
+    # ----------------------------------------------------------------
+    # to_representation – Mask thông tin user nếu is_anonymous = True
+    # ----------------------------------------------------------------
+
+    def to_representation(self, instance):
+        """
+        Xử lý logic ẩn danh khi serialize ra JSON trả về FE.
+
+        Quy tắc:
+          1. Nếu comment KHÔNG ẩn danh → trả bình thường.
+          2. Nếu comment ẩn danh:
+             - Admin hoặc chính chủ → vẫn thấy user_detail thật.
+             - Người khác → mask thành "Người dùng ẩn danh".
+        """
+        #thêm tạm
+        #print(f"[DEBUG] comment_id={instance.id} is_anonymous={instance.is_anonymous}")
+        #print(f"[DEBUG] request={self.context.get('request')}")
+
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+
+        if not instance.is_anonymous:
+            return data  # không ẩn danh → giữ nguyên
+
+        # Kiểm tra xem requester có được xem danh tính thật không
+        is_admin = False
+        if request and request.user.is_authenticated:
+            is_admin = request.user.is_staff or (
+                    hasattr(request.user, 'role')
+                    and request.user.role
+                    and request.user.role.role_name == 'Admin'
+            )
+
+        if not is_admin:
+            data['user'] = None
+            data['user_detail'] = {
+                'id': None,
+                'username': 'Người dùng ẩn danh',
+                'email': '',
+                'reputation_score': 0,
+            }
+
+        return data
 
     # ---- helpers ----
-
     def get_images(self, obj):
         """Trả về list URL ảnh đính kèm của comment này (qua bảng TargetMedia)."""
         from api.models import TargetMedia
@@ -63,7 +107,7 @@ class CommentSerializer(serializers.ModelSerializer):
         - Nếu đây đã là reply → trả [] để tránh đệ quy vô tận.
         NOTE: Để tối ưu DB, prefetch_related('replies') nên được gọi ở View.
         """
-        if obj.parent_comment is None:
+        if obj.replies.exists():
             serializer = CommentSerializer(
                 obj.replies.all(), many=True, context=self.context
             )

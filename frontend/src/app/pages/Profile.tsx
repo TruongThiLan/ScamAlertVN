@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import { toast } from 'sonner';
+import api from '../../api/axiosInstance';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,31 +14,46 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+
+const get_api_error_message = (error: any) => {
+  const data = error.response?.data;
+  if (typeof data === 'string') return data;
+  if (data?.detail) return data.detail;
+  if (data && typeof data === 'object') {
+    const firstValue = Object.values(data)[0];
+    if (Array.isArray(firstValue)) return String(firstValue[0]);
+    if (firstValue) return String(firstValue);
+  }
+  return 'Có lỗi xảy ra. Vui lòng thử lại.';
+};
 
 export function Profile() {
   const { user, updateUser } = useAuth();
-  const [name, setName] = useState(user?.name || '');
+  const [username, setUsername] = useState(user?.username || user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [nameError, setNameError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-
   const [isUpdateProfileAlertOpen, setIsUpdateProfileAlertOpen] = useState(false);
   const [isChangePasswordAlertOpen, setIsChangePasswordAlertOpen] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  useEffect(() => {
+    setUsername(user?.username || user?.name || '');
+    setEmail(user?.email || '');
+  }, [user]);
 
   if (!user) {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center px-4">
-        <div className="bg-white rounded-[10px] p-8 text-center max-w-md">
+        <div className="bg-white rounded-[10px] p-8 text-center max-w-md border border-[#D1D5DC]">
           <p className="text-gray-500 mb-4">Bạn cần đăng nhập để xem trang này</p>
           <Button className="bg-[#E01515] hover:bg-[#C10007]" asChild>
             <Link to="/login">Đăng nhập</Link>
@@ -48,103 +63,50 @@ export function Profile() {
     );
   }
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setName(val);
-    if (val.length > 0 && (val.length < 6 || val.length > 20)) {
-      setNameError('Tên đăng nhập phải có độ dài từ 6-20 ký tự và duy nhất trong hệ thống');
-    } else {
-      setNameError('');
-    }
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setEmail(val);
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (val.length > 0 && !emailRegex.test(val)) {
-      setEmailError('Email phải đúng định dạng và không trùng với email đã tồn tại');
-    } else {
-      setEmailError('');
-    }
-  };
-
-  const handleUpdateProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (nameError || emailError || !name || !email) {
-      toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
-      return;
-    }
+  const handleUpdateProfileSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     setIsUpdateProfileAlertOpen(true);
   };
 
   const confirmUpdateProfile = async () => {
+    setIsSavingProfile(true);
     try {
-      const result = await updateUser({ name, email });
+      // API tra ve user moi nhat; updateUser se set lai AuthContext de Header doi ngay.
+      const result = await updateUser({ username, email });
       if (result.success) {
-        toast.success('Đã cập nhật thông tin cá nhân');
+        toast.success('Cập nhật thông tin thành công');
       } else {
-        toast.error(result.message || 'Cập nhật không thành công. Vui lòng thử lại.');
+        toast.error(result.message || 'Cập nhật thông tin không thành công');
       }
-    } catch (error) {
-      toast.error('Có lỗi xảy ra khi cập nhật thông tin.');
     } finally {
+      setIsSavingProfile(false);
       setIsUpdateProfileAlertOpen(false);
     }
   };
 
-  const validatePassword = (pass: string) => {
-    const minLength = pass.length >= 6;
-    const hasLetter = /[a-zA-Z]/.test(pass);
-    const hasNumber = /[0-9]/.test(pass);
-    const hasSpecialChar = /[!@#$%]/.test(pass);
-    
-    return minLength && hasLetter && hasNumber && hasSpecialChar;
-  };
-
-  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setNewPassword(value);
-    
-    if (value.length > 0) {
-      if (!validatePassword(value)) {
-        setPasswordError('Mật khẩu không hợp lệ');
-      } else {
-        setPasswordError(''); 
-      }
-    } else {
-      setPasswordError('');
-    }
-  };
-
-  const handleChangePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (newPassword !== confirmPassword) {
-      toast.error('Mật khẩu mới không khớp');
-      return;
-    }
-
-    if (!validatePassword(newPassword)) {
-      toast.error('Mật khẩu chưa đúng định dạng yêu cầu');
-      return;
-    }
-
+  const handleChangePasswordSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     setIsChangePasswordAlertOpen(true);
   };
 
   const confirmChangePassword = async () => {
+    setIsChangingPassword(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      toast.success('Đã đổi mật khẩu thành công');
-      setCurrentPassword('');
+      // Frontend chi gui du lieu; backend chiu trach nhiem validate va tra text loi.
+      await api.put('users/change-password/', {
+        old_password: oldPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      });
+
+      toast.success('Đổi mật khẩu thành công');
+      setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setPasswordError('');
-    } catch (error) {
-      toast.error('Đổi mật khẩu không thành công. Vui lòng thử lại sau.');
+    } catch (error: any) {
+      toast.error(get_api_error_message(error));
     } finally {
+      setIsChangingPassword(false);
       setIsChangePasswordAlertOpen(false);
     }
   };
@@ -160,14 +122,14 @@ export function Profile() {
         <div className="bg-white rounded-[10px] border border-[#D1D5DC] overflow-hidden">
           <Tabs defaultValue="profile">
             <TabsList className="w-full justify-start rounded-none border-b border-[#D1D5DC] bg-transparent p-0">
-              <TabsTrigger 
-                value="profile" 
+              <TabsTrigger
+                value="profile"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#E01515] data-[state=active]:bg-[#E01515] data-[state=active]:text-white px-6 py-4 gap-2"
               >
                 <User className="h-5 w-5" />
                 Thông tin cá nhân
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="password"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#E01515] data-[state=active]:bg-[#E01515] data-[state=active]:text-white px-6 py-4 gap-2"
               >
@@ -185,15 +147,12 @@ export function Profile() {
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
                     <Input
-                      value={name}
-                      onChange={handleNameChange}
-                      className={`pl-10 bg-white rounded-[10px] h-12 ${nameError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      className="pl-10 bg-white rounded-[10px] h-12 border-[#D1D5DC]"
                       required
                     />
                   </div>
-                  <p className={`text-sm mt-2 font-medium ${nameError ? 'text-[#E01515]' : 'text-[#6A7282]'}`}>
-                    Tên đăng nhập phải có độ dài từ 6-20 ký tự và duy nhất trong hệ thống
-                  </p>
                 </div>
 
                 <div>
@@ -205,23 +164,20 @@ export function Profile() {
                     <Input
                       type="email"
                       value={email}
-                      onChange={handleEmailChange}
-                      className={`pl-10 bg-white rounded-[10px] h-12 ${emailError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className="pl-10 bg-white rounded-[10px] h-12 border-[#D1D5DC]"
                       required
                     />
                   </div>
-                  <p className={`text-sm mt-2 font-medium ${emailError ? 'text-[#E01515]' : 'text-[#6A7282]'}`}>
-                    Email phải đúng định dạng và không trùng với email đã tồn tại
-                  </p>
                 </div>
 
                 <div className="flex justify-center pt-4">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[8px] px-8 py-2 h-11 text-base font-medium shadow-sm transition-all"
-                    disabled={!!nameError || !!emailError}
+                    disabled={isSavingProfile}
                   >
-                    Lưu
+                    Lưu thay đổi
                   </Button>
                 </div>
               </form>
@@ -229,92 +185,39 @@ export function Profile() {
 
             <TabsContent value="password" className="p-6">
               <p className="text-[#4A5565] italic mb-6">
-                Mật khẩu của bạn phải có tối thiểu 6 ký tự, bao gồm chữ cái, số và ký tự đặc biệt (!@#$%).
+                Mật khẩu mới cần tối thiểu 8 ký tự, bao gồm chữ, số và ký tự đặc biệt.
               </p>
 
               <form onSubmit={handleChangePasswordSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-[#364153] font-medium mb-2">
-                    Mật khẩu cũ <span className="text-[#E01515]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-                    <Input
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99A1AF] hover:text-[#4A5565]"
-                    >
-                      {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[#364153] font-medium mb-2">
-                    Mật khẩu mới <span className="text-[#E01515]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-                    <Input
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={handleNewPasswordChange} // Sử dụng hàm bắt lỗi ở đây
-                      className={`pl-10 pr-10 bg-white rounded-[10px] h-12 ${passwordError ? 'border-[#E01515] focus:ring-[#E01515]' : 'border-[#D1D5DC]'}`}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99A1AF] hover:text-[#4A5565]"
-                    >
-                      {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {/* Hiển thị lỗi màu đỏ nếu có */}
-                  {passwordError && (
-                    <p className="text-[#E01515] text-sm mt-2 font-medium">
-                      {passwordError}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[#364153] font-medium mb-2">
-                    Xác nhận mật khẩu <span className="text-[#E01515]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99A1AF] hover:text-[#4A5565]"
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                </div>
+                <PasswordInput
+                  label="Mật khẩu cũ"
+                  value={oldPassword}
+                  visible={showOldPassword}
+                  onVisibleChange={() => setShowOldPassword((current) => !current)}
+                  onChange={setOldPassword}
+                />
+                <PasswordInput
+                  label="Mật khẩu mới"
+                  value={newPassword}
+                  visible={showNewPassword}
+                  onVisibleChange={() => setShowNewPassword((current) => !current)}
+                  onChange={setNewPassword}
+                />
+                <PasswordInput
+                  label="Xác nhận mật khẩu"
+                  value={confirmPassword}
+                  visible={showConfirmPassword}
+                  onVisibleChange={() => setShowConfirmPassword((current) => !current)}
+                  onChange={setConfirmPassword}
+                />
 
                 <div className="flex justify-center pt-4">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[8px] px-8 py-2 h-11 text-base font-medium shadow-sm transition-all"
-                    disabled={!!passwordError} 
+                    disabled={isChangingPassword}
                   >
-                    Đổi mật khẩu
+                    Xác nhận
                   </Button>
                 </div>
               </form>
@@ -328,13 +231,13 @@ export function Profile() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận cập nhật</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn cập nhật thông tin cá nhân? Các thay đổi sẽ được lưu vào hệ thống.
+              Bạn chắc chắn muốn cập nhật thông tin cá nhân đã chỉnh sửa?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction onClick={confirmUpdateProfile} className="bg-[#E01515] hover:bg-[#C10007] text-white">
-              Đồng ý
+              Xác nhận
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -345,17 +248,52 @@ export function Profile() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận đổi mật khẩu</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn đổi mật khẩu? Bạn sẽ cần sử dụng mật khẩu mới cho lần đăng nhập tiếp theo.
+              Bạn chắc chắn muốn đổi mật khẩu. Sau khi đổi bạn cần sử dụng mật khẩu mới để đăng nhập.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction onClick={confirmChangePassword} className="bg-[#E01515] hover:bg-[#C10007] text-white">
-              Đồng ý
+              Xác nhận
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+type PasswordInputProps = {
+  label: string;
+  value: string;
+  visible: boolean;
+  onVisibleChange: () => void;
+  onChange: (value: string) => void;
+};
+
+function PasswordInput({ label, value, visible, onVisibleChange, onChange }: PasswordInputProps) {
+  return (
+    <div>
+      <label className="block text-[#364153] font-medium mb-2">
+        {label} <span className="text-[#E01515]">*</span>
+      </label>
+      <div className="relative">
+        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
+        <Input
+          type={visible ? 'text' : 'password'}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="pl-10 pr-10 bg-white border-[#D1D5DC] rounded-[10px] h-12"
+          required
+        />
+        <button
+          type="button"
+          onClick={onVisibleChange}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99A1AF] hover:text-[#4A5565]"
+        >
+          {visible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+        </button>
+      </div>
     </div>
   );
 }

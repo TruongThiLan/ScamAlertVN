@@ -6,11 +6,17 @@
   <component name="ChangeListManager">
     <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/serializers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/serializers/moderation_serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/moderation_serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/serializers/public_serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/public_serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/urls/public_urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/urls/public_urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/views/moderation_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/views/moderation_views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/views/public_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/views/public_views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/backend/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/dist/assets/index-DJVTCixC.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/dist/assets/index-UfXJgRWh.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/components/AdminHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/components/AdminHeader.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/contexts/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/contexts/AuthContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/PostDetail.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/PostDetail.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/Profile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/Profile.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/SearchPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/SearchPage.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,23 +48,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.__init__.executor&quot;: &quot;Run&quot;,
-    &quot;Python.app.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dangki__v2&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;E:/ScamAlertVN&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.__init__.executor": "Run",
+    "Python.app.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "dangki__v2",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "E:/ScamAlertVN",
+    "to.speed.mode.migration.done": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\HK6\ScamAlertVN\backend\api\urls" />

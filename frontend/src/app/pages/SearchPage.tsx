@@ -1,73 +1,165 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router';
-import { mockPosts } from '../data/mockData';
-import { PostCard } from '../components/PostCard';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Search } from 'lucide-react';
+import publicApi from '../../api/publicApi';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Search } from 'lucide-react';
+import { Button } from '../components/ui/button';
+
+type PublicPost = {
+  id: number;
+  title: string;
+  content: string;
+  phone_number?: string;
+  created_time: string;
+  published_time?: string | null;
+  comments_count?: number;
+  user_detail?: {
+    id: number;
+    username: string;
+    reputation_score?: number;
+  };
+  category_detail?: {
+    id: number;
+    category_name: string;
+  } | null;
+};
+
+const getResults = (payload: PublicPost[] | { results?: PublicPost[] }) => {
+  return Array.isArray(payload) ? payload : payload.results ?? [];
+};
+
+const makeExcerpt = (content: string) => {
+  const text = content.replace(/\s+/g, ' ').trim();
+  return text.length > 180 ? `${text.slice(0, 180)}...` : text;
+};
 
 export function SearchPage() {
   const [searchParams] = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
-  const [query, setQuery] = useState(initialQuery);
-  
-  const approvedPosts = mockPosts.filter(post => post.status === 'approved');
-  
-  const searchResults = query.trim() 
-    ? approvedPosts.filter(post =>
-        post.title.toLowerCase().includes(query.toLowerCase()) ||
-        post.content.toLowerCase().includes(query.toLowerCase()) ||
-        post.category.name.toLowerCase().includes(query.toLowerCase())
-      )
-    : approvedPosts;
+  const navigate = useNavigate();
+  const keyword = searchParams.get('q')?.trim() ?? '';
+  const [query, setQuery] = useState(keyword);
+  const [posts, setPosts] = useState<PublicPost[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const title = useMemo(() => {
+    return keyword ? `Ket qua tim kiem cho "${keyword}"` : 'Tim kiem canh bao cong khai';
+  }, [keyword]);
 
   useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
+    setQuery(keyword);
+  }, [keyword]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchPublicPosts = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        // API public dung axios rieng, khong gui Authorization header.
+        const response = await publicApi.get<PublicPost[] | { results?: PublicPost[] }>('public/posts/', {
+          params: keyword ? { search: keyword } : undefined,
+          signal: controller.signal,
+        });
+        setPosts(getResults(response.data));
+      } catch (err: any) {
+        if (err.name !== 'CanceledError') {
+          setError('Khong the tai ket qua tim kiem. Vui long thu lai sau.');
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchPublicPosts();
+    return () => controller.abort();
+  }, [keyword]);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedQuery = query.trim();
+
+    // Dong bo tu khoa tren o nhap vao Browser URL: /search?q=...
+    navigate(trimmedQuery ? `/search?q=${encodeURIComponent(trimmedQuery)}` : '/search');
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-8">Tìm kiếm cảnh báo</h1>
-
-      <div className="mb-8">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-          <Input
-            type="search"
-            placeholder="Tìm kiếm cảnh báo lừa đảo..."
-            className="pl-10 text-lg h-12"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+    <div className="min-h-screen bg-[#F9FAFB]">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="mb-3 text-3xl font-bold text-[#101828]">{title}</h1>
+          <p className="text-[#4A5565]">
+            Tra cuu cac bai canh bao da duoc duyet theo tieu de, noi dung hoac so dien thoai.
+          </p>
         </div>
-      </div>
 
-      <div className="mb-4">
-        <p className="text-gray-600">
-          {query.trim() ? (
-            <>
-              Tìm thấy <strong>{searchResults.length}</strong> kết quả cho &quot;{query}&quot;
-            </>
-          ) : (
-            <>Hiển thị tất cả <strong>{searchResults.length}</strong> bài viết</>
-          )}
-        </p>
-      </div>
+        <form onSubmit={handleSubmit} className="mb-8 flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#99A1AF]" />
+            <Input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Nhap tu khoa, noi dung hoac so dien thoai..."
+              className="h-12 rounded-[10px] border-[#D1D5DC] bg-white pl-10 text-base"
+            />
+          </div>
+          <Button type="submit" className="h-12 rounded-[10px] bg-[#E01515] px-6 text-white hover:bg-[#C10007]">
+            Tim kiem
+          </Button>
+        </form>
 
-      <div className="space-y-4">
-        {searchResults.length === 0 ? (
+        <div className="mb-4 text-sm text-[#4A5565]">
+          {loading ? 'Dang tim kiem...' : `Tim thay ${posts.length} ket qua`}
+        </div>
+
+        {error && (
+          <Card className="mb-4 border-[#F7BABA] bg-[#FFF1F1]">
+            <CardContent className="py-4 text-[#C10007]">{error}</CardContent>
+          </Card>
+        )}
+
+        {!loading && !error && posts.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-gray-500">Không tìm thấy kết quả phù hợp</p>
-              <p className="text-sm text-gray-400 mt-2">
-                Thử tìm kiếm với từ khóa khác
-              </p>
+            <CardContent className="py-10 text-center">
+              <p className="font-medium text-[#1E293B]">Khong tim thay ket qua phu hop</p>
+              <p className="mt-2 text-sm text-[#6A7282]">Thu lai voi tu khoa khac hoac kiem tra so dien thoai.</p>
             </CardContent>
           </Card>
         ) : (
-          searchResults.map(post => <PostCard key={post.id} post={post} />)
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <Link
+                key={post.id}
+                to={`/posts/${post.id}`}
+                className="block rounded-[10px] border border-[#D1D5DC] bg-white p-5 shadow-sm transition hover:border-[#E01515] hover:shadow-md"
+              >
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-[#6A7282]">
+                  {post.category_detail?.category_name && (
+                    <span className="rounded-full border border-[#E01515] px-3 py-1 text-[#E01515]">
+                      {post.category_detail.category_name}
+                    </span>
+                  )}
+                  <span>{post.user_detail?.username ?? 'Nguoi dung an danh'}</span>
+                  <span>{post.comments_count ?? 0} binh luan</span>
+                </div>
+
+                <h2 className="mb-2 text-xl font-semibold text-[#1E293B]">{post.title}</h2>
+                <p className="mb-4 text-[#4A5565]">{makeExcerpt(post.content)}</p>
+
+                <div className="rounded-[8px] bg-[#FFF1F1] px-3 py-2 text-sm font-medium text-[#C10007]">
+                  So dien thoai lua dao: {post.phone_number || 'Dang cap nhat'}
+                </div>
+              </Link>
+            ))}
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -6,11 +6,12 @@ import { User } from '../types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAuthenticated: boolean;
   is_admin: boolean;
   login: (username: string, password: string) => Promise<User | null>;
   register: (email: string, password: string, username: string) => Promise<boolean>;
   logout: () => void;
-  updateUser: (userData: Partial<User>) => Promise<{ success: boolean; message?: string }>;
+  updateUser: (userData: Partial<User>) => Promise<{ success: boolean; message?: string; user?: User }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +27,7 @@ const normalizeUser = (rawUser: any): User => ({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isAuthenticated = Boolean(user);
   const is_admin = user?.role_name === 'Admin' && user?.is_staff === true;
 
   useEffect(() => {
@@ -96,20 +98,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast.info('Da dang xuat khoi he thong');
   };
 
-  const updateUser = async (userData: Partial<User>): Promise<{ success: boolean; message?: string }> => {
+  const updateUser = async (userData: Partial<User>): Promise<{ success: boolean; message?: string; user?: User }> => {
     try {
       if (!user) return { success: false, message: 'Ban chua dang nhap' };
 
-      const res = await api.patch(`users/${user.id}/`, userData);
-      setUser(normalizeUser(res.data));
-      return { success: true };
+      const payload = {
+        username: userData.username ?? userData.name ?? user.username,
+        email: userData.email ?? user.email,
+      };
+      const res = await api.patch('users/profile/', payload);
+      const updatedUser = normalizeUser({ ...user, ...res.data });
+      setUser(updatedUser);
+      return { success: true, user: updatedUser };
     } catch (error: any) {
-      return { success: false, message: error.response?.data?.message || 'Loi cap nhat' };
+      return {
+        success: false,
+        message: error.response?.data?.detail || error.response?.data?.message || 'Loi cap nhat',
+      };
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, is_admin, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated, is_admin, login, register, logout, updateUser }}>
       {!loading && children}
     </AuthContext.Provider>
   );

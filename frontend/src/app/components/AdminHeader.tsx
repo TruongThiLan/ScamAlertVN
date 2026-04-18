@@ -25,6 +25,8 @@ export function AdminHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const displayName = user?.name || user?.username || 'Quan tri vien';
+  const displayEmail = user?.email || 'Chua co email';
 
   const handleLogout = () => {
     logout();
@@ -104,16 +106,16 @@ export function AdminHeader() {
                       <User className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
                     <div className="flex flex-col items-start">
-                      <div className="text-sm font-semibold text-black leading-[21px]">Admin</div>
-                      <div className="text-xs text-[#4A5565] leading-[18px]">admin@scamalert.vn</div>
+                      <div className="text-sm font-semibold text-black leading-[21px]">{displayName}</div>
+                      <div className="text-xs text-[#4A5565] leading-[18px]">{displayEmail}</div>
                     </div>
                     <ChevronDown className="h-5 w-5 text-[#4A5565]" strokeWidth={1.67} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-semibold text-[#1E293B]">Admin</p>
-                    <p className="text-xs text-[#99A1AF]">admin@scamalert.vn</p>
+                    <p className="text-sm font-semibold text-[#1E293B]">{displayName}</p>
+                    <p className="text-xs text-[#99A1AF]">{displayEmail}</p>
                   </div>
                   <DropdownMenuSeparator />
 

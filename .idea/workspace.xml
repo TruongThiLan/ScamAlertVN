@@ -5,11 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Scam Alert Management System.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Scam Alert Management System.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/backend/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/Profile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/Profile.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/dist/assets/index-DJVTCixC.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/dist/assets/index-UfXJgRWh.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/dist/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/components/AdminHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/components/AdminHeader.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

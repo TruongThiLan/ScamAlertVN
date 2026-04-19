@@ -45,6 +45,53 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'reputation_score', 'role', 'role_name', 'is_staff',
             'created_date', 'updated_date',
         ]
+        extra_kwargs = {
+            'username': {
+                'validators': [],
+                'error_messages': {
+                    'blank': 'Tên đăng nhập không được để trống.',
+                    'required': 'Tên đăng nhập không được để trống.',
+                }
+            },
+            'email': {
+                'validators': [],
+                'error_messages': {
+                    'blank': 'Email không được để trống.',
+                    'required': 'Email không được để trống.',
+                    'invalid': 'Email phải đúng định dạng chuẩn.',
+                }
+            },
+        }
+
+    def validate_username(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Tên đăng nhập không được để trống.')
+        if len(value) < 6 or len(value) > 20:
+            raise serializers.ValidationError('Tên đăng nhập phải có độ dài từ 6 đến 20 ký tự.')
+        if re.search(r'\s', value):
+            raise serializers.ValidationError('Tên đăng nhập không được chứa khoảng trắng.')
+        if not re.fullmatch(r'[A-Za-z0-9]+', value):
+            raise serializers.ValidationError('Tên đăng nhập chỉ được bao gồm chữ cái và chữ số.')
+
+        queryset = User.objects.filter(username__iexact=value)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError('Tên đăng nhập đã tồn tại.')
+        return value
+
+    def validate_email(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Email không được để trống.')
+
+        queryset = User.objects.filter(email__iexact=value)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError('Email đã tồn tại.')
+        return value
 
 
 class UserBriefSerializer(serializers.ModelSerializer):
@@ -61,8 +108,35 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email']
         read_only_fields = ['id']
+        extra_kwargs = {
+            'username': {
+                'validators': [],
+                'error_messages': {
+                    'blank': 'Tên đăng nhập không được để trống.',
+                    'required': 'Tên đăng nhập không được để trống.',
+                }
+            },
+            'email': {
+                'validators': [],
+                'error_messages': {
+                    'blank': 'Email không được để trống.',
+                    'required': 'Email không được để trống.',
+                    'invalid': 'Email phải đúng định dạng chuẩn.',
+                }
+            },
+        }
 
     def validate_username(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Tên đăng nhập không được để trống.')
+        if len(value) < 6 or len(value) > 20:
+            raise serializers.ValidationError('Tên đăng nhập phải có độ dài từ 6 đến 20 ký tự.')
+        if re.search(r'\s', value):
+            raise serializers.ValidationError('Tên đăng nhập không được chứa khoảng trắng.')
+        if not re.fullmatch(r'[A-Za-z0-9]+', value):
+            raise serializers.ValidationError('Tên đăng nhập chỉ được bao gồm chữ cái và chữ số.')
+
         queryset = User.objects.filter(username__iexact=value)
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
@@ -71,6 +145,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Email không được để trống.')
+
         queryset = User.objects.filter(email__iexact=value)
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)

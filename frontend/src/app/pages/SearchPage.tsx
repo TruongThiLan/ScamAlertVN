@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Search } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 import publicApi from '../../api/publicApi';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Button } from '../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 type PublicPost = {
   id: number;
@@ -41,32 +41,76 @@ export function SearchPage() {
   const [posts, setPosts] = useState<PublicPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchError, setSearchError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('latest');
 
   const title = useMemo(() => {
-    return keyword ? `Ket qua tim kiem cho "${keyword}"` : 'Tim kiem canh bao cong khai';
+    return keyword ? `Kết quả tìm kiếm cho "${keyword}"` : 'Tìm kiếm cảnh báo công khai';
   }, [keyword]);
+
+  const categories = useMemo(() => {
+    const categoryMap = new Map<number, { id: number; category_name: string; count: number }>();
+
+    posts.forEach((post) => {
+      const category = post.category_detail;
+      if (!category) return;
+
+      const existingCategory = categoryMap.get(category.id);
+      if (existingCategory) {
+        existingCategory.count += 1;
+      } else {
+        categoryMap.set(category.id, { id: category.id, category_name: category.category_name, count: 1 });
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  }, [posts]);
+
+  const filteredPosts = useMemo(() => {
+    if (selectedCategory === 'all') return posts;
+    return posts.filter((post) => post.category_detail?.id.toString() === selectedCategory);
+  }, [posts, selectedCategory]);
+
+  const sortedPosts = useMemo(() => {
+    return [...filteredPosts].sort((a, b) => {
+      if (sortBy === 'trending') {
+        return (b.comments_count || 0) - (a.comments_count || 0);
+      }
+
+      const bTime = new Date(b.published_time || b.created_time).getTime();
+      const aTime = new Date(a.published_time || a.created_time).getTime();
+      return bTime - aTime;
+    });
+  }, [filteredPosts, sortBy]);
 
   useEffect(() => {
     setQuery(keyword);
+    setSelectedCategory('all');
   }, [keyword]);
 
   useEffect(() => {
     const controller = new AbortController();
 
     const fetchPublicPosts = async () => {
+      if (!keyword) {
+        setPosts([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError('');
 
       try {
-        // API public dung axios rieng, khong gui Authorization header.
         const response = await publicApi.get<PublicPost[] | { results?: PublicPost[] }>('public/posts/', {
-          params: keyword ? { search: keyword } : undefined,
+          params: { search: keyword },
           signal: controller.signal,
         });
         setPosts(getResults(response.data));
       } catch (err: any) {
         if (err.name !== 'CanceledError') {
-          setError('Khong the tai ket qua tim kiem. Vui long thu lai sau.');
+          setError('Hệ thống đang gặp vấn đề. Vui lòng thử lại sau.');
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -83,80 +127,165 @@ export function SearchPage() {
     event.preventDefault();
     const trimmedQuery = query.trim();
 
-    // Dong bo tu khoa tren o nhap vao Browser URL: /search?q=...
-    navigate(trimmedQuery ? `/search?q=${encodeURIComponent(trimmedQuery)}` : '/search');
+    if (!trimmedQuery) {
+      setSearchError('Vui lòng nhập từ khóa tìm kiếm.');
+      return;
+    }
+
+    setSearchError('');
+    navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
   };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="mb-3 text-3xl font-bold text-[#101828]">{title}</h1>
-          <p className="text-[#4A5565]">
-            Tra cuu cac bai canh bao da duoc duyet theo tieu de va noi dung.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mb-8 flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#99A1AF]" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Nhap tu khoa hoac noi dung can tim..."
-              className="h-12 rounded-[10px] border-[#D1D5DC] bg-white pl-10 text-base"
-            />
-          </div>
-          <Button type="submit" className="h-12 rounded-[10px] bg-[#E01515] px-6 text-white hover:bg-[#C10007]">
-            Tim kiem
-          </Button>
-        </form>
-
-        <div className="mb-4 text-sm text-[#4A5565]">
-          {loading ? 'Dang tim kiem...' : `Tim thay ${posts.length} ket qua`}
-        </div>
-
-        {error && (
-          <Card className="mb-4 border-[#F7BABA] bg-[#FFF1F1]">
-            <CardContent className="py-4 text-[#C10007]">{error}</CardContent>
-          </Card>
-        )}
-
-        {!loading && !error && posts.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center">
-              <p className="font-medium text-[#1E293B]">Khong tim thay ket qua phu hop</p>
-              <p className="mt-2 text-sm text-[#6A7282]">Thu lai voi tu khoa hoac noi dung khac.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <Link
-                key={post.id}
-                to={`/posts/${post.id}`}
-                className="block rounded-[10px] border border-[#D1D5DC] bg-white p-5 shadow-sm transition hover:border-[#E01515] hover:shadow-md"
+      <div className="flex">
+        <aside className="min-h-screen w-[320px] shrink-0 border-r border-[#D1D5DC] bg-white">
+          <div className="p-6">
+            <h2 className="mb-6 text-lg font-semibold text-[#111827]">Danh mục lừa đảo</h2>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('all')}
+                className={`group flex w-full items-center justify-between rounded-[10px] border px-3 py-2 transition-all ${
+                  selectedCategory === 'all' ? 'border-[#F7BABA] bg-[#FFF1F1]' : 'border-transparent bg-white hover:bg-[#FFF5F5]'
+                }`}
               >
-                <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-[#6A7282]">
-                  {post.category_detail?.category_name && (
-                    <span className="rounded-full border border-[#E01515] px-3 py-1 text-[#E01515]">
-                      {post.category_detail.category_name}
-                    </span>
-                  )}
-                  <span>{post.user_detail?.username ?? 'Nguoi dung an danh'}</span>
-                  <span>{post.comments_count ?? 0} binh luan</span>
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-sm font-semibold ${
+                      selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                    }`}
+                  >
+                    {posts.length}
+                  </div>
+                  <span className={`font-medium ${selectedCategory === 'all' ? 'text-[#E01515]' : 'text-[#111827]'}`}>
+                    Tất cả
+                  </span>
                 </div>
+                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+              </button>
 
-                <h2 className="mb-2 text-xl font-semibold text-[#1E293B]">{post.title}</h2>
-                <p className="mb-4 text-[#4A5565]">{makeExcerpt(post.content)}</p>
-
-                <span className="text-sm font-medium text-[#E01515]">Xem chi tiet canh bao</span>
-              </Link>
-            ))}
+              {categories.map((category) => {
+                const isActive = selectedCategory === category.id.toString();
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => setSelectedCategory(category.id.toString())}
+                    className={`group flex w-full items-center justify-between rounded-[10px] border px-3 py-2 transition-all ${
+                      isActive ? 'border-[#F7BABA] bg-[#FFF1F1]' : 'border-transparent bg-white hover:bg-[#FFF5F5]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-sm font-semibold ${
+                          isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                        }`}
+                      >
+                        {category.count}
+                      </div>
+                      <span className={`font-medium ${isActive ? 'text-[#E01515]' : 'text-[#111827]'}`}>
+                        {category.category_name}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
-      </main>
+        </aside>
+
+        <main className="flex-1 px-[88px] py-8">
+          <div className="max-w-[943px]">
+            <div className="mb-8">
+              <h1 className="mb-3 text-3xl font-bold text-[#101828]">{title}</h1>
+              <p className="text-[#4A5565]">Tra cứu các bài cảnh báo đã được duyệt theo tiêu đề và nội dung.</p>
+            </div>
+
+            <div className="mb-8 flex gap-4">
+              <form onSubmit={handleSubmit} className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#99A1AF]" />
+                  <Input
+                    type="search"
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      if (searchError) setSearchError('');
+                    }}
+                    placeholder="Nhập từ khóa hoặc nội dung cần tìm..."
+                    className={`h-12 rounded-[10px] border-[#D1D5DC] bg-white pl-10 text-base ${
+                      searchError ? 'border-[#E01515] focus-visible:ring-[#E01515]' : ''
+                    }`}
+                    aria-invalid={Boolean(searchError)}
+                  />
+                </div>
+              </form>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="h-12 w-[200px] rounded-[10px] bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="latest">Mới nhất</SelectItem>
+                  <SelectItem value="trending">Thịnh hành</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {searchError && <p className="-mt-6 mb-6 text-sm font-medium text-[#E01515]">{searchError}</p>}
+
+            <div className="mb-4 text-sm text-[#4A5565]">
+              {loading ? 'Đang tìm kiếm...' : `Tìm thấy ${sortedPosts.length} kết quả`}
+            </div>
+
+            {error && (
+              <Card className="mb-4 border-[#F7BABA] bg-[#FFF1F1]">
+                <CardContent className="py-4 text-[#C10007]">{error}</CardContent>
+              </Card>
+            )}
+
+            {!loading && !error && sortedPosts.length === 0 ? (
+              <Card>
+                <CardContent className="py-10 text-center">
+                  {keyword ? (
+                    <>
+                      <p className="font-medium text-[#1E293B]">Không tìm thấy kết quả.</p>
+                      <p className="mt-2 text-sm text-[#6A7282]">Vui lòng nhập lại.</p>
+                    </>
+                  ) : (
+                    <p className="font-medium text-[#1E293B]">Nhập từ khóa để tìm kiếm bài viết công khai.</p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {sortedPosts.map((post) => (
+                  <Link
+                    key={post.id}
+                    to={`/posts/${post.id}`}
+                    className="block rounded-[10px] border border-[#D1D5DC] bg-white p-5 shadow-sm transition hover:border-[#E01515] hover:shadow-md"
+                  >
+                    <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-[#6A7282]">
+                      {post.category_detail?.category_name && (
+                        <span className="rounded-full border border-[#E01515] px-3 py-1 text-[#E01515]">
+                          {post.category_detail.category_name}
+                        </span>
+                      )}
+                      <span>{post.user_detail?.username ?? 'Người dùng ẩn danh'}</span>
+                      <span>{post.comments_count ?? 0} bình luận</span>
+                    </div>
+
+                    <h2 className="mb-2 text-xl font-semibold text-[#1E293B]">{post.title}</h2>
+                    <p className="mb-4 text-[#4A5565]">{makeExcerpt(post.content)}</p>
+
+                    <span className="text-sm font-medium text-[#E01515]">Xem chi tiết cảnh báo</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

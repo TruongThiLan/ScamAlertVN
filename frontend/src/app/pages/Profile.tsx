@@ -30,10 +30,36 @@ const get_api_error_message = (error: any) => {
   return 'Có lỗi xảy ra. Vui lòng thử lại.';
 };
 
+const usernamePattern = /^[A-Za-z0-9]+$/;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const validateProfileUsername = (value: string) => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return 'Tên đăng nhập không được để trống';
+  if (trimmedValue.length < 6 || trimmedValue.length > 20) {
+    return 'Tên đăng nhập phải có độ dài từ 6 đến 20 ký tự';
+  }
+  if (/\s/.test(value)) return 'Tên đăng nhập không được chứa khoảng trắng';
+  if (!usernamePattern.test(trimmedValue)) return 'Tên đăng nhập chỉ được bao gồm chữ cái và chữ số';
+  return '';
+};
+
+const validateProfileEmail = (value: string) => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return 'Email không được để trống';
+  if (!emailPattern.test(trimmedValue)) return 'Email phải đúng định dạng chuẩn';
+  return '';
+};
+
 export function Profile() {
   const { user, updateUser } = useAuth();
   const [username, setUsername] = useState(user?.username || user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [usernameServerError, setUsernameServerError] = useState('');
+  const [emailServerError, setEmailServerError] = useState('');
+  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -50,6 +76,64 @@ export function Profile() {
     setEmail(user?.email || '');
   }, [user]);
 
+  const usernameClientError = validateProfileUsername(username);
+  const emailClientError = validateProfileEmail(email);
+  const usernameError = usernameClientError || usernameServerError;
+  const emailError = emailClientError || emailServerError;
+  const showUsernameError = usernameTouched && Boolean(usernameError);
+  const showEmailError = emailTouched && Boolean(emailError);
+
+  useEffect(() => {
+    setUsernameServerError('');
+    setEmailServerError('');
+
+    if (!user) return;
+
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
+    const currentUsername = (user.username || user.name || '').trim();
+    const currentEmail = (user.email || '').trim();
+    const shouldCheckUsername = usernameTouched && !usernameClientError && trimmedUsername !== currentUsername;
+    const shouldCheckEmail = emailTouched && !emailClientError && trimmedEmail !== currentEmail;
+
+    if (!shouldCheckUsername && !shouldCheckEmail) {
+      setIsCheckingProfile(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsCheckingProfile(true);
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await api.get('users/profile-availability/', {
+          params: {
+            ...(shouldCheckUsername ? { username: trimmedUsername } : {}),
+            ...(shouldCheckEmail ? { email: trimmedEmail } : {}),
+          },
+        });
+
+        if (isCancelled) return;
+        setUsernameServerError(response.data?.username || '');
+        setEmailServerError(response.data?.email || '');
+      } catch {
+        if (!isCancelled) {
+          toast.error('Không thể kiểm tra thông tin. Vui lòng thử lại sau.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsCheckingProfile(false);
+        }
+      }
+    }, 400);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timeoutId);
+      setIsCheckingProfile(false);
+    };
+  }, [email, emailClientError, emailTouched, user, username, usernameClientError, usernameTouched]);
+
   if (!user) {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center px-4">
@@ -65,10 +149,31 @@ export function Profile() {
 
   const handleUpdateProfileSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    setUsernameTouched(true);
+    setEmailTouched(true);
+    if (usernameError || emailError) {
+      toast.error('Dữ liệu không hợp lệ. Vui lòng kiểm tra và nhập lại.');
+      return;
+    }
+    if (isCheckingProfile) {
+      toast.error('Hệ thống đang kiểm tra thông tin. Vui lòng thử lại sau giây lát.');
+      return;
+    }
     setIsUpdateProfileAlertOpen(true);
   };
 
   const confirmUpdateProfile = async () => {
+    if (usernameError || emailError) {
+      toast.error('Dữ liệu không hợp lệ. Vui lòng kiểm tra và nhập lại.');
+      setIsUpdateProfileAlertOpen(false);
+      return;
+    }
+    if (isCheckingProfile) {
+      toast.error('Hệ thống đang kiểm tra thông tin. Vui lòng thử lại sau giây lát.');
+      setIsUpdateProfileAlertOpen(false);
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
       // API tra ve user moi nhat; updateUser se set lai AuthContext de Header doi ngay.
@@ -148,11 +253,19 @@ export function Profile() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
                     <Input
                       value={username}
-                      onChange={(event) => setUsername(event.target.value)}
-                      className="pl-10 bg-white rounded-[10px] h-12 border-[#D1D5DC]"
+                      onChange={(event) => {
+                        setUsernameTouched(true);
+                        setUsername(event.target.value);
+                      }}
+                      onBlur={() => setUsernameTouched(true)}
+                      aria-invalid={showUsernameError}
+                      className={`pl-10 bg-white rounded-[10px] h-12 ${
+                        showUsernameError ? 'border-[#E01515] focus-visible:ring-[#E01515]' : 'border-[#D1D5DC]'
+                      }`}
                       required
                     />
                   </div>
+                  {showUsernameError && <p className="text-[#E01515] text-sm mt-2 font-medium">{usernameError}</p>}
                 </div>
 
                 <div>
@@ -164,18 +277,26 @@ export function Profile() {
                     <Input
                       type="email"
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      className="pl-10 bg-white rounded-[10px] h-12 border-[#D1D5DC]"
+                      onChange={(event) => {
+                        setEmailTouched(true);
+                        setEmail(event.target.value);
+                      }}
+                      onBlur={() => setEmailTouched(true)}
+                      aria-invalid={showEmailError}
+                      className={`pl-10 bg-white rounded-[10px] h-12 ${
+                        showEmailError ? 'border-[#E01515] focus-visible:ring-[#E01515]' : 'border-[#D1D5DC]'
+                      }`}
                       required
                     />
                   </div>
+                  {showEmailError && <p className="text-[#E01515] text-sm mt-2 font-medium">{emailError}</p>}
                 </div>
 
                 <div className="flex justify-center pt-4">
                   <Button
                     type="submit"
                     className="bg-[#E01515] hover:bg-[#C10007] text-white rounded-[8px] px-8 py-2 h-11 text-base font-medium shadow-sm transition-all"
-                    disabled={isSavingProfile}
+                    disabled={isSavingProfile || isCheckingProfile}
                   >
                     Lưu thay đổi
                   </Button>

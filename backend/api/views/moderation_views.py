@@ -69,7 +69,7 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
     def get_permissions(self):
-        if self.action in ['me', 'profile', 'change_password']:
+        if self.action in ['me', 'profile', 'profile_availability', 'change_password']:
             return [permissions.IsAuthenticated()]
         if self.action in ['list', 'create', 'destroy']:
             return [IsAdminRole()]
@@ -105,6 +105,28 @@ class UserViewSet(viewsets.ModelViewSet):
 
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='profile-availability',
+    )
+    def profile_availability(self, request):
+        """Kiem tra username/email co bi trung voi user khac khong."""
+        username = request.query_params.get('username', '').strip()
+        email = request.query_params.get('email', '').strip()
+        errors = {}
+
+        if username:
+            username_exists = User.objects.filter(username__iexact=username).exclude(pk=request.user.pk).exists()
+            errors['username'] = 'Tên đăng nhập đã tồn tại.' if username_exists else ''
+
+        if email:
+            email_exists = User.objects.filter(email__iexact=email).exclude(pk=request.user.pk).exists()
+            errors['email'] = 'Email đã tồn tại.' if email_exists else ''
+
+        return Response(errors, status=status.HTTP_200_OK)
 
     @action(
         detail=False,

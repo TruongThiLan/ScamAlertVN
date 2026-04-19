@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+import re
 
 from api.models import Comment, Post, ScamCategory
 
@@ -8,12 +9,59 @@ User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(
+        write_only=True,
+        min_length=6,
+        error_messages={
+            'blank': 'Mật khẩu không được để trống.',
+            'required': 'Mật khẩu không được để trống.',
+            'min_length': 'Mật khẩu phải có ít nhất 6 ký tự.',
+        },
+    )
 
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password']
         read_only_fields = ['id']
+        extra_kwargs = {
+            'username': {
+                'validators': [],
+                'error_messages': {
+                    'blank': 'Tên đăng nhập không được để trống.',
+                    'required': 'Tên đăng nhập không được để trống.',
+                }
+            },
+            'email': {
+                'validators': [],
+                'error_messages': {
+                    'blank': 'Email không được để trống.',
+                    'required': 'Email không được để trống.',
+                    'invalid': 'Email phải đúng định dạng chuẩn.',
+                }
+            },
+        }
+
+    def validate_username(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Tên đăng nhập không được để trống.')
+        if len(value) < 6 or len(value) > 20:
+            raise serializers.ValidationError('Tên đăng nhập phải có độ dài từ 6 đến 20 ký tự.')
+        if re.search(r'\s', value):
+            raise serializers.ValidationError('Tên đăng nhập không được chứa khoảng trắng.')
+        if not re.fullmatch(r'[A-Za-z0-9]+', value):
+            raise serializers.ValidationError('Tên đăng nhập chỉ được bao gồm chữ cái và chữ số.')
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('Tên đăng nhập đã tồn tại.')
+        return value
+
+    def validate_email(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Email không được để trống.')
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('Email đã tồn tại.')
+        return value
 
     def create(self, validated_data):
         return User.objects.create_user(

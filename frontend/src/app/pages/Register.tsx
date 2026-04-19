@@ -233,7 +233,7 @@ export function Register() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/')}
               className="flex-1 bg-white border-[#D1D5DC] text-[#101828] h-12 rounded-[10px] hover:bg-gray-50 text-base font-medium"
             >
               Hủy

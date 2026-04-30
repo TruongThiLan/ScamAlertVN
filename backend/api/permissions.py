@@ -1,21 +1,23 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-
 class IsAdminRole(BasePermission):
     """
-    Chỉ cho phép Admin thực hiện.
+    Phân quyền chỉ cho phép những người dùng có vai trò là 'Admin' truy cập.
     Admin = user.is_staff == True HOẶC user.role.role_name == 'Admin'
     """
     message = 'Bạn không có quyền thực hiện thao tác này. Chỉ Admin mới được phép.'
 
     def has_permission(self, request, view):
+        # Người dùng phải đăng nhập trước
         if not request.user or not request.user.is_authenticated:
             return False
+            
+        # Kiểm tra vai trò của người dùng (Staff, Superuser hoặc Role Admin)
         return (
             request.user.is_staff
-            or (request.user.role is not None and request.user.role.role_name == 'Admin')
+            or request.user.is_superuser
+            or (request.user.role is not None and request.user.role.role_name.lower() == 'admin')
         )
-
 
 class IsAdminOrReadOnly(BasePermission):
     """
@@ -28,12 +30,12 @@ class IsAdminOrReadOnly(BasePermission):
         # Cho phép xem (SAFE_METHODS) với tất cả mọi người (kể cả Khách)
         if request.method in SAFE_METHODS:
             return True
-        
         # Các thao tác thay đổi dữ liệu yêu cầu phải là Admin
         if not request.user or not request.user.is_authenticated:
             return False
             
         return (
             request.user.is_staff
-            or (request.user.role is not None and request.user.role.role_name == 'Admin')
+            or request.user.is_superuser
+            or (request.user.role is not None and request.user.role.role_name.lower() == 'admin')
         )

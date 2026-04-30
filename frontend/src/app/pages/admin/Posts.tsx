@@ -51,7 +51,7 @@ export function AdminPosts() {
       post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter ? post.category?.id === categoryFilter : true;
     const matchesStatus =
-      statusFilter === 'all' || post.status.toLowerCase() === statusFilter.toLowerCase();
+      statusFilter === 'all' || post.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 

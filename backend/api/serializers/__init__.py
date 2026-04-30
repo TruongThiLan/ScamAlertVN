@@ -21,6 +21,7 @@ from api.serializers.interact_serializers import (
     CommentSerializer,
     ContentReportSerializer,
     ContentReportCreateSerializer,
+    NotificationSerializer,
 )
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     'CommentSerializer',
     'ContentReportSerializer',
     'ContentReportCreateSerializer',
+    'NotificationSerializer',
 ]

@@ -73,6 +73,8 @@ export function AdminLayout() {
       const res = await api.get('posts/all/');
       const results = res.data?.results ?? res.data ?? [];
       setPosts(results.map(adaptPost));
+      console.log("DEBUG: Posts Loaded:", results.map(adaptPost));
+      console.log("DEBUG: Categories Loaded:", categories);
     } catch (err) {
       console.error('Không thể tải danh sách bài viết:', err);
     } finally {
@@ -99,16 +101,18 @@ export function AdminLayout() {
   }, [fetchPosts, fetchCategories]);
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
+    if (!user || user.role?.toLowerCase() !== 'admin') {
       navigate('/');
     }
   }, [user, navigate]);
 
-  if (!user || user.role !== 'admin') return null;
+  if (!user || user.role?.toLowerCase() !== 'admin') return null;
 
   const getPendingCount = (categoryId?: string) =>
     posts.filter(
-      (p) => p.status === 'PENDING' && (!categoryId || p.category?.id === categoryId)
+      (p) => 
+        String(p.status).toUpperCase() === 'PENDING' && 
+        (!categoryId || String(p.category?.id) === String(categoryId))
     ).length;
 
   const selectedCategory = new URLSearchParams(location.search).get('category');

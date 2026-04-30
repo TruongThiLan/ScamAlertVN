@@ -4,135 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
+<<<<<<< HEAD
+    <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="" />
+=======
     <list default="true" id="23782baa-8f5c-4525-9d73-db01f7824088" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.ai/mcp/mcp.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/migrations/0003_post_images_post_is_anonymous.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/migrations/0004_alter_post_images_alter_post_is_anonymous.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/migrations/0005_auditlog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/migrations/0006_blacklist.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/migrations/0007_alter_contentreport_target_type_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/migrations/0008_remove_post_images_alter_reaction_reaction_type.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/migrations/0009_comment_is_anonymous.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/serializers/interact_serializers.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/serializers/post_serializers.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/serializers/scam_serializers.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/serializers/user_serializers.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/urls/interact_urls.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/views/interact_views.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/views/post_views.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/views/scam_views.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/api/views/user_views.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/comments/37/Screenshot_20260424_072834.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/10/đá bóng lớp 2025_7.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/11/20-10-2025.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/12/đá bóng lớp 2025.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/12/đá bóng lớp 2025_2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/13/đá bóng lớp 2025_3.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/13/đá bóng lớp 2025_4.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/14/đá bóng lớp 2025_5.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/14/đá bóng lớp 2025_6.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/14/đá bóng lớp 2025_7.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/14/đá bóng lớp 2025_8.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/15/z7247236009877_e90cc78883fd7c4a783aac08fa66c88a.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/15/z7247236014450_2635e64a687312358e483adc67463443.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/15/z7247236040240_4c434ca7982e392eecc72342dc530f79.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/16/TECHTONIC ngày hội tsv 51K.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/17/z6981236197845_0817c5beff138b6ad3b6580566eec625.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/18/ngày hội tsv 51K.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/19/Người trong ngành MIS.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/20/370295235_353841010497991_4812242502153362418_n.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/20/396461190_2776367132502295_6987749574579641140_n.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/21/20-10-2025-2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/21/20-10-2025.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/22/đá bóng lớp 2025.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/22/đá bóng lớp 2025_2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/23/đá bóng lớp 2025_5.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/23/đá bóng lớp 2025_6.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/24/đá bóng lớp 2025_3.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/24/đá bóng lớp 2025_4.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/25/đá bóng lớp 2025_7.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/25/đá bóng lớp 2025_8.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/26/z7247236009877_e90cc78883fd7c4a783aac08fa66c88a.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/26/z7247236014450_2635e64a687312358e483adc67463443.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/26/z7247236040240_4c434ca7982e392eecc72342dc530f79.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/27/DSC03385.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/27/z6981236197845_0817c5beff138b6ad3b6580566eec625.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/28/ngày hội tsv 51K.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/29/CSLT7_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/29/CSLT7_2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/29/CSLT7_3.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/29/CSLT7_4.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/29/Người trong ngành MIS.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/30/chủ nhật xanh.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/31/370295235_353841010497991_4812242502153362418_n.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/31/396461190_2776367132502295_6987749574579641140_n.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/8/đá bóng lớp 2025_6.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/20-10-2025-2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/20-10-2025.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/z7247236009877_e90cc78883fd7c4a783aac08fa66c88a.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/z7247236014450_2635e64a687312358e483adc67463443.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/z7247236040240_4c434ca7982e392eecc72342dc530f79.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025_2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025_3.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025_4.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025_5.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025_6.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025_7.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/media/posts/9/đá bóng lớp 2025_8.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/4/z7247236009877_e90cc78883fd7c4a783aac08fa66c88a.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/4/z7247236014450_2635e64a687312358e483adc67463443.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/4/z7247236040240_4c434ca7982e392eecc72342dc530f79.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/5/đá bóng lớp 2025_5.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/6/z7247236040240_4c434ca7982e392eecc72342dc530f79.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/6/đá bóng lớp 2025_2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/6/đá bóng lớp 2025_4.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/6/đá bóng lớp 2025_5.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/6/đá bóng lớp 2025_7.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/6/đá bóng lớp 2025_8.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/z7247236009877_e90cc78883fd7c4a783aac08fa66c88a.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/z7247236014450_2635e64a687312358e483adc67463443.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/z7247236040240_4c434ca7982e392eecc72342dc530f79.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/đá bóng lớp 2025_4.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/đá bóng lớp 2025_5.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/đá bóng lớp 2025_6.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/đá bóng lớp 2025_7.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/posts/7/đá bóng lớp 2025_8.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/dist/assets/index-B9dBTfgF.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/dist/assets/index-Bs4E380A.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/dist/assets/index-Bz2JiJY0.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/dist/assets/index-DCQbKiUm.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/dist/assets/index-DSynuzgw.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/dist/assets/index-xqvorKcW.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/components/Avatar.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/components/Lightbox.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/permissions.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/permissions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/serializers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/serializers/moderation_serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/moderation_serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/urls/moderation_urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/urls/moderation_urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/views/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/views/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api/views/moderation_views.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/api/serializers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/api/urls/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/api/views/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Scam Alert Management System.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Scam Alert Management System.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/serializers/moderation_serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/urls/moderation_urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api/views/moderation_views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/backend/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/components/AdminHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/components/AdminHeader.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/components/Header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/components/Header.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/components/PostCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/components/PostCard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/CreatePost.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/CreatePost.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/EditPost.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/EditPost.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/Home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/Home.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/MyPosts.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/MyPosts.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/PostDetail.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/PostDetail.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/SavedPosts.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/SavedPosts.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/UserProfile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/UserProfile.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/admin/AdminLayout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/admin/AdminLayout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/admin/Categories.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/admin/Categories.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/admin/Posts.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/admin/Posts.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/Login.tsx" afterDir="false" />
     </list>
+>>>>>>> origin/main
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -163,6 +51,7 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
+<<<<<<< HEAD
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
@@ -171,13 +60,29 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "Merging main",
+    "git-widget-placeholder": "quan__ly__nguoi__dung",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "D:/HK6/ScamAlertVN",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
     "to.speed.mode.migration.done": "true"
+=======
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/HK6/ScamAlertVN&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
+>>>>>>> origin/main
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\HK6\ScamAlertVN\backend\api\urls" />

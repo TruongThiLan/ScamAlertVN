@@ -33,8 +33,9 @@ export function Home() {
           api.get('categories/')
         ]);
 
-        setPosts(postsRes.data);
-        setCategories(categoriesRes.data);
+        // Trích xuất mảng results từ response đã phân trang
+        setPosts(postsRes.data.results || []);
+        setCategories(categoriesRes.data.results || []);
       } catch (err) {
         console.error("Lỗi lấy dữ liệu từ Backend:", err);
       } finally {

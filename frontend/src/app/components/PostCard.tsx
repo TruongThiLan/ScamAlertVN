@@ -6,7 +6,7 @@ import api from '../../api/axiosInstance';
 import { ReportDialog } from './ReportDialog';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { ThumbsUp, MessageCircle, Share2, AlertTriangle, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share2, AlertTriangle, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -179,7 +179,7 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
                 onClick={handleLikePost}
                 className={`flex items-center gap-1 transition-colors ${isLiked ? 'text-[#E01515]' : 'text-gray-600 hover:text-red-600'}`}
               >
-                <ThumbsUp className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
                 <span className="text-sm">{likesCount}</span>
               </button>
               <Link to={`/post/${post.id}`} className="flex items-center gap-1 text-gray-600 hover:text-[#E01515] transition-colors">

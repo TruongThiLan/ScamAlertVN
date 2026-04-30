@@ -42,6 +42,7 @@ export function PostDetail() {
   
   const [newComment, setNewComment] = useState('');
   const [newCommentImage, setNewCommentImage] = useState<{
+    file: File;
     previewUrl: string;
   } | null>(null);
   const [replyTo, setReplyTo] = useState<number | null>(null);
@@ -123,29 +124,61 @@ export function PostDetail() {
   const maxCategoryCount = Math.max(...categories.map(c => c.post_count || 0), 1);
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !user) return;
+    // Sửa lỗi logic: Kiểm tra an toàn xem có gửi chữ hoặc ảnh hay không
+    const hasText = newComment.trim().length > 0;
+    const hasImage = newCommentImage !== null && newCommentImage.file !== undefined;
+
+    if ((!hasText && !hasImage) || !user) return;
 
     try {
-      const res = await api.post('comments/', {
-        content: newComment,
-        post: post.id
+      const formData = new FormData();
+      formData.append('post', post.id.toString());
+
+      // Nếu chỉ có ảnh, gửi chuỗi mặc định
+      formData.append('content', hasText ? newComment.trim() : '[Hình ảnh đính kèm]');
+
+      // Nếu có ảnh, đính kèm một cách an toàn
+      if (hasImage) {
+        formData.append('attachments', newCommentImage.file);
+      }
+
+      // BẮT BUỘC: Ép Axios gửi dưới định dạng file (tránh bị lỗi mất ảnh)
+      await api.post('comments/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
-      setComments([...comments, res.data]);
+
+      // Lấy danh sách bình luận mới từ DB để render cả ảnh
+      const commentRes = await api.get('comments/', { params: { post: post.id } });
+      setComments(commentRes.data);
+
+      // Reset form
       setNewComment('');
       setNewCommentImage(null);
       toast.success('Đã gửi bình luận');
-    } catch (err) {
+    } catch (err: any) {
       toast.error('Không thể gửi bình luận');
+      console.error('Chi tiết lỗi:', err);
     }
   };
 
   const handleCommentImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const target = e.target;
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
+//     // Cần lưu giữ trực tiếp đối tượng selectedFile (File gốc)
+//     newCommentImage.value = {
+//       file: selectedFile,
+//       previewUrl: URL.createObjectURL(selectedFile)
+//     };
+
+      // Reset input
+//     target.value = '';
     if (!selectedFile.type.startsWith('image/')) {
       toast.error('Chỉ hỗ trợ tệp ảnh cho bình luận.');
-      e.target.value = '';
+      target.value = '';
       return;
     }
 
@@ -154,8 +187,8 @@ export function PostDetail() {
     }
 
     const previewUrl = URL.createObjectURL(selectedFile);
-    setNewCommentImage({ previewUrl });
-    e.target.value = '';
+    setNewCommentImage({ file: selectedFile, previewUrl });
+    target.value = '';
   };
 
   const removeCommentImage = () => {
@@ -284,24 +317,58 @@ export function PostDetail() {
   const renderComment = (comment: Comment, isReply = false) => (
     <div key={comment.id} className={`${isReply ? 'ml-14' : ''}`}>
       <div className="flex gap-3">
-        <Link to={`/user/${comment.user_detail.id}`} className="flex-shrink-0">
-          <Avatar name={comment.user_detail.username} size="md" />
-        </Link>
+        {comment.is_anonymous ? (
+          <div className="flex-shrink-0 cursor-default">
+            <Avatar name="?" size="md" className="grayscale" />
+          </div>
+        ) : (
+          <Link to={`/user/${comment.user_detail.id}`} className="flex-shrink-0">
+            <Avatar name={comment.user_detail.username} size="md" />
+          </Link>
+        )}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <Link to={`/user/${comment.user_detail.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
-              {comment.user_detail.username}
-            </Link>
-                      
-            <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
-              <span className="text-[#C10007] text-xs font-semibold">⭐ {comment.user_detail.reputation_score}</span>
-            </div>
+            {comment.is_anonymous ? (
+              <span className="font-semibold text-[#1E293B] italic text-gray-500">
+                {comment.user_detail.username}
+              </span>
+            ) : (
+              <>
+                <Link to={`/user/${comment.user_detail.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
+                  {comment.user_detail.username}
+                </Link>
+
+                <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
+                  <span className="text-[#C10007] text-xs font-semibold">⭐ {comment.user_detail.reputation_score}</span>
+                </div>
+              </>
+            )}
               
             <span className="text-sm text-[#99A1AF]">
               • {formatDistanceToNow(new Date(comment.created_time), { addSuffix: true, locale: vi })}
             </span>
           </div>
-          {comment.content && <p className="text-[#4A5565] mb-2">{comment.content}</p>}
+          {comment.content && comment.content !== '[Hình ảnh đính kèm]' && (<p className="text-[#4A5565] mb-2">{comment.content}</p>)}
+          {comment.images && comment.images.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {comment.images.map((img: string, idx: number) => {
+                const src = img.startsWith('http') ? img : `http://127.0.0.1:8000${img}`;
+                return (
+                  <img
+                    key={idx}
+                    src={src}
+                    alt="Ảnh bình luận"
+                    className="max-h-32 w-auto rounded-lg border border-[#D1D5DC] object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
+                    onClick={() => setLightbox({
+                      isOpen: true,
+                      images: comment.images.map((u: string) => u.startsWith('http') ? u : `http://127.0.0.1:8000${u}`),
+                      index: idx
+                    })}
+                  />
+                );
+              })}
+            </div>
+          )}
           <div className="flex items-center gap-4">
             <button
               onClick={() => handleLikeComment(comment.id)}
@@ -315,8 +382,8 @@ export function PostDetail() {
               }`}
               title={!user ? 'Vui lòng đăng nhập để thích bình luận' : ''}
             >
-              <ThumbsUp className={`h-4 w-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
-              <span>{commentLikes[comment.id] || 0} Thích</span>
+              <Heart className={`h-4 w-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
+              <span>{commentLikes[comment.id] || 0} </span>
             </button>
             <button 
               onClick={() => setReplyTo(comment.id)}
@@ -329,7 +396,11 @@ export function PostDetail() {
               title={!user ? 'Vui lòng đăng nhập để phản hồi' : ''}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>Phản hồi</span>
+              <span>
+                {comment.replies && comment.replies.length > 0
+                  ? `${comment.replies.length} Phản hồi`
+                  : 'Phản hồi'}
+              </span>
             </button>
             {user && (
               <button

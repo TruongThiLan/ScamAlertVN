@@ -140,6 +140,8 @@ class Comment(models.Model):
 
     content = models.TextField()
     created_time = models.DateTimeField(auto_now_add=True)
+    is_anonymous = models.BooleanField(default=False, help_text='True khi tác giả bình luận vào chính bài viết ẩn danh của mình. '
+            'Server tự set — FE không gửi trường này.')
 
     status = models.CharField(
         max_length=20,

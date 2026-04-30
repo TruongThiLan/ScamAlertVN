@@ -90,7 +90,7 @@ export function Register() {
     setLoading(true);
 
     try {
-      const success = await register(email, password, name);
+      const success = await register({ email, password, username: name });
       if (success) {
         toast.success('Đăng ký thành công!');
         navigate('/');

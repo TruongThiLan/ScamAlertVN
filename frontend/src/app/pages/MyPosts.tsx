@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Search, Plus, Edit, Trash2, Heart, MessageCircle, Share2, Calendar, History, Shield, Loader2 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import { toast } from 'sonner';
+import { Avatar } from '../components/Avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 
 export function MyPosts() {
   const navigate = useNavigate();
@@ -102,9 +104,7 @@ export function MyPosts() {
 
             {/* LEFT */}
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-full bg-[#E60012] flex items-center justify-center text-white font-bold text-xl shadow-md">
-                {getInitials(user.name || user.username)}
-              </div>
+              <Avatar name={user.name || user.username} size="xl" className="shadow-md" />
 
               <div>
                 <h1 className="text-[22px] font-bold text-[#111827] mb-1">
@@ -113,7 +113,7 @@ export function MyPosts() {
 
                 <div className="flex items-center gap-2 text-[14px] text-[#4B5563]">
                   <Calendar className="w-4 h-4 text-[#6B7280]" />
-                  <span>Tham gia từ {user.created_date ? new Date(user.created_date).toLocaleDateString('vi-VN') : 'Đang cập nhật'}</span>
+                  <span>Tham gia từ {user.created_date ? new Date(user.created_date).toLocaleDateString('vi-VN') : '10/03/2026'}</span>
                 </div>
               </div>
             </div>
@@ -187,9 +187,28 @@ export function MyPosts() {
                   </div>
 
                   <div className="flex gap-2">
-                    <button onClick={() => handleEdit(post.id)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
-                      <Edit className="h-4 w-4" />
-                    </button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => post.status !== 'APPROVED' && handleEdit(post.id)}
+                            disabled={post.status === 'APPROVED'}
+                            className={`p-2 rounded-full transition-all ${post.status === 'APPROVED'
+                                ? 'text-gray-200 cursor-not-allowed'
+                                : 'text-gray-400 hover:text-blue-500 hover:bg-blue-50'
+                              }`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        {post.status === 'APPROVED' && (
+                          <TooltipContent>
+                            <p className="text-xs">Không thể chỉnh sửa bài viết đã được đăng</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+
                     <button onClick={() => handleDelete(post.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
                       <Trash2 className="h-4 w-4" />
                     </button>

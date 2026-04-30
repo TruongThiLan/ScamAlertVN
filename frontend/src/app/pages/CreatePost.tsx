@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { categories, mockPosts, scamCategories } from '../data/mockData';
-import { ArrowLeft, Upload, Send, ChevronRight } from 'lucide-react';
+import { scamCategories } from '../data/mockData';
+import { ArrowLeft, Upload, Send, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
 import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
+import api from '../../api/axiosInstance';
+import { toast } from 'sonner';
 
 export function CreatePost() {
   const navigate = useNavigate();
@@ -12,6 +14,10 @@ export function CreatePost() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [content, setContent] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
@@ -21,16 +27,23 @@ export function CreatePost() {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('categories/');
+        setCategories(res.data.map((c: any) => ({ id: c.id, name: c.category_name })));
+      } catch (err) {
+        toast.error('Không thể tải danh mục');
+      }
+    };
+    fetchCategories();
+  }, []);
+
   if (!user) {
     return null;
   }
 
   const hasUnsavedChanges = title.trim() || content.trim() || category;
-
-  const approvedPosts = mockPosts.filter(post => post.status === 'approved');
-  
-  const categoryCounts = scamCategories.map(c => approvedPosts.filter(p => p.category.id === c.id).length);
-  const maxCategoryCount = Math.max(...categoryCounts, 1);
 
   const handleBack = () => {
     if (hasUnsavedChanges) {
@@ -45,68 +58,60 @@ export function CreatePost() {
   };
 
   const handleSaveDraft = () => {
-    const selectedCategoryData = categories.find(c => c.id === category);
-    
-    const anonymousCount = mockPosts.filter((p: any) => p.isAnonymous).length + 1;
-    const postAuthor = isAnonymous 
-      ? { ...user, name: `Người tham gia ẩn danh ${anonymousCount}` } 
-      : user;
-
-    const newPost = {
-      id: `p${Date.now()}`,
-      title: title || 'Bài viết chưa có tiêu đề', 
-      content: content,
-      category: {
-        id: category || 'uncategorized',
-        name: selectedCategoryData ? selectedCategoryData.name : 'Chưa phân loại'
-      },
-      author: postAuthor, 
-      isAnonymous: isAnonymous,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      likes: 0,
-      comments: [],
-      status: 'draft', 
-    };
-
-    mockPosts.unshift(newPost as any);
     setShowUnsavedDialog(false); 
     alert('Đã lưu bản nháp thành công!');
     navigate('/my-posts'); 
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim() || !category || !content.trim()) {
-      alert('Vui lòng điền đầy đủ thông tin');
+      toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
 
-    const selectedCategoryData = categories.find(c => c.id === category);
-    const anonymousCount = mockPosts.filter((p: any) => p.isAnonymous).length + 1;
-    const postAuthor = isAnonymous 
-      ? { ...user, name: `Người tham gia ẩn danh ${anonymousCount}` } 
-      : user;
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('content', content);
+      formData.append('category', category);
+      formData.append('is_anonymous', String(isAnonymous));
 
-    const newPost = {
-      id: `p${Date.now()}`,
-      title: title,
-      content: content,
-      category: {
-        id: category,
-        name: selectedCategoryData ? selectedCategoryData.name : 'Chưa phân loại'
-      },
-      author: postAuthor,
-      isAnonymous: isAnonymous,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      likes: 0,
-      comments: [],
-      status: 'pending', 
-    };
+      selectedFiles.forEach(file => {
+        formData.append('attachments', file);
+      });
 
-    mockPosts.unshift(newPost as any);
+      await api.post('posts/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
 
-    setShowSuccessDialog(true);
+      setShowSuccessDialog(true);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.detail || 'Đã có lỗi xảy ra khi đăng bài';
+      toast.error(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        const url = URL.createObjectURL(file);
+        setImages(prev => [...prev, url]);
+        setSelectedFiles(prev => [...prev, file]);
+      }
+    }
+    e.target.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleCloseSuccess = () => {
@@ -123,31 +128,22 @@ export function CreatePost() {
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
 
             <div className="space-y-3">
-              {/* Tất cả */}
               <Link
                 to="/"
                 className="group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
-                    {approvedPosts.length}
+                    {categories.reduce((acc, c) => acc + ((c as any).post_count || 0), 0)}
                   </div>
-
                   <span className="text-left font-medium transition-colors duration-200 text-[#111827] group-hover:text-[#E01515]">
                     Tất cả
                   </span>
                 </div>
-
                 <ChevronRight className="h-5 w-5 shrink-0 transition-colors duration-200 text-[#99A1AF] group-hover:text-[#E01515]" />
               </Link>
 
-              {/* Các danh mục */}
-              {scamCategories.map((cat) => {
-                const categoryPostCount = approvedPosts.filter(
-                  (p) => p.category.id === cat.id
-                ).length;
-
-                return (
+              {categories.map((cat) => (
                   <Link
                     key={cat.id}
                     to={`/?category=${cat.id}`}
@@ -155,18 +151,15 @@ export function CreatePost() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
-                        {categoryPostCount}
+                        {(cat as any).post_count || 0}
                       </div>
-
                       <span className="text-left font-medium transition-colors duration-200 text-[#111827] group-hover:text-[#E01515]">
                         {cat.name}
                       </span>
                     </div>
-
                     <ChevronRight className="h-5 w-5 shrink-0 transition-colors duration-200 text-[#99A1AF] group-hover:text-[#E01515]" />
                   </Link>
-                );
-              })}
+                ))}
             </div>
           </div>
         </aside>
@@ -187,13 +180,12 @@ export function CreatePost() {
                 Chia sẻ thông tin và cảnh báo cho cộng đồng về các hành vi lừa đảo
               </p>
 
-              {/* Anonymous Toggle */}
               <div className="mb-6 pb-6 border-b border-[#D1D5DC]">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold mb-1">Đăng bài ẩn danh</h3>
                     <p className="text-sm text-[#99A1AF]">
-                      Tên và huy hiệu của bạn sẽ không được thể hiện trên bài viết.
+                      Tên của bạn sẽ được hiển thị dưới dạng "Người dùng ẩn danh" kèm theo ID.
                     </p>
                   </div>
                   <button
@@ -211,7 +203,6 @@ export function CreatePost() {
                 </div>
               </div>
 
-              {/* Title */}
               <div className="mb-6">
                 <label className="block font-semibold mb-2">
                   Tiêu đề bài viết <span className="text-[#E01515]">*</span>
@@ -225,7 +216,6 @@ export function CreatePost() {
                 />
               </div>
 
-              {/* Category */}
               <div className="mb-6">
                 <label className="block font-semibold mb-2">
                   Danh mục / Hình thức lừa đảo <span className="text-[#E01515]">*</span>
@@ -244,7 +234,6 @@ export function CreatePost() {
                 </select>
               </div>
 
-              {/* Content */}
               <div className="mb-6">
                 <label className="block font-semibold mb-2">
                   Nội dung bài viết <span className="text-[#E01515]">*</span>
@@ -263,11 +252,54 @@ export function CreatePost() {
 
               {/* Media Upload */}
               <div className="mb-6">
-                <label className="block font-semibold mb-2">Hình ảnh / Video</label>
-                <button className="flex items-center gap-2 px-4 py-3 rounded-[10px] border border-[#D1D5DC] text-[#4A5565] hover:border-[#E01515] hover:text-[#E01515] transition-colors">
-                  <Upload className="h-5 w-5" />
-                  <span>Tải ảnh/video lên</span>
-                </button>
+                <label className="block font-semibold mb-2">Hình ảnh chứng minh</label>
+                
+                {/* Preview Grid */}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    {images.map((url, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-[10px] overflow-hidden border border-[#D1D5DC] group">
+                        <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                        <button 
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-[#E01515] transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <label className="aspect-square rounded-[10px] border-2 border-dashed border-[#D1D5DC] flex flex-col items-center justify-center gap-1 text-[#99A1AF] hover:border-[#E01515] hover:text-[#E01515] transition-all cursor-pointer">
+                      <Plus className="w-6 h-6" />
+                      <span className="text-[10px] font-medium">Thêm ảnh</span>
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*,video/*" 
+                        className="hidden" 
+                        onChange={handleImageUpload} 
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {images.length === 0 && (
+                  <label className="flex flex-col items-center justify-center gap-3 w-full p-10 rounded-[10px] border-2 border-dashed border-[#D1D5DC] text-[#4A5565] hover:border-[#E01515] hover:text-[#E01515] transition-all cursor-pointer">
+                    <div className="w-12 h-12 rounded-full bg-[#F3F3F5] flex items-center justify-center">
+                      <Upload className="h-6 w-6" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium">Tải ảnh/video minh chứng</p>
+                      <p className="text-xs text-[#99A1AF]">Hỗ trợ JPG, PNG, GIF (Tối đa 5MB)</p>
+                    </div>
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*,video/*" 
+                        className="hidden" 
+                        onChange={handleImageUpload} 
+                      />
+                  </label>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-4 pt-6 border-t border-[#D1D5DC]">
@@ -279,10 +311,17 @@ export function CreatePost() {
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#E01515] text-white hover:bg-[#C10007] transition-colors font-medium"
+                  disabled={isSubmitting}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#E01515] text-white hover:bg-[#C10007] transition-colors font-medium ${
+                    isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <Send className="h-5 w-5" />
-                  Đăng bài
+                  {isSubmitting ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                  {isSubmitting ? 'Đang xử lý...' : 'Đăng bài'}
                 </button>
               </div>
             </div>

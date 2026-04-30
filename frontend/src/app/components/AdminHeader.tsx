@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { User, ChevronDown, LogOut, Home } from 'lucide-react';
+import { Avatar } from './Avatar';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -102,9 +103,7 @@ export function AdminHeader() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 px-4 h-[58px] bg-white rounded-[10px] border border-[#D1D5DC] hover:bg-gray-50 transition-colors">
-                    <div className="w-10 h-10 bg-[#E01515] rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-white" strokeWidth={2} />
-                    </div>
+                    <Avatar name={user.name || user.username} size="md" />
                     <div className="flex flex-col items-start">
                       <div className="text-sm font-semibold text-black leading-[21px]">{displayName}</div>
                       <div className="text-xs text-[#4A5565] leading-[18px]">{displayEmail}</div>

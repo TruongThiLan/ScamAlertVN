@@ -5,6 +5,7 @@ import { ShieldAlert, User, LogOut, LayoutDashboard, ChevronDown, Bell, Check } 
 import { useState, useEffect } from 'react';
 import { mockNotifications } from '../data/mockData';
 import { Notification } from '../types';
+import { Avatar } from './Avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -200,9 +201,7 @@ export function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 px-[16.8px] py-[8.8px] bg-white rounded-[10px] border border-[#D1D5DC] hover:bg-gray-50 transition-colors">
-                    <div className="w-10 h-10 bg-[#E01515] rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-white" />
-                    </div>
+                    <Avatar name={user.name || user.username} size="md" />
                     <div className="flex flex-col items-start">
                       <div className="text-sm font-semibold text-black">{user.name}</div>
                       <div className="text-xs text-[#4A5565]">{user.email}</div>

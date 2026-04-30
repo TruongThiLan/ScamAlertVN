@@ -23,6 +23,7 @@ export interface Post {
   createdAt: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'LOCKED';
   rejectionReason?: string;
+  images: string[];
 }
 
 // ─── Adapter: Chuyển response API → shape frontend cần ───────────────────────
@@ -35,6 +36,7 @@ function adaptPost(raw: any): Post {
     createdAt: raw.created_time ?? '',
     status: raw.status ?? 'PENDING',
     rejectionReason: raw.rejection_reason ?? undefined,
+    images: Array.isArray(raw.images) ? raw.images : [],
     author: raw.user_detail
       ? { id: String(raw.user_detail.id), name: raw.user_detail.username }
       : { id: String(raw.user ?? ''), name: '(unknown)' },
@@ -65,13 +67,14 @@ export function AdminLayout() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
-  // Kéo danh sách bài (tất cả trạng thái)
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
     try {
       const res = await api.get('posts/all/');
       const results = res.data?.results ?? res.data ?? [];
       setPosts(results.map(adaptPost));
+      console.log("DEBUG: Posts Loaded:", results.map(adaptPost));
+      console.log("DEBUG: Categories Loaded:", categories);
     } catch (err) {
       console.error('Không thể tải danh sách bài viết:', err);
     } finally {
@@ -79,7 +82,6 @@ export function AdminLayout() {
     }
   }, []);
 
-  // Kéo danh mục
   const fetchCategories = useCallback(async () => {
     setLoadingCategories(true);
     try {
@@ -98,7 +100,6 @@ export function AdminLayout() {
     fetchCategories();
   }, [fetchPosts, fetchCategories]);
 
-  // Kiểm tra quyền admin (dùng role từ AuthContext)
   useEffect(() => {
     if (!is_admin) {
       navigate('/');
@@ -109,7 +110,9 @@ export function AdminLayout() {
 
   const getPendingCount = (categoryId?: string) =>
     posts.filter(
-      (p) => p.status === 'PENDING' && (!categoryId || p.category?.id === categoryId)
+      (p) => 
+        String(p.status).toUpperCase() === 'PENDING' && 
+        (!categoryId || String(p.category?.id) === String(categoryId))
     ).length;
 
   const selectedCategory = new URLSearchParams(location.search).get('category');
@@ -129,34 +132,30 @@ export function AdminLayout() {
               {/* Tất cả */}
               <button
                 onClick={() => navigate('/admin/posts')}
-                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${
-                  isAllActive
+                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${isAllActive
                     ? 'bg-[#FFF1F1] border-[#F7BABA]'
                     : 'bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${
-                      isAllActive
+                    className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${isAllActive
                         ? 'bg-[#E01515] text-white'
                         : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
-                    }`}
+                      }`}
                   >
                     {loadingPosts ? '…' : getPendingCount()}
                   </div>
                   <span
-                    className={`text-left font-medium transition-colors duration-200 ${
-                      isAllActive ? 'text-[#E01515] font-semibold' : 'text-[#111827] group-hover:text-[#E01515]'
-                    }`}
+                    className={`text-left font-medium transition-colors duration-200 ${isAllActive ? 'text-[#E01515] font-semibold' : 'text-[#111827] group-hover:text-[#E01515]'
+                      }`}
                   >
                     Tất cả danh mục
                   </span>
                 </div>
                 <ChevronRight
-                  className={`h-5 w-5 shrink-0 transition-colors duration-200 ${
-                    isAllActive ? 'text-[#E01515]' : 'text-[#99A1AF] group-hover:text-[#E01515]'
-                  }`}
+                  className={`h-5 w-5 shrink-0 transition-colors duration-200 ${isAllActive ? 'text-[#E01515]' : 'text-[#99A1AF] group-hover:text-[#E01515]'
+                    }`}
                 />
               </button>
 
@@ -173,34 +172,30 @@ export function AdminLayout() {
                     <button
                       key={category.id}
                       onClick={() => navigate(`/admin/posts?category=${category.id}`)}
-                      className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${
-                        isActive
+                      className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${isActive
                           ? 'bg-[#FFF1F1] border-[#F7BABA]'
                           : 'bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${
-                            isActive
+                          className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${isActive
                               ? 'bg-[#E01515] text-white'
                               : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
-                          }`}
+                            }`}
                         >
                           {pendingCount}
                         </div>
                         <span
-                          className={`text-left font-medium transition-colors duration-200 ${
-                            isActive ? 'text-[#E01515] font-semibold' : 'text-[#111827] group-hover:text-[#E01515]'
-                          }`}
+                          className={`text-left font-medium transition-colors duration-200 ${isActive ? 'text-[#E01515] font-semibold' : 'text-[#111827] group-hover:text-[#E01515]'
+                            }`}
                         >
                           {category.name}
                         </span>
                       </div>
                       <ChevronRight
-                        className={`h-5 w-5 shrink-0 transition-colors duration-200 ${
-                          isActive ? 'text-[#E01515]' : 'text-[#99A1AF] group-hover:text-[#E01515]'
-                        }`}
+                        className={`h-5 w-5 shrink-0 transition-colors duration-200 ${isActive ? 'text-[#E01515]' : 'text-[#99A1AF] group-hover:text-[#E01515]'
+                          }`}
                       />
                     </button>
                   );

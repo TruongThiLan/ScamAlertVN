@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Lock, AlertTriangle, Trash2, LockOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import api from '../../../api/axiosInstance';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -20,61 +22,23 @@ import { Button } from '../../components/ui/button';
 
 interface User {
   id: string;
-  name: string;
+  username: string;
   email: string;
-  joinDate: string;
-  reputation: number;
-  status: 'active' | 'locked' | 'warning';
+  created_date: string;
+  reputation_score: number;
+  report_count: number;
+  status: 'active' | 'banned' | 'warning' | 'inactive';
+  remaining_lock_time?: string;
   avatar?: string;
+  role_name?: string;
 }
 
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Nguyễn Văn A',
-    email: 'vana.nguyen@example.com',
-    joinDate: '2024-01-15',
-    reputation: 2,
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Trần Thị B',
-    email: 'thib.tran@example.com',
-    joinDate: '2023-11-20',
-    reputation: 15,
-    status: 'warning',
-  },
-  {
-    id: '3',
-    name: 'Lê Văn C',
-    email: 'vanc.le@example.com',
-    joinDate: '2024-02-01',
-    reputation: 0,
-    status: 'active',
-  },
-  {
-    id: '4',
-    name: 'Phạm Thị D',
-    email: 'thid.pham@example.com',
-    joinDate: '2023-05-12',
-    reputation: 5,
-    status: 'active',
-  },
-  {
-    id: '5',
-    name: 'Nguyễn Thị E',
-    email: 'thie.nguyen@example.com',
-    joinDate: '2023-10-12',
-    reputation: 0,
-    status: 'active',
-  },
-];
 
 type DialogType = 'lock' | 'unlock' | 'warning' | 'delete' | null;
 
 export function AdminUsers() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -95,14 +59,56 @@ export function AdminUsers() {
   
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteDetails, setDeleteDetails] = useState('');
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
-    return matchesSearch && matchesStatus;
+  // Các state mới cho phân trang và lọc server-side
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterRole, setFilterRole] = useState('all');
+  const [totalCount, setTotalCount] = useState(0);
+  const [globalStats, setGlobalStats] = useState({
+    active: 0,
+    banned: 0,
+    inactive: 0
   });
+
+  // Reset về trang 1 khi thay đổi bộ lọc hoặc tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus, filterRole]);
+
+  const fetchUsers = async () => {
+    try {
+      // Gửi các tham số lọc lên server
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (filterStatus !== 'all') {
+        const backendStatus = filterStatus === 'locked' ? 'banned' : filterStatus;
+        params.append('status', backendStatus);
+      }
+      if (filterRole !== 'all') params.append('role', filterRole);
+      params.append('page', currentPage.toString());
+
+      const response = await api.get(`users/?${params.toString()}`);
+      
+      // Cập nhật dữ liệu từ kết quả phân trang
+      setUsers(response.data.results || []);
+      setTotalCount(response.data.count || 0);
+      
+      // Cập nhật thống kê tổng quát từ metadata
+      if (response.data.status_summary) {
+        setGlobalStats(response.data.status_summary);
+      }
+    } catch (error) {
+      toast.error('Không thể tải danh sách người dùng');
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [currentPage, searchQuery, filterStatus, filterRole]);
+
+  // Vì đã lọc từ Server, filteredUsers chỉ đơn giản là danh sách users hiện tại
+  const filteredUsers = users;
 
   const openDialog = (type: DialogType, user: User) => {
     setSelectedUser(user);
@@ -124,47 +130,96 @@ export function AdminUsers() {
     setWarningDetails('');
     setDeleteReason('');
     setDeleteDetails('');
+    setIsFormSubmitted(false);
   };
 
-  const handleAction = () => {
-    if (selectedUser) {
-      setUsers(users.map((u): User => {
-        if (u.id === selectedUser.id) {
-          if (dialogType === 'lock') return { ...u, status: 'locked' };
-          if (dialogType === 'unlock') return { ...u, status: 'active' };
-          if (dialogType === 'warning') return { ...u, status: 'warning' };
-          return u;
-        }
-        return u;
-      }).filter(u => !(dialogType === 'delete' && u.id === selectedUser.id)));
+  const handleAction = async () => {
+    if (!selectedUser) return;
+    setIsFormSubmitted(true);
 
-      // Show toast
-      if (dialogType === 'lock') toast.success('Đã khóa tài khoản thành công');
-      else if (dialogType === 'unlock') toast.success('Đã mở khóa tài khoản thành công');
-      else if (dialogType === 'warning') toast.success('Đã gửi nhắc nhở tới người dùng');
-      else if (dialogType === 'delete') toast.success('Đã xóa người dùng khỏi hệ thống');
+    try {
+      if (dialogType === 'lock') {
+        if (!lockReason) {
+          toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc');
+          return;
+        }
+        await api.post(`users/${selectedUser.id}/lock/`, {
+          action: lockAction,
+          reason: lockReason,
+          details: lockDetails,
+          duration: lockDuration
+        });
+        toast.success('Đã khóa tài khoản thành công');
+      } else if (dialogType === 'unlock') {
+        if (!unlockReason) {
+          toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc');
+          return;
+        }
+        await api.post(`users/${selectedUser.id}/unlock/`, {
+          action: unlockAction,
+          reason: unlockReason,
+          details: unlockDetails
+        });
+        toast.success('Đã mở khóa tài khoản thành công');
+      } else if (dialogType === 'warning') {
+        if (!warningType) {
+          toast.error('Vui lòng chọn loại hình cảnh báo');
+          return;
+        }
+        await api.post(`users/${selectedUser.id}/warn/`, {
+          warning_type: warningType,
+          details: warningDetails
+        });
+        toast.success('Đã gửi nhắc nhở tới người dùng');
+      } else if (dialogType === 'delete') {
+        if (!deleteReason) {
+          toast.error('Vui lòng chọn lý do xóa');
+          return;
+        }
+        await api.delete(`users/${selectedUser.id}/`, {
+          data: {
+            reason: deleteReason,
+            details: deleteDetails
+          }
+        });
+        toast.success('Đã xóa người dùng khỏi hệ thống');
+      }
+      
+      // Refresh list
+      fetchUsers();
+    } catch (error) {
+      toast.error('Thực hiện thao tác thất bại');
     }
     
     closeDialog();
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (statusParam: string) => {
+    const status = (statusParam || '').toLowerCase();
     switch (status) {
       case 'active':
         return <span className="text-xs font-medium text-[#22C55E]">ĐANG HOẠT ĐỘNG</span>;
-      case 'locked':
-        return <span className="text-xs font-medium text-[#4A5565]">TẠM KHÓA BỊ KHÓA</span>;
+      case 'banned':
+        return <span className="text-xs font-medium text-[#4A5565]">BỊ KHÓA</span>;
       case 'warning':
-        return <span className="text-xs font-medium text-[#F59E0B]">TẠM KHÓA BỊ KHÓA</span>;
+        return <span className="text-xs font-medium text-[#F59E0B]">CẢNH BÁO</span>;
+      case 'inactive':
+        return <span className="text-xs font-medium text-[#99A1AF]">ĐÃ XÓA</span>;
       default:
-        return null;
+        return <span className="text-xs font-medium text-[#99A1AF] italic uppercase">{status}</span>;
     }
   };
 
   const getReputationColor = (score: number) => {
-    if (score >= 10) return '#22C55E';
-    if (score >= 5) return '#F59E0B';
+    if (score >= 100) return '#22C55E';
+    if (score >= 50) return '#F59E0B';
     return '#E01515';
+  };
+
+  const getReportColor = (count: number) => {
+    if (count >= 20) return '#E01515';
+    if (count >= 10) return '#F9B939';
+    return '#12B76A';
   };
 
   return (
@@ -186,15 +241,44 @@ export function AdminUsers() {
         <div className="w-[180px]">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="px-5 py-3 h-[50px] rounded-[10px] border border-[#D1D5DC] focus:border-[#E01515] bg-white text-[#1E293B]">
-              <SelectValue placeholder="Tất cả trạng thái" />
+              <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
               <SelectItem value="active">Đang hoạt động</SelectItem>
-              <SelectItem value="locked">Tạm khóa bị khóa</SelectItem>
+              <SelectItem value="locked">Bị khóa</SelectItem>
               <SelectItem value="warning">Cảnh báo</SelectItem>
+              <SelectItem value="inactive">Đã xóa</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="w-[180px]">
+          <Select value={filterRole} onValueChange={setFilterRole}>
+            <SelectTrigger className="px-5 py-3 h-[50px] rounded-[10px] border border-[#D1D5DC] focus:border-[#E01515] bg-white text-[#1E293B]">
+              <SelectValue placeholder="Vai trò" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả vai trò</SelectItem>
+              <SelectItem value="User">User</SelectItem>
+              <SelectItem value="Admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Stats Summary Bar */}
+      <div className="bg-[#F8FAFC] border border-[#D1D5DC] rounded-[10px] p-4 mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <span className="font-medium text-[#1E293B]">
+            Tổng: <span className="text-[#E01515] font-bold">{totalCount}</span> người dùng
+          </span>
+          <span className="text-[#D1D5DC]">|</span>
+          <span className="text-[#22C55E] font-medium">Hoạt động: {globalStats.active}</span>
+          <span className="text-[#4A5565] font-medium">Bị khóa: {globalStats.banned}</span>
+          <span className="text-[#94A3B8] font-medium">Đã xóa: {globalStats.inactive}</span>
+        </div>
+        <div className="text-sm text-[#99A1AF]">
+          Trang hiện tại: {users.length} người dùng
         </div>
       </div>
 
@@ -209,20 +293,39 @@ export function AdminUsers() {
               <div className="flex items-center gap-4 flex-1">
                 {/* Avatar */}
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E01515] to-[#F59E0B] flex items-center justify-center text-white font-semibold text-lg">
-                  {user.name.charAt(0)}
+                  {user.username.charAt(0)}
                 </div>
 
                 {/* User Info */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-[#1E293B]">{user.name}</h3>
+                    <h3 className="font-semibold text-[#1E293B] flex items-center gap-2">
+                      {user.username}
+                      {user.role_name === 'Admin' && (
+                        <span className="px-2 py-0.5 rounded bg-[#E01515]/10 text-[#E01515] text-[10px] font-bold uppercase tracking-wider">
+                          Admin
+                        </span>
+                      )}
+                    </h3>
                     {getStatusBadge(user.status)}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-[#99A1AF]">
                     <span>📧 {user.email}</span>
-                    <span>Ngày tham gia: {user.joinDate}</span>
-                    <span style={{ color: getReputationColor(user.reputation) }}>
-                      Báo cáo: {user.reputation}
+                    <span>Ngày tham gia: {user.created_date ? new Date(user.created_date).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                    <div
+                      className="px-1.5 py-0.5 rounded flex items-center gap-1"
+                      style={{ backgroundColor: `${getReputationColor(user.reputation_score)}15` }}
+                    >
+                      <span
+                        className="text-xs font-semibold"
+                        style={{ color: getReputationColor(user.reputation_score) }}
+                      >
+                        ⭐ {user.reputation_score}
+                      </span>
+                    </div>
+
+                    <span className="text-sm" style={{ color: getReportColor(user.report_count) }}>
+                      Báo cáo: {user.report_count}
                     </span>
                   </div>
                 </div>
@@ -230,41 +333,81 @@ export function AdminUsers() {
 
               {/* Actions */}
               <div className="flex items-center gap-2">
-                {user.status === 'locked' || user.status === 'warning' ? (
-                  <button
-                    onClick={() => openDialog('unlock', user)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#22C55E] text-[#22C55E] hover:bg-[#F0FDF4] transition-colors"
-                  >
-                    <LockOpen className="h-4 w-4" />
-                    Mở khóa
-                  </button>
+                {String(user.id) === String(currentUser?.id) ? (
+                  <span className="text-sm text-[#94A3B8] italic font-medium">Tài khoản của bạn</span>
+                ) : user.status === 'inactive' ? (
+                  <span className="text-sm text-[#94A3B8] italic">Tài khoản đã bị xóa</span>
                 ) : (
-                  <button
-                    onClick={() => openDialog('lock', user)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#4A5565] text-[#4A5565] hover:bg-[#F9FAFB] transition-colors"
-                  >
-                    <Lock className="h-4 w-4" />
-                    Khóa
-                  </button>
+                  <>
+                    {user.status === 'banned' || user.status === 'warning' ? (
+                      <button
+                        onClick={() => openDialog('unlock', user)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#22C55E] text-[#22C55E] hover:bg-[#F0FDF4] transition-colors"
+                      >
+                        <LockOpen className="h-4 w-4" />
+                        Mở khóa
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => openDialog('lock', user)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#4A5565] text-[#4A5565] hover:bg-[#F9FAFB] transition-colors"
+                      >
+                        <Lock className="h-4 w-4" />
+                        Khóa
+                      </button>
+                    )}
+                    <button
+                      onClick={() => openDialog('warning', user)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#F59E0B] text-[#F59E0B] hover:bg-[#FFFBEB] transition-colors"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      Cảnh báo
+                    </button>
+                    <button
+                      onClick={() => openDialog('delete', user)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#E01515] text-[#E01515] hover:bg-[#FFF5F5] transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Xóa
+                    </button>
+                  </>
                 )}
-                <button
-                  onClick={() => openDialog('warning', user)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#F59E0B] text-[#F59E0B] hover:bg-[#FFFBEB] transition-colors"
-                >
-                  <AlertTriangle className="h-4 w-4" />
-                  Cảnh báo
-                </button>
-                <button
-                  onClick={() => openDialog('delete', user)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#E01515] text-[#E01515] hover:bg-[#FFF5F5] transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Xóa
-                </button>
               </div>
             </div>
           </div>
         ))}
+
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-[10px] border border-[#D1D5DC] text-[#99A1AF]">
+            Không tìm thấy người dùng nào phù hợp.
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalCount > 10 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="border-[#D1D5DC] text-[#1E293B]"
+            >
+              Trước
+            </Button>
+            <div className="flex items-center gap-1 mx-2">
+              <span className="text-sm font-medium text-[#1E293B]">Trang {currentPage}</span>
+              <span className="text-sm text-[#99A1AF]">/ {Math.ceil(totalCount / 10)}</span>
+            </div>
+            <Button
+              variant="outline"
+              disabled={currentPage >= Math.ceil(totalCount / 10)}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="border-[#D1D5DC] text-[#1E293B]"
+            >
+              Sau
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Lock Account Dialog */}
@@ -293,13 +436,18 @@ export function AdminUsers() {
                 Lý do <span className="text-[#E01515]">*</span>
               </label>
               <Select value={lockReason} onValueChange={setLockReason}>
-                <SelectTrigger>
+                <SelectTrigger className={isFormSubmitted && !lockReason ? 'border-[#E01515]' : ''}>
                   <SelectValue placeholder="Chọn lý do" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spam">Spam</SelectItem>
+                  <SelectItem value="spam-content">Spam nội dung</SelectItem>
                   <SelectItem value="fake-info">Thông tin giả mạo</SelectItem>
-                  <SelectItem value="violation">Vi phạm quy định</SelectItem>
+                  <SelectItem value="scam">Lừa đảo</SelectItem>
+                  <SelectItem value="system-abuse">Lạm dụng hệ thống</SelectItem>
+                  <SelectItem value="rule-violation">Vi phạm quy định</SelectItem>
+                  <SelectItem value="malicious-links">Chia sẻ liên kết độc hại</SelectItem>
+                  <SelectItem value="unusual-behavior">Hành vi bất thường</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -344,7 +492,7 @@ export function AdminUsers() {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Mở khóa tài khoản</DialogTitle>
             <DialogDescription className="text-sm text-[#99A1AF]">
-              Thời hạn bị khóa còn lại: 5 ngày 3 giờ
+              Thời hạn bị khóa còn lại: {selectedUser?.remaining_lock_time || 'N/A'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -364,13 +512,16 @@ export function AdminUsers() {
                 Lý do <span className="text-[#E01515]">*</span>
               </label>
               <Select value={unlockReason} onValueChange={setUnlockReason}>
-                <SelectTrigger>
+                <SelectTrigger className={isFormSubmitted && !unlockReason ? 'border-[#E01515]' : ''}>
                   <SelectValue placeholder="Chọn lý do" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="appeal">Khiếu nại thành công</SelectItem>
-                  <SelectItem value="mistake">Khóa nhầm</SelectItem>
-                  <SelectItem value="improved">Đã cải thiện</SelectItem>
+                  <SelectItem value="mistake">Khóa nhầm tài khoản</SelectItem>
+                  <SelectItem value="valid-appeal">Khiếu nại và cung cấp bằng chứng hợp lệ</SelectItem>
+                  <SelectItem value="expired">Đã hết thời hạn khóa</SelectItem>
+                  <SelectItem value="secured">Tài khoản đã bảo mật lại</SelectItem>
+                  <SelectItem value="committed">Cam kết tuân thủ quy định</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -404,7 +555,7 @@ export function AdminUsers() {
           <div className="bg-[#FFF5F5] border border-[#E01515] rounded-[8px] p-4 mb-4">
             <p className="text-sm text-[#E01515]">
               Thông báo sẽ được gửi trực tiếp đến hộp thư của người dùng{' '}
-              <span className="font-semibold">{selectedUser?.name}</span>.
+              <span className="font-semibold">{selectedUser?.username}</span>.
             </p>
           </div>
           <div className="space-y-4">
@@ -413,13 +564,18 @@ export function AdminUsers() {
                 Loại vi phạm <span className="text-[#E01515]">*</span>
               </label>
               <Select value={warningType} onValueChange={setWarningType}>
-                <SelectTrigger>
+                <SelectTrigger className={isFormSubmitted && !warningType ? 'border-[#E01515]' : ''}>
                   <SelectValue placeholder="Chọn loại vi phạm" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="spam">Spam</SelectItem>
-                  <SelectItem value="fake-info">Thông tin sai lệch</SelectItem>
-                  <SelectItem value="inappropriate">Nội dung không phù hợp</SelectItem>
+                  <SelectItem value="misinformation">Thông tin sai lệch</SelectItem>
+                  <SelectItem value="inappropriate-content">Nội dung không phù hợp</SelectItem>
+                  <SelectItem value="harassment">Quấy rối người dùng</SelectItem>
+                  <SelectItem value="suspected-scam">Nghi ngờ lừa đảo</SelectItem>
+                  <SelectItem value="wrong-category">Sai danh mục / nội dung</SelectItem>
+                  <SelectItem value="inappropriate-language">Ngôn từ không phù hợp</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -455,7 +611,7 @@ export function AdminUsers() {
             <div>
               <p className="font-semibold text-[#E01515] mb-1">Hành động không thể hoàn tác!</p>
               <p className="text-sm text-[#E01515]">
-                Bạn đang thực hiện xóa tài khoản <span className="font-semibold">{selectedUser?.name}</span>.
+                Bạn đang thực hiện xóa tài khoản <span className="font-semibold">{selectedUser?.username}</span>.
               </p>
             </div>
           </div>
@@ -465,13 +621,17 @@ export function AdminUsers() {
                 Lý do xóa <span className="text-[#E01515]">*</span>
               </label>
               <Select value={deleteReason} onValueChange={setDeleteReason}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn lý do xóa" />
+                <SelectTrigger className={isFormSubmitted && !deleteReason ? 'border-[#E01515]' : ''}>
+                  <SelectValue placeholder="Chọn lý do" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="serious-violation">Vi phạm nghiêm trọng</SelectItem>
                   <SelectItem value="fake-account">Tài khoản giả mạo</SelectItem>
-                  <SelectItem value="user-request">Yêu cầu của người dùng</SelectItem>
+                  <SelectItem value="repeated-violation">Tái phạm nhiều lần</SelectItem>
+                  <SelectItem value="legal-request">Yêu cầu pháp lý</SelectItem>
+                  <SelectItem value="user-request">Người dùng yêu cầu</SelectItem>
+                  <SelectItem value="inactive-long-time">Không hoạt động lâu ngày</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>

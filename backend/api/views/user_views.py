@@ -3,11 +3,24 @@ import re
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-from rest_framework import viewsets, permissions
+from django.contrib.auth import update_session_auth_hash
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from ..models import User, ActivityLog, Notification, Role
-from ..serializers.user_serializers import UserSerializer
+from ..serializers.user_serializers import UserSerializer, UserProfileSerializer, ChangePasswordSerializer
+
+def _first_serializer_error(serializer):
+    """Tra ve text loi dau tien de frontend hien thi toast."""
+    errors = serializer.errors
+    if isinstance(errors, dict):
+        first_error = next(iter(errors.values()), None)
+        if isinstance(first_error, list) and first_error:
+            return str(first_error[0])
+        return str(first_error)
+    if isinstance(errors, list) and errors:
+        return str(errors[0])
+    return 'Dữ liệu không hợp lệ.'
 from ..permissions import IsAdminRole 
 from ..pagination import UserPagination # Import pagination tùy chỉnh
 
@@ -59,7 +72,7 @@ class UserViewSet(viewsets.ModelViewSet):
         - Hành động 'me' (lấy thông tin bản thân) chỉ cần IsAuthenticated.
         - Các hành động quản lý (list, lock, unlock, warn, destroy...) yêu cầu IsAdminRole.
         """
-        if self.action == 'me':
+        if self.action in ['me', 'profile', 'profile_availability', 'change_password']:
             return [permissions.IsAuthenticated()]
         return [IsAdminRole()]
 
@@ -165,6 +178,65 @@ class UserViewSet(viewsets.ModelViewSet):
         """Lấy thông tin cá nhân của người dùng hiện tại."""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['put', 'patch'], permission_classes=[permissions.IsAuthenticated])
+    def profile(self, request):
+        """Cap nhat username/email cua user hien tai va tra ve user moi nhat."""
+        serializer = UserProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=request.method == 'PATCH',
+        )
+        if not serializer.is_valid():
+            return Response(
+                {'detail': _first_serializer_error(serializer)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='profile-availability',
+    )
+    def profile_availability(self, request):
+        """Kiem tra username/email co bi trung voi user khac khong."""
+        username = request.query_params.get('username', '').strip()
+        email = request.query_params.get('email', '').strip()
+        errors = {}
+
+        if username:
+            username_exists = User.objects.filter(username__iexact=username).exclude(pk=request.user.pk).exists()
+            errors['username'] = 'Tên đăng nhập đã tồn tại.' if username_exists else ''
+
+        if email:
+            email_exists = User.objects.filter(email__iexact=email).exclude(pk=request.user.pk).exists()
+            errors['email'] = 'Email đã tồn tại.' if email_exists else ''
+
+        return Response(errors, status=status.HTTP_200_OK)
+
+    @action(
+        detail=False,
+        methods=['put'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='change-password',
+    )
+    def change_password(self, request):
+        """Doi mat khau cho user hien tai va giu session dang nhap."""
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(
+                {'detail': _first_serializer_error(serializer)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+        update_session_auth_hash(request, request.user)
+        return Response({'detail': 'Đổi mật khẩu thành công.'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def lock(self, request, pk=None):

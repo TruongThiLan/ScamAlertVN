@@ -26,6 +26,8 @@ export function AdminHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const displayName = user?.name || user?.username || 'Quan tri vien';
+  const displayEmail = user?.email || 'Chua co email';
 
   const handleLogout = () => {
     logout();
@@ -103,16 +105,16 @@ export function AdminHeader() {
                   <button className="flex items-center gap-3 px-4 h-[58px] bg-white rounded-[10px] border border-[#D1D5DC] hover:bg-gray-50 transition-colors">
                     <Avatar name={user.name || user.username} size="md" />
                     <div className="flex flex-col items-start">
-                      <div className="text-sm font-semibold text-black leading-[21px]">{user.name || user.username}</div>
-                      <div className="text-xs text-[#4A5565] leading-[18px]">{user.email}</div>
+                      <div className="text-sm font-semibold text-black leading-[21px]">{displayName}</div>
+                      <div className="text-xs text-[#4A5565] leading-[18px]">{displayEmail}</div>
                     </div>
                     <ChevronDown className="h-5 w-5 text-[#4A5565]" strokeWidth={1.67} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-semibold text-[#1E293B]">{user.name || user.username}</p>
-                    <p className="text-xs text-[#99A1AF]">{user.email}</p>
+                    <p className="text-sm font-semibold text-[#1E293B]">{displayName}</p>
+                    <p className="text-xs text-[#99A1AF]">{displayEmail}</p>
                   </div>
                   <DropdownMenuSeparator />
 

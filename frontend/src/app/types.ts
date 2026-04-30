@@ -17,7 +17,11 @@ export interface User {
   email: string;
   status: UserStatus;
   reputation_score: number;
-  role?: number;
+  role_name: string | null;
+  is_staff: boolean;
+  role?: number | null;
+  name?: string;
+  reputationScore?: number;
   created_date: string;
   updated_date: string;
 }

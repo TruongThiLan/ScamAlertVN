@@ -26,7 +26,7 @@ import {
 } from './ui/alert-dialog';
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, is_admin, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -124,11 +124,11 @@ export function Header() {
             </>
           ) : (
             <>
-              {user.role === 'admin' && (
-                <Link to="/admin/users">
-                  <Button variant="outline" className="rounded-[10px]">
+              {is_admin && (
+                <Link to="/admin/dashboard">
+                  <Button variant="outline" className="rounded-[10px] border-[#E01515] text-[#E01515] hover:bg-[#FFF1F1]">
                     <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Quản trị
+                    Trang Quản Trị
                   </Button>
                 </Link>
               )}

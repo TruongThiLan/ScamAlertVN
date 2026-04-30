@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { FormEvent, useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
+// 1. Nhảy ra 2 lần (../../) để từ pages -> app -> src rồi vào api
 import api from '../../api/axiosInstance';
 import { Post, ScamCategory } from '../../types';
 import { PostCard } from '../components/PostCard';
@@ -12,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // --- STATE DỮ LIỆU THẬT ---
   const [posts, setPosts] = useState<Post[]>([]);
@@ -22,6 +24,7 @@ export function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('latest');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchError, setSearchError] = useState('');
 
   // --- GỌI API KHI VÀO TRANG ---
   useEffect(() => {
@@ -63,6 +66,18 @@ export function Home() {
     }
     return new Date(b.created_time).getTime() - new Date(a.created_time).getTime();
   });
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+
+    if (!trimmedQuery) {
+      setSearchError('Vui lòng nhập từ khóa tìm kiếm.');
+      return;
+    }
+
+    navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+  };
 
   if (loading) return <div className="p-10 text-center">Đang tải dữ liệu từ hệ thống...</div>;
 
@@ -132,15 +147,24 @@ export function Home() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
-                  <Input
-                    placeholder="Tìm kiếm bài viết..."
-                    className="pl-10 bg-[#F3F3F5] rounded-[10px]"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
+                <form onSubmit={handleSearchSubmit} className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
+                    <Input
+                      placeholder="Tìm kiếm bài viết..."
+                      className={`pl-10 bg-[#F3F3F5] rounded-[10px] ${
+                        searchError ? 'border-[#E01515] focus-visible:ring-[#E01515]' : ''
+                      }`}
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        if (searchError) setSearchError('');
+                      }}
+                      aria-invalid={Boolean(searchError)}
+                    />
+                  </div>
+                  {searchError && <p className="mt-2 text-sm font-medium text-[#E01515]">{searchError}</p>}
+                </form>
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-[200px] bg-[#F3F3F5] rounded-[10px]">
                     <SelectValue />

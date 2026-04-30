@@ -1,6 +1,8 @@
 from api.serializers.user_serializers import (
     UserSerializer,
     UserBriefSerializer,
+    UserProfileSerializer,
+    ChangePasswordSerializer,
 )
 from api.serializers.scam_serializers import (
     ScamCategorySerializer,
@@ -27,6 +29,8 @@ from api.serializers.interact_serializers import (
 __all__ = [
     'UserSerializer',
     'UserBriefSerializer',
+    'UserProfileSerializer',
+    'ChangePasswordSerializer',
     'ScamCategorySerializer',
     'PostSerializer',
     'PostModerationSerializer',

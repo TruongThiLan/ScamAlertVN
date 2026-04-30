@@ -22,6 +22,7 @@ import { ReputationHistory } from './pages/ReputationHistory';
 import { Outlet, Navigate } from 'react-router';
 import { Toaster } from './components/ui/sonner';
 import { EditPost } from './pages/EditPost';
+import { useAuth } from './contexts/AuthContext';
 
 function AuthLayout() {
   return (
@@ -30,6 +31,11 @@ function AuthLayout() {
       <Toaster />
     </>
   );
+}
+
+function AdminProtectedRoute() {
+  const { is_admin } = useAuth();
+  return is_admin ? <Outlet /> : <Navigate to="/" replace />;
 }
 
 export const router = createBrowserRouter([
@@ -54,14 +60,20 @@ export const router = createBrowserRouter([
   },
   {
     path: 'admin',
-    Component: AdminLayout,
+    Component: AdminProtectedRoute,
     children: [
-      { index: true, element: <Navigate to="/admin/posts" replace /> },
-      { path: 'users', Component: AdminUsers },
-      { path: 'posts', Component: AdminPosts },
-      { path: 'categories', Component: AdminCategories },
-      { path: 'categories/:id', Component: AdminCategories },
-      { path: 'statistics', Component: AdminStatistics },
+      {
+        Component: AdminLayout,
+        children: [
+          { index: true, element: <Navigate to="/admin/dashboard" replace /> },
+          { path: 'dashboard', Component: AdminStatistics },
+          { path: 'users', Component: AdminUsers },
+          { path: 'posts', Component: AdminPosts },
+          { path: 'categories', Component: AdminCategories },
+          { path: 'categories/:id', Component: AdminCategories },
+          { path: 'statistics', Component: AdminStatistics },
+        ],
+      },
     ],
   },
   {

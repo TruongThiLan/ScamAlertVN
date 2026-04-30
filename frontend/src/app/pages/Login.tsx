@@ -21,10 +21,11 @@ export function Login() {
 
     try {
       // Gửi identifier (username adscamalert) sang hàm login của AuthContext
-      const success = await login(identifier, password);
-      if (success) {
+      const loggedInUser = await login(identifier, password);
+      if (loggedInUser) {
         // Thông báo sẽ được hiện bởi toast.success bên trong AuthContext hoặc ở đây
-        navigate('/');
+        const canOpenAdmin = loggedInUser.role_name === 'Admin' && loggedInUser.is_staff;
+        navigate(canOpenAdmin ? '/admin/dashboard' : '/');
       }
       // Lỗi 401 đã được xử lý bằng toast.error bên trong AuthContext rồi Nguyệt nhé
     } catch (error) {

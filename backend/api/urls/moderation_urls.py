@@ -5,24 +5,32 @@ File này đóng vai trò là Hub trung tâm để đăng ký toàn bộ Route c
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from ..views.moderation_views import (
-    UserViewSet, PostViewSet, ScamCategoryViewSet, ContentReportViewSet, NotificationViewSet
+from ..views.notification_views import NotificationViewSet
+from api.views import (
+    PostViewSet, 
+    UserViewSet, 
+    ScamCategoryViewSet, 
+    ContentReportViewSet,
+    CommentViewSet,
+    ReactionViewSet
 )
+from api.views.interact_views import BookmarkViewSet, PostShareViewSet
 
 # Router chính của dự án
 router = DefaultRouter()
 
-# Đăng ký các module
-router.register(r'reports', ContentReportViewSet, basename='content-report')
+router.register(r'posts', PostViewSet)
+router.register(r'users', UserViewSet)
+router.register(r'categories', ScamCategoryViewSet)
+router.register(r'reports', ContentReportViewSet)
+router.register(r'comments', CommentViewSet)
+router.register(r'reactions', ReactionViewSet, basename='reaction')
+router.register(r'bookmarks', BookmarkViewSet, basename='bookmark')
+router.register(r'shares', PostShareViewSet, basename='share')
 router.register(r'notifications', NotificationViewSet, basename='notification')
-router.register(r'users', UserViewSet, basename='user')
-router.register(r'posts', PostViewSet, basename='post')
-router.register(r'categories', ScamCategoryViewSet, basename='category')
 
 urlpatterns = [
     path('', include(router.urls)),
-    
-    # Include các URL thủ công khác nếu có
-    path('', include('api.urls.public_urls')),
-    path('', include('api.urls.interact_urls')),
+
+    path('api/', include('api.urls.interact_urls')),
 ]

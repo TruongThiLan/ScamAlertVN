@@ -85,6 +85,13 @@ class Post(models.Model):
         default=PostStatus.PENDING
     )
 
+    is_anonymous = models.BooleanField(
+        default=False,
+        help_text='Nếu true, thông tin tác giả sẽ bị ẩn trên giao diện public'
+    )
+
+
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -134,6 +141,8 @@ class Comment(models.Model):
 
     content = models.TextField()
     created_time = models.DateTimeField(auto_now_add=True)
+    is_anonymous = models.BooleanField(default=False, help_text='True khi tác giả bình luận vào chính bài viết ẩn danh của mình. '
+            'Server tự set — FE không gửi trường này.')
 
     status = models.CharField(
         max_length=20,
@@ -196,6 +205,7 @@ class Bookmark(models.Model):
 class TargetType(models.TextChoices):
     POST = 'POST', 'Post'
     COMMENT = 'COMMENT', 'Comment'
+    USER = 'USER', 'User'
 
 
 class Reaction(models.Model):
@@ -203,7 +213,11 @@ class Reaction(models.Model):
         UPVOTE = 'UPVOTE', 'Upvote'
         DOWNVOTE = 'DOWNVOTE', 'Downvote'
 
-    reaction_type = models.CharField(max_length=20, choices=ReactionType.choices)
+    reaction_type = models.CharField(
+        max_length=20,
+        choices=ReactionType.choices,
+        default=ReactionType.DOWNVOTE
+    )
     target_type = models.CharField(max_length=20, choices=TargetType.choices)
     target_id = models.IntegerField()
 
@@ -326,3 +340,24 @@ class ReputationHistory(models.Model):
         verbose_name_plural = 'Reputation Histories'
         ordering = ['-created_time']
         indexes = [models.Index(fields=['user'])]
+
+
+class AuditLog(models.Model):
+    """Bảng ghi nhật ký các thao tác quan trọng của Admin (Duyệt/Khóa/Xóa)."""
+    action = models.CharField(max_length=50) # APPROVE, REJECT, LOCK, HIDE, DELETE
+    admin_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
+    target_post = models.ForeignKey(Post, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
+    reason = models.TextField(null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_time']
+
+
+class Blacklist(models.Model):
+    """Danh sách từ khóa bị cấm trong tiêu đề/nội dung."""
+    keyword = models.CharField(max_length=100, unique=True)
+    created_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.keyword

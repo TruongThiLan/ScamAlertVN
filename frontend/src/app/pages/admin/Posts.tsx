@@ -11,6 +11,7 @@ import {
 } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
+import { ScrollArea } from '../../components/ui/scroll-area';
 
 import { useOutletContext } from 'react-router';
 import api from '../../../api/axiosInstance';
@@ -370,7 +371,7 @@ export function AdminPosts() {
               <DialogTitle className="text-xl font-bold">{selectedPost.title}</DialogTitle>
             </DialogHeader>
 
-            <div>
+            <ScrollArea className="max-h-[min(600px,calc(90vh-250px))] pr-4">
               <div className="flex items-center gap-4 text-sm text-[#4A5565] mb-4">
                 <span>Tác giả: {selectedPost.author.name}</span>
                 <span>•</span>
@@ -387,12 +388,37 @@ export function AdminPosts() {
                 {selectedPost.content}
               </div>
 
+              {/* Post Images */}
+              {selectedPost.images && selectedPost.images.length > 0 && (
+                <div className="mt-6 max-w-3xl mx-auto">
+                  <div className={`grid gap-3 ${
+                    selectedPost.images.length === 1 ? 'grid-cols-1 max-w-md mx-auto' :
+                    selectedPost.images.length === 2 ? 'grid-cols-2' :
+                    'grid-cols-2 md:grid-cols-3'
+                  }`}>
+                    {selectedPost.images.map((img, idx) => {
+                      const src = img.startsWith('http') ? img : `http://127.0.0.1:8000${img}`;
+                      return (
+                        <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-[#E2E8F0] bg-gray-50 shadow-sm group">
+                          <img 
+                            src={src} 
+                            alt={`Hình ${idx + 1}`} 
+                            className="w-full h-full object-contain bg-white transition-all duration-300 group-hover:scale-105" 
+                            style={{ maxHeight: '300px' }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {selectedPost.rejectionReason && (
                 <div className="mt-4 p-3 bg-[#FFF5F5] border border-[#FEE2E2] rounded-lg text-sm text-[#991B1B]">
                   <strong>Lý do xử lý:</strong> {selectedPost.rejectionReason}
                 </div>
               )}
-            </div>
+            </ScrollArea>
 
             <div className="flex items-center justify-between mt-2 pt-6 border-t border-[#E2E8F0] flex-wrap gap-2">
               <div className="flex items-center gap-3 flex-wrap">

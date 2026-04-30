@@ -1,10 +1,11 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { mockPosts, scamCategories } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
-import { ReportDialog } from '../components/ReportDialog';
-import { ShareDialog } from '../components/ShareDialog';
 import { toast } from 'sonner';
+import api from '../../api/axiosInstance';
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { Loader2 } from 'lucide-react';
 import { 
   ArrowLeft, 
   Heart, 
@@ -18,41 +19,91 @@ import {
   Bookmark,
   MoreHorizontal,
   Camera,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { Comment } from '../types';
 import { getCategoryBadgeStyle } from '../utils/colorUtils';
+import { Avatar } from '../components/Avatar';
+import { Lightbox } from '../components/Lightbox';
+import { ReportDialog } from '../components/ReportDialog';
+import { ShareDialog } from '../components/ShareDialog';
 
 export function PostDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const [post, setPost] = useState<any>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const post = mockPosts.find(p => p.id === id);
-  const [comments, setComments] = useState<Comment[]>(post?.comments || []);
   const [newComment, setNewComment] = useState('');
   const [newCommentImage, setNewCommentImage] = useState<{
+    file: File;
     previewUrl: string;
   } | null>(null);
-  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
-  const [commentLikes, setCommentLikes] = useState<Record<string, number>>({});
+  const [likedComments, setLikedComments] = useState<Set<number>>(new Set());
+  const [commentLikes, setCommentLikes] = useState<Record<number, number>>({});
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ type: 'post' | 'comment'; id: string } | null>(null);
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(post?.likes || 0);
+  const [likesCount, setLikesCount] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  
+  // Lightbox state
+  const [lightbox, setLightbox] = useState<{
+    isOpen: boolean;
+    images: string[];
+    index: number;
+  }>({ isOpen: false, images: [], index: 0 });
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [postRes, catRes] = await Promise.all([
+          api.get(`posts/${id}/`),
+          api.get('categories/')
+        ]);
+        
+        const postData = postRes.data;
+        setPost(postData);
+        setLikesCount(postData.likes_count || 0);
+        setIsLiked(postData.is_liked || false);
+        setIsSaved(postData.is_bookmarked || false);
+        setCategories(catRes.data);
+        
+        // Fetch comments
+        const commentRes = await api.get('comments/', { params: { post: id } });
+        setComments(commentRes.data);
+      } catch (err: any) {
+        toast.error('Không thể tải dữ liệu bài viết');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+
     return () => {
       if (newCommentImage) {
         URL.revokeObjectURL(newCommentImage.previewUrl);
       }
     };
-  }, [newCommentImage]);
+  }, [id, newCommentImage]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-10 w-10 text-[#E01515] animate-spin" />
+        <p className="text-[#99A1AF] font-medium">Đang tải nội dung bài viết...</p>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
@@ -70,36 +121,64 @@ export function PostDetail() {
     );
   }
 
-  const approvedPosts = mockPosts.filter(p => p.status === 'approved');
-  
-  const categoryCounts = scamCategories.map(c => approvedPosts.filter(p => p.category.id === c.id).length);
-  const maxCategoryCount = Math.max(...categoryCounts, 1);
+  const maxCategoryCount = Math.max(...categories.map(c => c.post_count || 0), 1);
 
-  const handleAddComment = () => {
-    if ((!newComment.trim() && !newCommentImage) || !user) return;
+  const handleAddComment = async () => {
+    // Sửa lỗi logic: Kiểm tra an toàn xem có gửi chữ hoặc ảnh hay không
+    const hasText = newComment.trim().length > 0;
+    const hasImage = newCommentImage !== null && newCommentImage.file !== undefined;
 
-    const comment: Comment = {
-      id: `c${Date.now()}`,
-      postId: post.id,
-      author: user,
-      content: newComment,
-      imageUrl: newCommentImage?.previewUrl,
-      createdAt: new Date().toISOString(),
-      replies: [],
-    };
+    if ((!hasText && !hasImage) || !user) return;
 
-    setComments([...comments, comment]);
-    setNewComment('');
-    setNewCommentImage(null);
+    try {
+      const formData = new FormData();
+      formData.append('post', post.id.toString());
+
+      // Nếu chỉ có ảnh, gửi chuỗi mặc định
+      formData.append('content', hasText ? newComment.trim() : '[Hình ảnh đính kèm]');
+
+      // Nếu có ảnh, đính kèm một cách an toàn
+      if (hasImage) {
+        formData.append('attachments', newCommentImage.file);
+      }
+
+      // BẮT BUỘC: Ép Axios gửi dưới định dạng file (tránh bị lỗi mất ảnh)
+      await api.post('comments/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      // Lấy danh sách bình luận mới từ DB để render cả ảnh
+      const commentRes = await api.get('comments/', { params: { post: post.id } });
+      setComments(commentRes.data);
+
+      // Reset form
+      setNewComment('');
+      setNewCommentImage(null);
+      toast.success('Đã gửi bình luận');
+    } catch (err: any) {
+      toast.error('Không thể gửi bình luận');
+      console.error('Chi tiết lỗi:', err);
+    }
   };
 
   const handleCommentImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const target = e.target;
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
+//     // Cần lưu giữ trực tiếp đối tượng selectedFile (File gốc)
+//     newCommentImage.value = {
+//       file: selectedFile,
+//       previewUrl: URL.createObjectURL(selectedFile)
+//     };
+
+      // Reset input
+//     target.value = '';
     if (!selectedFile.type.startsWith('image/')) {
       toast.error('Chỉ hỗ trợ tệp ảnh cho bình luận.');
-      e.target.value = '';
+      target.value = '';
       return;
     }
 
@@ -108,8 +187,8 @@ export function PostDetail() {
     }
 
     const previewUrl = URL.createObjectURL(selectedFile);
-    setNewCommentImage({ previewUrl });
-    e.target.value = '';
+    setNewCommentImage({ file: selectedFile, previewUrl });
+    target.value = '';
   };
 
   const removeCommentImage = () => {
@@ -119,52 +198,60 @@ export function PostDetail() {
     setNewCommentImage(null);
   };
 
-  const handleAddReply = (parentId: string) => {
+  const handleAddReply = async (parentId: string | number) => {
     if (!replyText.trim() || !user) return;
 
-    const reply: Comment = {
-      id: `r${Date.now()}`,
-      postId: post.id,
-      author: user,
-      content: replyText,
-      createdAt: new Date().toISOString(),
-      parentId,
-    };
-
-    setComments(prevComments => {
-      return prevComments.map(comment => {
-        if (comment.id === parentId) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), reply],
-          };
-        }
-        return comment;
+    try {
+      const res = await api.post('comments/', {
+        content: replyText,
+        post: post.id,
+        parent_comment: parentId
       });
-    });
 
-    setReplyText('');
-    setReplyTo(null);
+      setComments(prevComments => {
+        return prevComments.map(comment => {
+          if (comment.id === Number(parentId)) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), res.data],
+            };
+          }
+          return comment;
+        });
+      });
+
+      setReplyText('');
+      setReplyTo(null);
+      toast.success('Đã gửi phản hồi');
+    } catch (err) {
+      toast.error('Không thể gửi phản hồi');
+    }
   };
 
-  const handleLikeComment = (commentId: string) => {
+  const handleLikeComment = async (commentId: string | number) => {
     if (!user) return;
 
-    const newLikedComments = new Set(likedComments);
-    if (newLikedComments.has(commentId)) {
-      newLikedComments.delete(commentId);
-      setCommentLikes({
-        ...commentLikes,
-        [commentId]: (commentLikes[commentId] || 0) - 1,
+    try {
+      const res = await api.post('reactions/toggle/', {
+        target_type: 'COMMENT',
+        target_id: commentId,
+        reaction_type: 'UPVOTE'
       });
-    } else {
-      newLikedComments.add(commentId);
-      setCommentLikes({
-        ...commentLikes,
-        [commentId]: (commentLikes[commentId] || 0) + 1,
-      });
+
+      const isReacted = res.data.status === 'reacted';
+      const newLikedComments = new Set(likedComments);
+      
+      if (isReacted) {
+        newLikedComments.add(Number(commentId));
+        setCommentLikes(prev => ({ ...prev, [Number(commentId)]: (prev[Number(commentId)] || 0) + 1 }));
+      } else {
+        newLikedComments.delete(Number(commentId));
+        setCommentLikes(prev => ({ ...prev, [Number(commentId)]: (prev[Number(commentId)] || 0) - 1 }));
+      }
+      setLikedComments(newLikedComments);
+    } catch (err) {
+      toast.error('Lỗi khi thực hiện thích bình luận');
     }
-    setLikedComments(newLikedComments);
   };
 
   const handleReportPost = () => {
@@ -172,25 +259,43 @@ export function PostDetail() {
     setIsReportDialogOpen(true);
   };
 
-  const handleReportComment = (commentId: string) => {
-    setReportTarget({ type: 'comment', id: commentId });
+  const handleReportComment = (commentId: number) => {
+    setReportTarget({ type: 'comment', id: String(commentId) });
     setIsReportDialogOpen(true);
   };
 
-  const handleSubmitReport = (reason: string) => {
-    console.log('Report submitted:', { target: reportTarget, reason });
-    alert('Báo cáo đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+  const handleSubmitReport = async (reason: string) => {
+    if (!reportTarget) return;
+
+    try {
+      await api.post('reports/', {
+        target_type: reportTarget.type.toUpperCase(),
+        target_id: reportTarget.id,
+        reason: reason
+      });
+      toast.success('Báo cáo đã được gửi. Chúng tôi sẽ xem xét sớm nhất.');
+      setIsReportDialogOpen(false);
+      setReportTarget(null);
+    } catch (err) {
+      toast.error('Không thể gửi báo cáo');
+    }
   };
 
-  const handleLikePost = () => {
+  const handleLikePost = async () => {
     if (!user) return;
     
-    if (isLiked) {
-      setIsLiked(false);
-      setLikesCount(likesCount - 1);
-    } else {
-      setIsLiked(true);
-      setLikesCount(likesCount + 1);
+    try {
+      const res = await api.post('reactions/toggle/', {
+        target_type: 'POST',
+        target_id: post.id,
+        reaction_type: 'UPVOTE'
+      });
+
+      const isReacted = res.data.status === 'reacted';
+      setIsLiked(isReacted);
+      setLikesCount(isReacted ? likesCount + 1 : likesCount - 1);
+    } catch (err) {
+      toast.error('Lỗi khi thực hiện thích bài viết');
     }
   };
 
@@ -212,33 +317,56 @@ export function PostDetail() {
   const renderComment = (comment: Comment, isReply = false) => (
     <div key={comment.id} className={`${isReply ? 'ml-14' : ''}`}>
       <div className="flex gap-3">
-        <Link to={`/user/${comment.author.id}`} className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-[#E01515] flex items-center justify-center text-white font-semibold">
-            {comment.author.name.charAt(0)}
+        {comment.is_anonymous ? (
+          <div className="flex-shrink-0 cursor-default">
+            <Avatar name="?" size="md" className="grayscale" />
           </div>
-        </Link>
+        ) : (
+          <Link to={`/user/${comment.user_detail.id}`} className="flex-shrink-0">
+            <Avatar name={comment.user_detail.username} size="md" />
+          </Link>
+        )}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <Link to={`/user/${comment.author.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
-              {comment.author.name}
-            </Link>
-                      
-            <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
-              <span className="text-[#C10007] text-xs font-semibold">⭐ {comment.author.reputationScore}</span>
-            </div>
+            {comment.is_anonymous ? (
+              <span className="font-semibold text-[#1E293B] italic text-gray-500">
+                {comment.user_detail.username}
+              </span>
+            ) : (
+              <>
+                <Link to={`/user/${comment.user_detail.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
+                  {comment.user_detail.username}
+                </Link>
+
+                <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
+                  <span className="text-[#C10007] text-xs font-semibold">⭐ {comment.user_detail.reputation_score}</span>
+                </div>
+              </>
+            )}
               
             <span className="text-sm text-[#99A1AF]">
-              • 5 giờ trước
+              • {formatDistanceToNow(new Date(comment.created_time), { addSuffix: true, locale: vi })}
             </span>
           </div>
-          {comment.content && <p className="text-[#4A5565] mb-2">{comment.content}</p>}
-          {comment.imageUrl && (
-            <div className="mb-3">
-              <img
-                src={comment.imageUrl}
-                alt="Ảnh bình luận"
-                className="max-h-72 w-auto max-w-full rounded-lg border border-[#D1D5DC] object-cover"
-              />
+          {comment.content && comment.content !== '[Hình ảnh đính kèm]' && (<p className="text-[#4A5565] mb-2">{comment.content}</p>)}
+          {comment.images && comment.images.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {comment.images.map((img: string, idx: number) => {
+                const src = img.startsWith('http') ? img : `http://127.0.0.1:8000${img}`;
+                return (
+                  <img
+                    key={idx}
+                    src={src}
+                    alt="Ảnh bình luận"
+                    className="max-h-32 w-auto rounded-lg border border-[#D1D5DC] object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
+                    onClick={() => setLightbox({
+                      isOpen: true,
+                      images: comment.images.map((u: string) => u.startsWith('http') ? u : `http://127.0.0.1:8000${u}`),
+                      index: idx
+                    })}
+                  />
+                );
+              })}
             </div>
           )}
           <div className="flex items-center gap-4">
@@ -254,8 +382,8 @@ export function PostDetail() {
               }`}
               title={!user ? 'Vui lòng đăng nhập để thích bình luận' : ''}
             >
-              <ThumbsUp className={`h-4 w-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
-              <span>{commentLikes[comment.id] || 0} Thích</span>
+              <Heart className={`h-4 w-4 ${likedComments.has(comment.id) ? 'fill-current' : ''}`} />
+              <span>{commentLikes[comment.id] || 0} </span>
             </button>
             <button 
               onClick={() => setReplyTo(comment.id)}
@@ -268,7 +396,11 @@ export function PostDetail() {
               title={!user ? 'Vui lòng đăng nhập để phản hồi' : ''}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>Phản hồi</span>
+              <span>
+                {comment.replies && comment.replies.length > 0
+                  ? `${comment.replies.length} Phản hồi`
+                  : 'Phản hồi'}
+              </span>
             </button>
             {user && (
               <button
@@ -321,23 +453,21 @@ export function PostDetail() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
-        
         {/* Sidebar - Categories */}
-        <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen sticky top-[70px] h-[calc(100vh-70px)] overflow-y-auto">
+        <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-[calc(100vh-70px)] sticky top-[70px] h-[calc(100vh-70px)] overflow-y-auto">
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">
               Danh mục lừa đảo
             </h2>
 
             <div className="space-y-3">
-              {/* Tất cả */}
               <Link
                 to="/"
-                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200`}
+                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
-                    {approvedPosts.length}
+                    {categories.reduce((acc, c) => acc + (c.post_count || 0), 0)}
                   </div>
 
                   <span className="text-[#111827] group-hover:text-[#E01515] font-medium">
@@ -349,13 +479,8 @@ export function PostDetail() {
               </Link>
 
               {/* Các danh mục */}
-              {scamCategories.map((category) => {
-                const categoryPostCount = approvedPosts.filter(
-                  (p) => p.category.id === category.id
-                ).length;
-
-                const isActive = category.id === post.category.id;
-
+              {categories.map((category) => {
+                const isActive = category.id === post.category;
                 return (
                   <Link
                     key={category.id}
@@ -374,7 +499,7 @@ export function PostDetail() {
                             : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
                         }`}
                       >
-                        {categoryPostCount}
+                        {category.post_count || 0}
                       </div>
 
                       <span
@@ -384,7 +509,7 @@ export function PostDetail() {
                             : 'text-[#111827] group-hover:text-[#E01515]'
                         }`}
                       >
-                        {category.name}
+                        {category.category_name}
                       </span>
                     </div>
 
@@ -419,64 +544,83 @@ export function PostDetail() {
               {/* Author Info */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <Link to={`/user/${post.author.id}`} className="w-12 h-12 rounded-full bg-[#E01515] flex items-center justify-center text-white font-semibold text-lg">
-                    {post.author.name.charAt(0)}
-                  </Link>
+                  {post.is_anonymous ? (
+                    <Avatar name="?" size="lg" className="grayscale" />
+                  ) : (
+                    <Link to={`/user/${post.user_detail?.id}`}>
+                      <Avatar name={post.user_detail?.username || 'U'} size="lg" />
+                    </Link>
+                  )}
                   <div className="flex flex-col gap-1"> 
-                      { /* Hàng Tên tác giả và Điểm uy tín */ }
                       <div className="flex items-center gap-2">
-                        <Link to={`/user/${post.author.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
-                          {post.author.name}
-                        </Link>
+                        {post.is_anonymous ? (
+                          <span className="font-semibold text-[#1E293B] italic text-gray-500">Người dùng ẩn danh {post.user}</span>
+                        ) : (
+                          <Link to={`/user/${post.user_detail?.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
+                            {post.user_detail?.username}
+                          </Link>
+                        )}
+                        {!post.is_anonymous && (
                           <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
-                            <span className="text-[#C10007] text-xs font-semibold">⭐ {post.author.reputationScore}</span>
+                            <span className="text-[#C10007] text-xs font-semibold">⭐ {post.user_detail?.reputation_score || 0}</span>
                           </div>
+                        )}
                       </div>
                       
-                      { /* Ngày đăng */ }
                       <p className="text-sm text-[#99A1AF]">
-                        Đăng lúc {formatDate(post.createdAt)}
+                        Đăng lúc {formatDistanceToNow(new Date(post.created_time), { addSuffix: true, locale: vi })}
                       </p>
                     </div>
                 </div>
 
-                {user && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none">
-                        <MoreHorizontal className="h-6 w-6" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-white border border-[#D1D5DC] rounded-[8px] shadow-lg overflow-hidden p-1">
-                      <DropdownMenuItem 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setIsSaved(!isSaved);
-                          if (!isSaved) toast.success('Đã lưu bài viết');
-                        }}
-                        className="flex items-center gap-2 px-3 py-2 cursor-pointer outline-none hover:bg-slate-50 transition-colors"
-                      >
-                        <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-amber-500 text-amber-500' : 'text-gray-600'}`} />
-                        <span className={`text-sm ${isSaved ? 'text-amber-600' : 'text-gray-700'}`}>
-                          {isSaved ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}
-                        </span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={handleReportPost}
-                        className="flex items-center gap-2 px-3 py-2 cursor-pointer outline-none hover:bg-red-50 text-[#E01515] transition-colors"
-                      >
-                        <Flag className="h-4 w-4" />
-                        <span className="text-sm">Báo cáo bài viết</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none">
+                      <MoreHorizontal className="h-6 w-6" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-white border border-[#D1D5DC] rounded-[8px] shadow-lg overflow-hidden p-1">
+                    <DropdownMenuItem 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!user) {
+                          toast.error('Vui lòng đăng nhập để lưu bài viết');
+                          return;
+                        }
+                        setIsSaved(!isSaved);
+                        if (!isSaved) toast.success('Đã lưu bài viết');
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 cursor-pointer outline-none hover:bg-slate-50 transition-colors"
+                    >
+                      <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-amber-500 text-amber-500' : 'text-gray-600'}`} />
+                      <span className={`text-sm ${isSaved ? 'text-amber-600' : 'text-gray-700'}`}>
+                        {isSaved ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleReportPost}
+                      className="flex items-center gap-2 px-3 py-2 cursor-pointer outline-none hover:bg-red-50 text-[#E01515] transition-colors"
+                    >
+                      <Flag className="h-4 w-4" />
+                      <span className="text-sm">Báo cáo bài viết</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {!user && (
+                   <div className="flex-1 flex justify-end">
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 flex items-center gap-2 text-xs text-amber-700">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <span>Đăng nhập để tương tác</span>
+                      </div>
+                   </div>
                 )}
               </div>
 
               {/* Category Tag */}
               <div className="mb-4">
                 <span className="inline-block px-3 py-1 rounded-full border border-[#E01515] text-[#E01515] text-sm">
-                  {post.category.name}
+                  {post.category_detail?.category_name}
                 </span>
               </div>
 
@@ -489,6 +633,37 @@ export function PostDetail() {
               <div className="text-[#4A5565] whitespace-pre-wrap mb-6">
                 {post.content}
               </div>
+
+              {/* Post Images */}
+              {post.images && post.images.length > 0 && (
+                <div className={`mb-6 grid gap-2 ${
+                  post.images.length === 1 ? 'grid-cols-1' :
+                  post.images.length === 2 ? 'grid-cols-2' :
+                  'grid-cols-2 sm:grid-cols-3'
+                }`}>
+                  {post.images.slice(0, 6).map((img: string, idx: number) => {
+                    const src = img.startsWith('http') ? img : `http://127.0.0.1:8000${img}`;
+                    return (
+                    <div 
+                      key={idx} 
+                      className={`relative rounded-[12px] overflow-hidden border border-[#D1D5DC] cursor-zoom-in group aspect-square`}
+                      onClick={() => setLightbox({ isOpen: true, images: post.images.map((u: string) => u.startsWith('http') ? u : `http://127.0.0.1:8000${u}`), index: idx })}
+                    >
+                      <img 
+                        src={src} 
+                        alt={`Attachment ${idx + 1}`} 
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                      />
+                      {idx === 5 && post.images && post.images.length > 6 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-2xl font-bold">
+                          +{post.images.length - 6}
+                        </div>
+                      )}
+                    </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Post Stats */}
               <div className="flex items-center gap-6 pt-4 border-t border-[#D1D5DC]">
@@ -594,7 +769,7 @@ export function PostDetail() {
                 {comments.length === 0 ? (
                   <p className="text-center text-[#99A1AF] py-8">Chưa có bình luận nào</p>
                 ) : (
-                  comments.filter(comment => !comment.parentId).map((comment) => (
+                  comments.filter(comment => !comment.parent_comment).map((comment) => (
                     <div key={comment.id} className="border-b border-[#D1D5DC] pb-6 last:border-0 last:pb-0">
                       {renderComment(comment)}
                     </div>
@@ -622,6 +797,14 @@ export function PostDetail() {
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
         postId={post.id}
+      />
+
+      {/* Lightbox */}
+      <Lightbox 
+        images={lightbox.images}
+        isOpen={lightbox.isOpen}
+        initialIndex={lightbox.index}
+        onClose={() => setLightbox({ ...lightbox, isOpen: false })}
       />
     </div>
   );

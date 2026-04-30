@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-// 1. Nhảy ra 2 lần (../../) để từ pages -> app -> src rồi vào api
 import api from '../../api/axiosInstance';
-// 2. Tương tự cho file types
 import { Post, ScamCategory } from '../../types';
-// 3. Vì components nằm trong src/app/ nên chỉ cần nhảy ra 1 lần (../)
 import { PostCard } from '../components/PostCard';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -56,9 +53,9 @@ export function Home() {
   const filteredPosts = searchQuery.trim() === ''
     ? categoryFilteredPosts
     : categoryFilteredPosts.filter(post =>
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === 'trending') {
@@ -79,14 +76,12 @@ export function Home() {
             <div className="space-y-3">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${
-                  selectedCategory === 'all' ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
-                }`}
+                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${selectedCategory === 'all' ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
+                  }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${
-                    selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                    }`}>
                     {posts.length}
                   </div>
                   <span className={`font-medium ${selectedCategory === 'all' ? 'text-[#E01515]' : 'text-[#111827]'}`}>Tất cả</span>
@@ -101,14 +96,12 @@ export function Home() {
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id.toString())}
-                    className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${
-                      isActive ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
-                    }`}
+                    className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${isActive ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
+                      }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${
-                        isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                      }`}>
+                      <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                        }`}>
                         {count}
                       </div>
                       <span className={`font-medium ${isActive ? 'text-[#E01515]' : 'text-[#111827]'}`}>{category.category_name}</span>
@@ -128,7 +121,6 @@ export function Home() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-[28px] font-semibold mb-1">Cảnh báo lừa đảo</h1>
-                  <p className="text-[#4A5565] text-sm">Dữ liệu thời gian thực từ Backend</p>
                 </div>
                 {user && (
                   <Link to="/create-post">

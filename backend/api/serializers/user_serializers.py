@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
@@ -98,3 +99,8 @@ class UserSerializer(serializers.ModelSerializer):
             
         except Exception:
             return "Lỗi tính toán"
+class UserBriefSerializer(serializers.ModelSerializer):
+    """Thông tin tóm tắt user, dùng lồng vào Post/Comment."""
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'reputation_score']

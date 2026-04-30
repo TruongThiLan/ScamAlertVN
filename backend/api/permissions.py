@@ -27,11 +27,13 @@ class IsAdminOrReadOnly(BasePermission):
     message = 'Chỉ Admin mới được chỉnh sửa dữ liệu này.'
 
     def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
+        # Cho phép xem (SAFE_METHODS) với tất cả mọi người (kể cả Khách)
         if request.method in SAFE_METHODS:
             return True
-        # Kiểm tra vai trò của người dùng (Staff, Superuser hoặc Role Admin)
+        # Các thao tác thay đổi dữ liệu yêu cầu phải là Admin
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
         return (
             request.user.is_staff
             or request.user.is_superuser

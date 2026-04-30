@@ -2,13 +2,15 @@ import { Link } from 'react-router';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+import api from '../../api/axiosInstance';
 import { ReportDialog } from './ReportDialog';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { ThumbsUp, MessageCircle, Share2, AlertTriangle, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share2, AlertTriangle, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { Avatar } from './Avatar';
 
 interface PostCardProps {
   post: any;
@@ -20,6 +22,8 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
   const { user } = useAuth();
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(defaultSaved);
+  const [likesCount, setLikesCount] = useState(post.likes_count || 0);
+  const [isLiked, setIsLiked] = useState(post.is_liked || false);
 
   const handleReportClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -30,11 +34,42 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
     setIsReportDialogOpen(true);
   };
 
-  const handleReportSubmit = (reason: string) => {
-    toast.success('Báo cáo đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+  const handleReportSubmit = async (reason: string) => {
+    try {
+      await api.post('reports/', {
+        target_type: 'POST',
+        target_id: post.id,
+        reason: reason
+      });
+      toast.success('Báo cáo đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
+      setIsReportDialogOpen(false);
+    } catch (err) {
+      toast.error('Không thể gửi báo cáo');
+    }
   };
 
-  // Đồng bộ: createdAt -> created_time
+  const handleLikePost = async (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thích bài viết');
+      return;
+    }
+
+    try {
+      const res = await api.post('reactions/toggle/', {
+        target_type: 'POST',
+        target_id: post.id,
+        reaction_type: 'UPVOTE'
+      });
+
+      const isReacted = res.data.status === 'reacted';
+      setIsLiked(isReacted);
+      setLikesCount(isReacted ? likesCount + 1 : likesCount - 1);
+    } catch (err) {
+      toast.error('Lỗi khi thực hiện thích bài viết');
+    }
+  };
+
   const timeAgo = post.created_time
     ? formatDistanceToNow(new Date(post.created_time), { addSuffix: true, locale: vi })
     : 'Vừa xong';
@@ -43,28 +78,43 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
     <Card className="hover:shadow-md transition-shadow border-[#D1D5DC] rounded-[12px] mb-4">
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
-          {/* Author Avatar - Sử dụng user_detail từ Backend */}
-          <Link to={`/user/${post.user_detail?.id}`}>
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
-              style={{ backgroundColor: '#E01515' }}
-            >
-              {post.user_detail?.username?.charAt(0).toUpperCase() || 'U'}
-            </div>
-          </Link>
+          {post.is_anonymous ? (
+            <Avatar
+              name="?"
+              size="lg"
+              className="shadow-sm grayscale"
+            />
+          ) : (
+            <Link to={`/user/${post.user_detail?.id}`}>
+              <Avatar
+                name={post.user_detail?.username || 'U'}
+                size="lg"
+                className="hover:opacity-80 transition-opacity cursor-pointer shadow-sm"
+              />
+            </Link>
+          )}
 
           <div className="flex-1 min-w-0">
             {/* Header: Author Info & Actions */}
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <Link to={`/user/${post.user_detail?.id}`} className="hover:underline">
-                  <span className="font-semibold text-sm">{post.user_detail?.username}</span>
-                </Link>
-                <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
-                  <span className="text-[#C10007] text-xs font-semibold">
-                    ⭐ {post.user_detail?.reputation_score || 0}
+                {post.is_anonymous ? (
+                  <span className="font-semibold text-sm text-gray-500 italic">
+                    {post.user_detail?.username || 'Người dùng ẩn danh'}
                   </span>
-                </div>
+                ) : (
+                  <Link to={`/user/${post.user_detail?.id}`} className="hover:underline">
+                    <span className="font-semibold text-sm">{post.user_detail?.username}</span>
+                  </Link>
+                )}
+                {!post.is_anonymous && post.user_detail?.reputation_score !== undefined && (
+                  <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
+                    <span className="text-[#C10007] text-xs font-semibold">
+                      ⭐ {post.user_detail.reputation_score}
+                    </span>
+                  </div>
+                )}
+
                 <span className="text-gray-400">•</span>
                 <span className="text-sm text-[#4A5565]">{timeAgo}</span>
               </div>
@@ -79,6 +129,10 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.preventDefault();
+                      if (!user) {
+                        toast.error('Vui lòng đăng nhập để lưu bài viết');
+                        return;
+                      }
                       setIsSaved(!isSaved);
                       if (!isSaved) toast.success('Đã lưu bài viết');
                     }}
@@ -121,9 +175,12 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
 
             {/* Actions: likes -> likes_count, comments -> comments_count */}
             <div className="flex items-center gap-4">
-              <button className="flex items-center gap-1 text-gray-600 hover:text-red-600 transition-colors">
-                <ThumbsUp className="h-4 w-4" />
-                <span className="text-sm">{post.likes_count || 0}</span>
+              <button
+                onClick={handleLikePost}
+                className={`flex items-center gap-1 transition-colors ${isLiked ? 'text-[#E01515]' : 'text-gray-600 hover:text-red-600'}`}
+              >
+                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                <span className="text-sm">{likesCount}</span>
               </button>
               <Link to={`/post/${post.id}`} className="flex items-center gap-1 text-gray-600 hover:text-[#E01515] transition-colors">
                 <MessageCircle className="h-4 w-4" />
@@ -141,8 +198,8 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
                 <Badge
                   variant={
                     post.status === 'APPROVED' ? 'default' :
-                    post.status === 'PENDING' ? 'secondary' :
-                    'destructive'
+                      post.status === 'PENDING' ? 'secondary' :
+                        'destructive'
                   }
                 >
                   {post.status === 'APPROVED' && 'Đã duyệt'}

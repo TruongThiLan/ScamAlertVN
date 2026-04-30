@@ -20,20 +20,19 @@ export function SavedPosts() {
     return null;
   }
 
-  // Tạm thời dùng mockPosts.slice(1, 3) để giả lập danh sách đã lưu
   const savedPostsList = mockPosts.slice(1, 3);
-  
+
   const filteredPosts = searchQuery
     ? savedPostsList.filter(post =>
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : savedPostsList;
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] pb-12">
       <div className="max-w-[768px] mx-auto px-6 py-8">
-        
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">

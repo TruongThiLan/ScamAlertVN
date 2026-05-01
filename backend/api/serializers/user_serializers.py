@@ -1,3 +1,4 @@
+import re
 from rest_framework import serializers
 
 from django.db import models
@@ -19,7 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'password', 'reputation_score', 
-            'status', 'created_date', 'remaining_lock_time', 'report_count', 'role_name'
+            'status', 'created_date', 'remaining_lock_time', 'report_count', 'role_name', 'is_staff'
         ]
         extra_kwargs = {'password': {'write_only': True}}
 

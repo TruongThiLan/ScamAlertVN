@@ -1,4 +1,7 @@
+from django.db.models import Q
 from rest_framework import filters, generics, permissions, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from api.models import Comment, Post
 from api.serializers.public_serializers import (
@@ -37,6 +40,34 @@ class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
             .select_related('user', 'category')
             .order_by('-published_time', '-created_time')
         )
+
+    @action(detail=False, methods=['get'])
+    def check_scam(self, request):
+        """
+        API kiem tra nhanh link hoac so dien thoai.
+        Goi: GET /api/public/posts/check_scam/?query=<link_hoac_sdt>
+        """
+        query = request.query_params.get('query', '').strip()
+        if not query:
+            return Response({'is_scam': False, 'message': 'Vui lòng nhập thông tin cần kiểm tra.', 'matches': []})
+
+        # Tim trong title hoac content cua cac bai APPROVED
+        matches = self.get_queryset().filter(
+            Q(title__icontains=query) | Q(content__icontains=query)
+        )[:5]  # Lay toi da 5 ket qua
+
+        if matches.exists():
+            return Response({
+                'is_scam': True,
+                'message': 'Cảnh báo: Thông tin này đã bị cộng đồng báo cáo là lừa đảo!',
+                'matches': [{'id': p.id, 'title': p.title} for p in matches]
+            })
+        
+        return Response({
+            'is_scam': False,
+            'message': 'An toàn: Hệ thống chưa ghi nhận báo cáo nào. Tuy nhiên, luôn cẩn trọng!',
+            'matches': []
+        })
 
 
 class PublicCommentViewSet(viewsets.ReadOnlyModelViewSet):

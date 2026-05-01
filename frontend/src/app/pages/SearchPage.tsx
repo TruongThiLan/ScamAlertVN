@@ -123,6 +123,24 @@ export function SearchPage() {
     return () => controller.abort();
   }, [keyword]);
 
+  // Live Search Debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmedQuery = query.trim();
+      // Chỉ cập nhật URL nếu từ khóa khác với từ khóa hiện tại trong URL
+      if (trimmedQuery !== keyword) {
+        if (trimmedQuery) {
+          navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`, { replace: true });
+        } else if (keyword) {
+          // Nếu xóa hết chữ thì quay về trang search trống
+          navigate('/search', { replace: true });
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [query, keyword, navigate]);
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedQuery = query.trim();

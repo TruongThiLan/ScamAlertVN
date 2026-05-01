@@ -23,6 +23,8 @@ from api.serializers.interact_serializers import (
     CommentSerializer,
     ContentReportSerializer,
     ContentReportCreateSerializer,
+)
+from api.serializers.notification_serializers import (
     NotificationSerializer,
 )
 

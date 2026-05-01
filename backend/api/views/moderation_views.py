@@ -11,7 +11,7 @@ from .notification_views import NotificationViewSet
 from api.models import (
     ContentReport, Notification, TargetType, Post, Comment
 )
-from api.serializers.moderation_serializers import (
+from api.serializers.interact_serializers import (
     ContentReportSerializer, ContentReportCreateSerializer
 )
 from api.permissions import IsAdminRole

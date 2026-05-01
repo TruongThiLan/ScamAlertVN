@@ -7,9 +7,9 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from ..views.notification_views import NotificationViewSet
 from api.views import (
-    PostViewSet, 
-    UserViewSet, 
-    ScamCategoryViewSet, 
+    PostViewSet,
+    UserViewSet,
+    ScamCategoryViewSet,
     ContentReportViewSet,
     CommentViewSet,
     ReactionViewSet
@@ -31,6 +31,4 @@ router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     path('', include(router.urls)),
-
-    path('api/', include('api.urls.interact_urls')),
 ]

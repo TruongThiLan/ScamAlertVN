@@ -31,7 +31,8 @@ export function CreatePost() {
     const fetchCategories = async () => {
       try {
         const res = await api.get('categories/');
-        setCategories(res.data.map((c: any) => ({ id: c.id, name: c.category_name })));
+        const results = Array.isArray(res.data) ? res.data : (res.data.results || []);
+        setCategories(results.map((c: any) => ({ id: c.id, name: c.category_name })));
       } catch (err) {
         toast.error('Không thể tải danh mục');
       }

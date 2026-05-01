@@ -12,6 +12,7 @@ import { MyPosts } from './pages/MyPosts';
 import { SavedPosts } from './pages/SavedPosts';
 import { Profile } from './pages/Profile';
 import { SearchPage } from './pages/SearchPage';
+import { ScamChecker } from './pages/ScamChecker';
 import { UserProfile } from './pages/UserProfile';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUsers } from './pages/admin/Users';
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: 'about', Component: About },
+      { path: 'scam-checker', Component: ScamChecker },
       { path: 'posts/:id', Component: PostDetail },
       { path: 'posts/create', Component: CreatePost },
       { path: 'posts/:id/edit', Component: CreatePost },
@@ -56,6 +58,7 @@ export const router = createBrowserRouter([
       { path: 'user/:userId', Component: UserProfile },
       { path: 'post/:id', Component: PostDetail },
       { path: 'create-post', Component: CreatePost },
+      { path: 'edit-post/:id', Component: EditPost },
     ],
   },
   {
@@ -104,8 +107,4 @@ export const router = createBrowserRouter([
       { index: true, Component: ResetPassword },
     ],
   },
-  {
-  path: 'edit-post/:id',
-  element: <EditPost />,
-},
 ]);

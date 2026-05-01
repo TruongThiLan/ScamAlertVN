@@ -37,6 +37,7 @@ class PostViewSet(viewsets.ModelViewSet):
     """
     Quản lý bài viết + kiểm duyệt.
     """
+    # [Chương 2] Tối ưu hóa truy vấn (Giải quyết N+1 query problem) bằng select_related
     queryset = Post.objects.all().select_related('user', 'category', 'reviewed_by')
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -77,6 +78,28 @@ class PostViewSet(viewsets.ModelViewSet):
         ]:
             return PostModerationSerializer
         return PostSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Lấy chi tiết bài viết.
+        # [Chương 7] Quản lý phiên - Lưu vết các bài viết đã xem vào session
+        """
+        instance = self.get_object()
+        
+        # Lấy danh sách ID bài viết đã xem từ session của người dùng (mặc định list rỗng)
+        viewed_posts = request.session.get('viewed_posts', [])
+        
+        if instance.id not in viewed_posts:
+            viewed_posts.append(instance.id)
+            # Chỉ lưu 20 bài viết xem gần nhất để tối ưu session
+            request.session['viewed_posts'] = viewed_posts[-20:]
+            
+        serializer = self.get_serializer(instance)
+        response = Response(serializer.data)
+        
+        # Gửi danh sách ID đã xem qua header để frontend (hoặc giảng viên) dễ kiểm chứng
+        response['X-Recently-Viewed'] = str(request.session['viewed_posts'])
+        return response
 
     def _is_admin(self):
         user = self.request.user
@@ -330,13 +353,14 @@ class PostViewSet(viewsets.ModelViewSet):
         post = self.get_object()
         serializer = AdminDeletePostSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data.get('reason', '')
         _send_notification(post.user, f'Bài viết "{post.title}" đã bị xóa do vi phạm.')
         
         # Audit Log
         AuditLog.objects.create(
             action='DELETE',
             admin_user=request.user,
-            target_post=None, # Bài viết bị xóa khỏi DB, giữ ID logic trong Audit nếu cần
+            target_post=None,  # Bài viết bị xóa khỏi DB, giữ ID logic trong Audit nếu cần
             reason=reason
         )
         

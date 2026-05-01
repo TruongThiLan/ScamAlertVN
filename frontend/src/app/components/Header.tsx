@@ -106,6 +106,16 @@ export function Header() {
             >
               Về chúng tôi
             </Link>
+            <Link 
+              to="/scam-checker" 
+              className={`text-base transition-colors ${
+                isActive('/scam-checker') 
+                  ? 'text-[#E01515] font-bold' 
+                  : 'text-black font-medium hover:text-[#E01515]'
+              }`}
+            >
+              Kiểm tra nhanh
+            </Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-3">

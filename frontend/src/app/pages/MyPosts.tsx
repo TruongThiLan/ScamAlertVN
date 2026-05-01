@@ -28,7 +28,7 @@ export function MyPosts() {
     try {
       const res = await api.get('posts/mine/');
       // API return: { count, next, previous, results: [...] } OR directly [...]
-      const data = res.data.results || res.data;
+      const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
       setPosts(data);
     } catch (error) {
       console.error("Lỗi khi tải bài viết của tôi:", error);

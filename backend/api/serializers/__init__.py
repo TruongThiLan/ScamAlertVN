@@ -1,6 +1,7 @@
 from api.serializers.user_serializers import (
     UserSerializer,
     UserBriefSerializer,
+    ReputationHistorySerializer,
     UserProfileSerializer,
     ChangePasswordSerializer,
 )
@@ -31,6 +32,7 @@ from api.serializers.notification_serializers import (
 __all__ = [
     'UserSerializer',
     'UserBriefSerializer',
+    'ReputationHistorySerializer',
     'UserProfileSerializer',
     'ChangePasswordSerializer',
     'ScamCategorySerializer',

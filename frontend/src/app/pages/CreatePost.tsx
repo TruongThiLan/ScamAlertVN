@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { scamCategories } from '../data/mockData';
 import { ArrowLeft, Upload, Send, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
 import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
 import api from '../../api/axiosInstance';

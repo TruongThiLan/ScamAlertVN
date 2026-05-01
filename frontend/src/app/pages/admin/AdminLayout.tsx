@@ -97,8 +97,6 @@ export function AdminLayout() {
       const res = await api.get('posts/all/');
       const results = res.data?.results ?? res.data ?? [];
       setPosts(results.map(adaptPost));
-      console.log("DEBUG: Posts Loaded:", results.map(adaptPost));
-      console.log("DEBUG: Categories Loaded:", categories);
     } catch (err) {
       console.error('Không thể tải danh sách bài viết:', err);
     } finally {

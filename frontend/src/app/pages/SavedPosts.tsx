@@ -1,26 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { mockPosts } from '../data/mockData';
 import { PostCard } from '../components/PostCard';
-import { Search, Bookmark } from 'lucide-react';
+import { Search, Bookmark, Loader2 } from 'lucide-react';
+import api from '../../api/axiosInstance';
 
 export function SavedPosts() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [savedPostsList, setSavedPostsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
+      return;
     }
+
+    const fetchSavedPosts = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('bookmarks/mine/');
+        const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
+        setSavedPostsList(data);
+      } catch (error) {
+        setSavedPostsList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSavedPosts();
   }, [user, navigate]);
 
   if (!user) {
     return null;
   }
-
-  const savedPostsList = mockPosts.slice(1, 3);
 
   const filteredPosts = searchQuery
     ? savedPostsList.filter(post =>
@@ -32,8 +48,6 @@ export function SavedPosts() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] pb-12">
       <div className="max-w-[768px] mx-auto px-6 py-8">
-
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-amber-100 p-2 rounded-lg">
@@ -46,7 +60,6 @@ export function SavedPosts() {
           </p>
         </div>
 
-        {/* Search */}
         <div className="relative mb-8">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
           <input
@@ -58,9 +71,13 @@ export function SavedPosts() {
           />
         </div>
 
-        {/* Posts List */}
         <div className="space-y-4">
-          {filteredPosts.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-[#4A5565]">
+              <Loader2 className="h-7 w-7 animate-spin text-[#E01515] mb-2" />
+              <p>Đang tải bài viết đã lưu...</p>
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <div className="bg-white rounded-[12px] border border-[#D1D5DC] p-12 text-center shadow-sm">
               <p className="text-[#99A1AF] mb-4">
                 {searchQuery ? 'Không tìm thấy bài viết đã lưu phù hợp' : 'Bạn chưa lưu bài viết nào'}
@@ -68,7 +85,16 @@ export function SavedPosts() {
             </div>
           ) : (
             filteredPosts.map((post) => (
-              <PostCard key={post.id} post={post} defaultSaved={true} />
+              <PostCard
+                key={post.id}
+                post={post}
+                defaultSaved={true}
+                onBookmarkChange={(postId, isBookmarked) => {
+                  if (!isBookmarked) {
+                    setSavedPostsList((current) => current.filter((item) => item.id !== postId));
+                  }
+                }}
+              />
             ))
           )}
         </div>

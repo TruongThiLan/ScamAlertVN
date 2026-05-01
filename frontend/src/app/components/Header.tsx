@@ -3,9 +3,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { ShieldAlert, User, LogOut, LayoutDashboard, ChevronDown, Bell, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { mockNotifications } from '../data/mockData';
 import { Notification } from '../types';
 import { Avatar } from './Avatar';
+import api from '../../api/axiosInstance';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,16 +31,28 @@ export function Header() {
   const location = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // If user changes, reset notifications list based on user (Mocked here)
   useEffect(() => {
-    if (user) {
-      setNotifications(mockNotifications.filter(n => n.userId === user.id));
+    if (!user) {
+      setNotifications([]);
+      return;
     }
+
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.get('notifications/');
+        const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
+        setNotifications(data);
+      } catch (error) {
+        setNotifications([]);
+      }
+    };
+
+    fetchNotifications();
   }, [user]);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const handleLogout = () => {
     logout();
@@ -48,16 +60,30 @@ export function Header() {
     setShowLogoutDialog(false);
   };
 
-  const markAllAsRead = (e: React.MouseEvent) => {
+  const markAllAsRead = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    const unreadNotifications = notifications.filter(n => !n.is_read);
+    setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+    try {
+      await Promise.all(unreadNotifications.map(n => api.post(`notifications/${n.id}/mark_as_read/`)));
+    } catch (error) {
+      // Keep the optimistic UI; the next fetch will reconcile server state.
+    }
   };
 
-  const markAsRead = (id: string, e: React.MouseEvent) => {
+  const markAsRead = async (id: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+    const notification = notifications.find(n => n.id === id);
+    if (!notification || notification.is_read) return;
+
+    setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
+    try {
+      await api.post(`notifications/${id}/mark_as_read/`);
+    } catch (error) {
+      setNotifications(notifications);
+    }
   };
 
   const isActive = (path: string) => {
@@ -179,19 +205,19 @@ export function Header() {
                             // or we can allow it to close. Usually clicking a notification navigates somewhere and closes the menu.
                             // If we want it to close, we can just let it navigate. For now, it just marks as read.
                             className={`flex flex-col items-start px-4 py-3 border-b border-[#E2E8F0] cursor-pointer hover:bg-gray-50 transition-colors ${
-                              !notif.isRead ? 'bg-blue-50/40' : ''
+                              !notif.is_read ? 'bg-blue-50/40' : ''
                             }`}
                           >
                             <div className="flex justify-between w-full items-start gap-2">
-                              <span className={`text-sm leading-snug ${!notif.isRead ? 'font-semibold text-gray-900' : 'text-[#4A5565]'}`}>
+                              <span className={`text-sm leading-snug ${!notif.is_read ? 'font-semibold text-gray-900' : 'text-[#4A5565]'}`}>
                                 {notif.content}
                               </span>
-                              {!notif.isRead && (
+                              {!notif.is_read && (
                                 <span className="h-2 w-2 rounded-full bg-[#E01515] mt-1 shrink-0 relative top-0.5 shadow-sm" />
                               )}
                             </div>
                             <span className="text-xs text-[#99A1AF] mt-1.5 flex items-center gap-1 font-medium">
-                              {new Date(notif.createdTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              {new Date(notif.created_time).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </span>
                           </div>
                         ))}

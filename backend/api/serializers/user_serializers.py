@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-from ..models import User, ActivityLog, ContentReport, Post, Comment, Notification
+from ..models import User, ActivityLog, ContentReport, Post, Comment, Notification, ReputationHistory
 
 class UserSerializer(serializers.ModelSerializer):
     """
@@ -105,6 +105,15 @@ class UserBriefSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'reputation_score']
+
+
+class ReputationHistorySerializer(serializers.ModelSerializer):
+    """Lich su thay doi diem uy tin cua mot user."""
+
+    class Meta:
+        model = ReputationHistory
+        fields = ['id', 'action_type', 'score_change', 'created_time', 'user']
+        read_only_fields = fields
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

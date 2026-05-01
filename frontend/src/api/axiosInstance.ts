@@ -30,7 +30,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.log("Token hết hạn hoặc không hợp lệ, Nguyệt nên cho user login lại!");
       // localStorage.removeItem('access_token');
     }
     return Promise.reject(error);

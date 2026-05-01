@@ -1,12 +1,12 @@
 import { Link } from 'react-router';
-import { useState } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import api from '../../api/axiosInstance';
 import { ReportDialog } from './ReportDialog';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { Heart, MessageCircle, Share2, AlertTriangle, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Flag, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -16,17 +16,25 @@ interface PostCardProps {
   post: any;
   showStatus?: boolean;
   defaultSaved?: boolean;
+  onBookmarkChange?: (postId: number, isBookmarked: boolean) => void;
 }
 
-export function PostCard({ post, showStatus = false, defaultSaved = false }: PostCardProps) {
+export function PostCard({ post, showStatus = false, defaultSaved = false, onBookmarkChange }: PostCardProps) {
   const { user } = useAuth();
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
-  const [isSaved, setIsSaved] = useState(defaultSaved);
+  const [isSaved, setIsSaved] = useState(defaultSaved || Boolean(post.is_bookmarked));
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
-  const [isLiked, setIsLiked] = useState(post.is_liked || false);
+  const [isLiked, setIsLiked] = useState(Boolean(post.is_liked));
 
-  const handleReportClick = (e: React.MouseEvent) => {
+  useEffect(() => {
+    setIsSaved(defaultSaved || Boolean(post.is_bookmarked));
+    setLikesCount(post.likes_count || 0);
+    setIsLiked(Boolean(post.is_liked));
+  }, [defaultSaved, post.id, post.is_bookmarked, post.likes_count, post.is_liked]);
+
+  const handleReportClick = (e: MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!user) {
       toast.error('Vui lòng đăng nhập để báo cáo bài viết');
       return;
@@ -39,7 +47,7 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
       await api.post('reports/', {
         target_type: 'POST',
         target_id: post.id,
-        reason: reason
+        reason,
       });
       toast.success('Báo cáo đã được gửi. Chúng tôi sẽ xem xét trong thời gian sớm nhất.');
       setIsReportDialogOpen(false);
@@ -48,8 +56,9 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
     }
   };
 
-  const handleLikePost = async (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation();
+  const handleLikePost = async (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!user) {
       toast.error('Vui lòng đăng nhập để thích bài viết');
       return;
@@ -59,14 +68,47 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
       const res = await api.post('reactions/toggle/', {
         target_type: 'POST',
         target_id: post.id,
-        reaction_type: 'UPVOTE'
+        reaction_type: 'UPVOTE',
       });
 
-      const isReacted = res.data.status === 'reacted';
-      setIsLiked(isReacted);
-      setLikesCount(isReacted ? likesCount + 1 : likesCount - 1);
+      setIsLiked(res.data.status === 'reacted');
+      setLikesCount(res.data.likes_count);
     } catch (err) {
       toast.error('Lỗi khi thực hiện thích bài viết');
+    }
+  };
+
+  const handleToggleBookmark = async (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để lưu bài viết');
+      return;
+    }
+
+    try {
+      const res = await api.post('bookmarks/toggle/', { post_id: post.id });
+      const nextSaved = res.data.status === 'bookmarked';
+      setIsSaved(nextSaved);
+      onBookmarkChange?.(post.id, nextSaved);
+      toast.success(nextSaved ? 'Đã lưu bài viết' : 'Đã bỏ lưu bài viết');
+    } catch (err) {
+      toast.error('Không thể cập nhật bài viết đã lưu');
+    }
+  };
+
+  const handleSharePost = async (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      const res = await api.get(`shares/${post.id}/share/`);
+      const shareUrl = res.data.share_url || `${window.location.origin}/post/${post.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Đã sao chép liên kết chia sẻ');
+    } catch (err) {
+      toast.error('Không thể tạo liên kết chia sẻ');
     }
   };
 
@@ -79,11 +121,7 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           {post.is_anonymous ? (
-            <Avatar
-              name="?"
-              size="lg"
-              className="shadow-sm grayscale"
-            />
+            <Avatar name="?" size="lg" className="shadow-sm grayscale" />
           ) : (
             <Link to={`/user/${post.user_detail?.id}`}>
               <Avatar
@@ -95,7 +133,6 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
           )}
 
           <div className="flex-1 min-w-0">
-            {/* Header: Author Info & Actions */}
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {post.is_anonymous ? (
@@ -110,7 +147,7 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
                 {!post.is_anonymous && post.user_detail?.reputation_score !== undefined && (
                   <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
                     <span className="text-[#C10007] text-xs font-semibold">
-                      ⭐ {post.user_detail.reputation_score}
+                      Uy tín {post.user_detail.reputation_score}
                     </span>
                   </div>
                 )}
@@ -127,15 +164,7 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-white border border-[#D1D5DC] rounded-[8px] shadow-lg p-1">
                   <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (!user) {
-                        toast.error('Vui lòng đăng nhập để lưu bài viết');
-                        return;
-                      }
-                      setIsSaved(!isSaved);
-                      if (!isSaved) toast.success('Đã lưu bài viết');
-                    }}
+                    onClick={handleToggleBookmark}
                     className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-slate-50 outline-none"
                   >
                     <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-amber-500 text-amber-500' : 'text-gray-600'}`} />
@@ -154,7 +183,6 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
               </DropdownMenu>
             </div>
 
-            {/* Danh mục: category -> category_detail */}
             {post.category_detail && (
               <div className="mb-2">
                 <span className="inline-block px-2 py-0.5 border border-[#E01515] text-[#E01515] rounded-lg text-xs font-medium">
@@ -163,17 +191,14 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
               </div>
             )}
 
-            {/* Post Title */}
             <Link to={`/post/${post.id}`} className="hover:underline block mb-2">
               <h3 className="font-semibold text-base">{post.title}</h3>
             </Link>
 
-            {/* Post Content */}
             <p className="text-gray-700 line-clamp-2 text-sm mb-3">
               {post.content}
             </p>
 
-            {/* Actions: likes -> likes_count, comments -> comments_count */}
             <div className="flex items-center gap-4">
               <button
                 onClick={handleLikePost}
@@ -186,13 +211,15 @@ export function PostCard({ post, showStatus = false, defaultSaved = false }: Pos
                 <MessageCircle className="h-4 w-4" />
                 <span className="text-sm">{post.comments_count || 0} bình luận</span>
               </Link>
-              <button className="ml-auto flex items-center gap-2 text-[#99A1AF] hover:text-[#E01515] transition-colors">
+              <button
+                onClick={handleSharePost}
+                className="ml-auto flex items-center gap-2 text-[#99A1AF] hover:text-[#E01515] transition-colors"
+              >
                 <Share2 className="h-4 w-4" />
                 <span className="text-sm">Chia sẻ</span>
               </button>
             </div>
 
-            {/* Status Badge */}
             {showStatus && (
               <div className="mt-4">
                 <Badge

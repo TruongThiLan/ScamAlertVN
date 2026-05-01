@@ -2,7 +2,7 @@ import { FormEvent, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 // 1. Nhảy ra 2 lần (../../) để từ pages -> app -> src rồi vào api
 import api from '../../api/axiosInstance';
-import { Post, ScamCategory } from '../../types';
+import type { Post, ScamCategory } from '../types';
 import { PostCard } from '../components/PostCard';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';

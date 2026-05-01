@@ -1,8 +1,8 @@
-export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED';
-export type PostStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type UserStatus = 'active' | 'inactive' | 'banned' | 'warning' | 'ACTIVE' | 'INACTIVE' | 'BANNED' | 'WARNING';
+export type PostStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'LOCKED';
 export type ReportStatus = 'PENDING' | 'PROCESSED' | 'DISMISSED';
 export type ReactionType = 'UPVOTE' | 'DOWNVOTE';
-export type TargetType = 'POST' | 'COMMENT';
+export type TargetType = 'POST' | 'COMMENT' | 'USER';
 export type MediaType = 'IMAGE' | 'VIDEO' | 'DOCUMENT';
 
 export interface Role {
@@ -40,10 +40,14 @@ export interface Post {
   updated_time: string;
   published_time?: string | null;
   status: PostStatus;
+  is_anonymous?: boolean;
   user_detail: User;
   category_detail: ScamCategory | null;
   likes_count: number;
   comments_count: number;
+  is_liked?: boolean;
+  is_bookmarked?: boolean;
+  images?: string[];
 }
 
 export interface Comment {
@@ -100,7 +104,7 @@ export interface Notification {
   content: string;
   is_read: boolean;
   created_time: string;
-  user: number;
+  user?: number;
 }
 
 export interface ActivityLog {

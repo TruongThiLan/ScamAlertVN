@@ -7,8 +7,13 @@ from django.contrib.auth import update_session_auth_hash
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from ..models import User, ActivityLog, Notification, Role
-from ..serializers.user_serializers import UserSerializer, UserProfileSerializer, ChangePasswordSerializer
+from ..models import User, ActivityLog, Notification, Role, ReputationHistory
+from ..serializers.user_serializers import (
+    UserSerializer,
+    UserProfileSerializer,
+    ChangePasswordSerializer,
+    ReputationHistorySerializer,
+)
 
 def _first_serializer_error(serializer):
     """Tra ve text loi dau tien de frontend hien thi toast."""
@@ -72,7 +77,7 @@ class UserViewSet(viewsets.ModelViewSet):
         - Hành động 'me' (lấy thông tin bản thân) chỉ cần IsAuthenticated.
         - Các hành động quản lý (list, lock, unlock, warn, destroy...) yêu cầu IsAdminRole.
         """
-        if self.action in ['me', 'profile', 'profile_availability', 'change_password']:
+        if self.action in ['me', 'profile', 'profile_availability', 'change_password', 'reputation_history']:
             return [permissions.IsAuthenticated()]
         return [IsAdminRole()]
 
@@ -177,6 +182,18 @@ class UserViewSet(viewsets.ModelViewSet):
     def me(self, request):
         """Lấy thông tin cá nhân của người dùng hiện tại."""
         serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='reputation-history',
+    )
+    def reputation_history(self, request):
+        """Lay lich su thay doi diem uy tin cua user dang dang nhap."""
+        histories = ReputationHistory.objects.filter(user=request.user).order_by('-created_time')
+        serializer = ReputationHistorySerializer(histories, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['put', 'patch'], permission_classes=[permissions.IsAuthenticated])

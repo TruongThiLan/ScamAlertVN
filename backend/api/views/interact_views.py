@@ -384,19 +384,24 @@ class ContentReportViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """
-        UC 10.4 – Lưu báo cáo, gán reporter_user từ request.
-        NOTE: Điểm uy tín +5 cho người báo cáo khi báo cáo được duyệt
-        CẬP NHẬT: Hệ thống tự động rà soát và xử lý (PROCESSED) ngay lập tức.
+        Lưu báo cáo, gán reporter_user từ request.
+        Điểm uy tín và việc ẩn nội dung chỉ được áp dụng sau khi Admin xử lý.
         """
+        serializer.save(reporter_user=self.request.user)
 
-        # 1. Lưu báo cáo vào DB (trạng thái mặc định là pending)
-        report = serializer.save(reporter_user=self.request.user)
-        # 2. HỆ THỐNG TỰ RÀ SOÁT (Auto-Review Logic)
-        # TODO: Thêm logic quét từ khóa hoặc AI tại đây nếu cần.
-        # Hiện tại mặc định cho phép tự động duyệt:
-        is_auto_approved = True
-        if is_auto_approved:
-            self._apply_report_logic(report, is_auto=True)
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='dismiss')
+    def dismiss(self, request, pk=None):
+        """Admin bac bo bao cao va khong thay doi diem/noi dung."""
+        report = self.get_object()
+        if report.processing_status != ContentReport.ProcessStatus.PENDING:
+            return Response(
+                {'detail': 'Báo cáo này đã được xử lý trước đó.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        report.processing_status = ContentReport.ProcessStatus.DISMISSED
+        report.save(update_fields=['processing_status'])
+        return Response({'detail': 'Báo cáo đã bị bác bỏ.'})
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='process')
     def process(self, request, pk=None):

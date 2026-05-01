@@ -72,6 +72,12 @@ class Post(models.Model):
         HIDDEN = 'HIDDEN', 'Hidden'
         LOCKED = 'LOCKED', 'Locked'
 
+    class AIAnalysisStatus(models.TextChoices):
+        NOT_ANALYZED = 'NOT_ANALYZED', 'Not analyzed'
+        PROCESSING = 'PROCESSING', 'Processing'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+
     title = models.CharField(max_length=255)
     content = models.TextField()
 
@@ -120,6 +126,31 @@ class Post(models.Model):
     reviewed_at = models.DateTimeField(
         null=True, blank=True,
         help_text='Thời điểm Admin xử lý'
+    )
+    ai_analysis_status = models.CharField(
+        max_length=20,
+        choices=AIAnalysisStatus.choices,
+        default=AIAnalysisStatus.NOT_ANALYZED,
+        help_text='Trang thai phan tich noi dung bang AI'
+    )
+    ai_analysis_result = models.JSONField(
+        null=True, blank=True,
+        help_text='Ket qua goi y AI dang JSON cho Admin'
+    )
+    ai_analysis_provider = models.CharField(
+        max_length=30,
+        blank=True,
+        default='',
+        help_text='Nguon phan tich: openai, gemini, local'
+    )
+    ai_analysis_error = models.TextField(
+        blank=True,
+        default='',
+        help_text='Loi khi goi API AI, neu co'
+    )
+    ai_analyzed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Thoi diem phan tich AI gan nhat'
     )
 
     class Meta:

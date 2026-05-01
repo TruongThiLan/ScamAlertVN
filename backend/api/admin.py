@@ -20,10 +20,10 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'status', 'created_time')
-    list_filter = ('status', 'is_anonymous', 'created_time')
+    list_display = ('title', 'user', 'status', 'ai_analysis_status', 'ai_analysis_provider', 'created_time')
+    list_filter = ('status', 'ai_analysis_status', 'ai_analysis_provider', 'is_anonymous', 'created_time')
     search_fields = ('title', 'content', 'user__username')
-    readonly_fields = ('created_time', 'updated_time')
+    readonly_fields = ('created_time', 'updated_time', 'ai_analysis_result', 'ai_analysis_error', 'ai_analyzed_at')
     ordering = ('-created_time',)
     # [Chương 2] Tối ưu hóa truy vấn cho giao diện admin bằng select_related
     list_select_related = ('user',)

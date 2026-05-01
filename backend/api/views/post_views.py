@@ -11,6 +11,7 @@ from api.serializers import (
     HidePostSerializer, LockPostSerializer, AdminDeletePostSerializer
 )
 from api.permissions import IsAdminRole
+from api.services.ai_content_analysis import analyze_and_store_post
 
 # ========================================================
 # HELPERS
@@ -74,7 +75,8 @@ class PostViewSet(viewsets.ModelViewSet):
             return PostCreateSerializer
         if self.action in [
             'pending_list', 'all_posts',
-            'approve', 'reject', 'hide', 'lock', 'admin_delete'
+            'approve', 'reject', 'hide', 'lock', 'admin_delete',
+            'ai_analyze',
         ]:
             return PostModerationSerializer
         return PostSerializer
@@ -129,11 +131,14 @@ class PostViewSet(viewsets.ModelViewSet):
 
         instance = serializer.save(user=self.request.user)
         self._handle_file_uploads(instance)
+        analyze_and_store_post(instance)
 
     def perform_update(self, serializer):
         """Xử lý cập nhật bài viết và upload thêm file mới."""
         instance = serializer.save()
         self._handle_file_uploads(instance)
+        if instance.status in [Post.PostStatus.PENDING, Post.PostStatus.REJECTED]:
+            analyze_and_store_post(instance)
 
     def _handle_file_uploads(self, instance):
         """
@@ -249,6 +254,15 @@ class PostViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(posts)
         serializer = PostSerializer(page if page is not None else posts, many=True)
         return self.get_paginated_response(serializer.data) if page is not None else Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='ai-analyze')
+    def ai_analyze(self, request, pk=None):
+        post = self.get_object()
+        analyze_and_store_post(post)
+        return Response({
+            'detail': 'Đã phân tích nội dung bằng AI.',
+            'post': PostModerationSerializer(post).data,
+        })
 
     # ---------------------------------------------------------
     # MODERATION ACTIONS

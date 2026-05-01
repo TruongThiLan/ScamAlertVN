@@ -156,8 +156,8 @@ export function SearchPage() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
-      <div className="flex">
-        <aside className="min-h-screen w-[320px] shrink-0 border-r border-[#D1D5DC] bg-white">
+      <div className="flex items-start">
+        <aside className="sticky top-[70px] h-[calc(100vh-70px)] w-[320px] shrink-0 overflow-y-auto border-r border-[#D1D5DC] bg-white">
           <div className="p-6">
             <h2 className="mb-6 text-lg font-semibold text-[#111827]">Danh mục lừa đảo</h2>
             <div className="space-y-3">

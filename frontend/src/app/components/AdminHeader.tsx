@@ -41,7 +41,7 @@ export function AdminHeader() {
 
   return (
     <>
-      <header className="bg-[#E7A5A5]/30 border-b border-[#D1D5DC]" style={{ height: '70px' }}>
+      <header className="shrink-0 bg-[#E7A5A5]/30 border-b border-[#D1D5DC] z-40" style={{ height: '70px' }}>
         <div className="px-8 h-full flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center">

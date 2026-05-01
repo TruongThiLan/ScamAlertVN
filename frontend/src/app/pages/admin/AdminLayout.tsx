@@ -1,7 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChevronRight } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
 import api from '../../../api/axiosInstance';
 
@@ -14,6 +14,21 @@ export interface Category {
   postCount: number;
 }
 
+export interface AIAnalysis {
+  status: 'NOT_ANALYZED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  provider: string;
+  result: {
+    is_scam?: boolean;
+    confidence?: number;
+    category?: string | null;
+    summary?: string;
+    signals?: string[];
+    recommended_action?: 'approve' | 'reject' | 'review' | string;
+  } | null;
+  error?: string;
+  analyzedAt?: string | null;
+}
+
 export interface Post {
   id: string;
   title: string;
@@ -24,6 +39,7 @@ export interface Post {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'LOCKED';
   rejectionReason?: string;
   images: string[];
+  aiAnalysis: AIAnalysis;
 }
 
 // ─── Adapter: Chuyển response API → shape frontend cần ───────────────────────
@@ -37,6 +53,13 @@ function adaptPost(raw: any): Post {
     status: raw.status ?? 'PENDING',
     rejectionReason: raw.rejection_reason ?? undefined,
     images: Array.isArray(raw.images) ? raw.images : [],
+    aiAnalysis: {
+      status: raw.ai_analysis_status ?? 'NOT_ANALYZED',
+      provider: raw.ai_analysis_provider ?? '',
+      result: raw.ai_analysis_result ?? null,
+      error: raw.ai_analysis_error ?? '',
+      analyzedAt: raw.ai_analyzed_at ?? null,
+    },
     author: raw.user_detail
       ? { id: String(raw.user_detail.id), name: raw.user_detail.username }
       : { id: String(raw.user ?? ''), name: '(unknown)' },
@@ -66,6 +89,7 @@ export function AdminLayout() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
@@ -106,6 +130,10 @@ export function AdminLayout() {
     }
   }, [is_admin, navigate]);
 
+  useEffect(() => {
+    mainContentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, location.search]);
+
   if (!user || !is_admin) return null;
 
   const getPendingCount = (categoryId?: string) =>
@@ -119,12 +147,12 @@ export function AdminLayout() {
   const isAllActive = location.pathname === '/admin/posts' && !selectedCategory;
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="h-screen bg-[#F9FAFB] overflow-hidden flex flex-col">
       <AdminHeader />
 
-      <div className="flex">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
-        <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-[calc(100vh-73px)]">
+        <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] h-full overflow-y-auto">
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
 
@@ -206,7 +234,7 @@ export function AdminLayout() {
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1">
+        <main ref={mainContentRef} className="flex-1 min-w-0 h-full overflow-y-auto">
           <Outlet
             context={{
               categories, setCategories, fetchCategories,
@@ -214,7 +242,7 @@ export function AdminLayout() {
               loadingPosts, loadingCategories,
             }}
           />
-        </div>
+        </main>
       </div>
     </div>
   );

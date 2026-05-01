@@ -15,6 +15,7 @@ from api.views import (
     ReactionViewSet
 )
 from api.views.interact_views import BookmarkViewSet, PostShareViewSet
+from api.views.statistics_views import SystemStatisticsView
 
 # Router chính của dự án
 router = DefaultRouter()
@@ -30,5 +31,6 @@ router.register(r'shares', PostShareViewSet, basename='share')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
+    path('statistics/', SystemStatisticsView.as_view(), name='system-statistics'),
     path('', include(router.urls)),
 ]

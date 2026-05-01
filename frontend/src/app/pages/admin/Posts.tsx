@@ -1,5 +1,18 @@
 import { useState } from 'react';
-import { Search, Eye, Trash2, Lock, EyeOff, Check, X, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  Search,
+  Eye,
+  Trash2,
+  Lock,
+  EyeOff,
+  Check,
+  X,
+  AlertTriangle,
+  Loader2,
+  Sparkles,
+  ShieldAlert,
+  RefreshCw,
+} from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -22,6 +35,25 @@ export type { Post };
 
 type ActionType = 'approve' | 'reject' | 'hide' | 'lock' | 'delete' | null;
 
+type AIAnalysis = Post['aiAnalysis'];
+
+function mapAIAnalysis(raw: any): AIAnalysis {
+  return {
+    status: raw.ai_analysis_status ?? 'NOT_ANALYZED',
+    provider: raw.ai_analysis_provider ?? '',
+    result: raw.ai_analysis_result ?? null,
+    error: raw.ai_analysis_error ?? '',
+    analyzedAt: raw.ai_analyzed_at ?? null,
+  };
+}
+
+function formatProvider(provider: string) {
+  if (provider === 'openai') return 'OpenAI GPT';
+  if (provider === 'gemini') return 'Google Gemini';
+  if (provider === 'local') return 'Local AI';
+  return 'AI';
+}
+
 interface OutletCtx {
   posts: Post[];
   setPosts: React.Dispatch<React.SetStateAction<Post[]>>;
@@ -43,6 +75,7 @@ export function AdminPosts() {
   const [actionReason, setActionReason] = useState('');
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
 
   // ─── Lọc bài hiển thị ────────────────────────────────────────────────────
   const filteredPosts = posts.filter((post) => {
@@ -66,6 +99,33 @@ export function AdminPosts() {
     setActionType(null);
     setSelectedPost(null);
     setActionReason('');
+  };
+
+  const handleAnalyzePost = async (post: Post) => {
+    setAnalyzingPostId(post.id);
+    try {
+      const res = await api.post(`posts/${post.id}/ai-analyze/`);
+      const rawPost = res.data?.post;
+      const aiAnalysis = mapAIAnalysis(rawPost ?? {});
+
+      setPosts((prev) =>
+        prev.map((item) =>
+          item.id === post.id ? { ...item, aiAnalysis } : item
+        )
+      );
+      setSelectedPost((current) =>
+        current?.id === post.id ? { ...current, aiAnalysis } : current
+      );
+      toast.success('Đã cập nhật gợi ý AI');
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.detail ||
+        Object.values(err?.response?.data ?? {}).flat().join(' ') ||
+        'Không thể phân tích nội dung lúc này.';
+      toast.error(String(msg));
+    } finally {
+      setAnalyzingPostId(null);
+    }
   };
 
   // ─── Gọi API & cập nhật state ────────────────────────────────────────────
@@ -149,6 +209,115 @@ export function AdminPosts() {
       default:
         return null;
     }
+  };
+
+  const renderAIAnalysis = (post: Post, compact = false) => {
+    const analysis = post.aiAnalysis ?? {
+      status: 'NOT_ANALYZED',
+      provider: '',
+      result: null,
+      error: '',
+      analyzedAt: null,
+    } as AIAnalysis;
+    const result = analysis?.result;
+    const isAnalyzing = analyzingPostId === post.id || analysis?.status === 'PROCESSING';
+    const confidence = Math.max(0, Math.min(100, Number(result?.confidence ?? 0)));
+    const signals = Array.isArray(result?.signals) ? result.signals : [];
+    const isScam = Boolean(result?.is_scam);
+    const confidenceClass =
+      confidence >= 80
+        ? 'bg-[#DC2626]'
+        : confidence >= 55
+          ? 'bg-[#F59E0B]'
+          : 'bg-[#10B981]';
+
+    if (post.status !== 'PENDING' && !result) return null;
+
+    return (
+      <div className={`mt-4 rounded-[8px] border p-4 ${
+        isScam
+          ? 'border-[#FECACA] bg-[#FFF7F7]'
+          : 'border-[#BFDBFE] bg-[#F8FBFF]'
+      }`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className={`h-9 w-9 rounded-[8px] flex items-center justify-center shrink-0 ${
+              isScam ? 'bg-[#FEE2E2] text-[#DC2626]' : 'bg-[#DBEAFE] text-[#2563EB]'
+            }`}>
+              {isScam ? <ShieldAlert className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-semibold text-[#1E293B]">Gợi ý AI</p>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-white border border-[#D1D5DC] text-[#64748B]">
+                  {formatProvider(analysis?.provider ?? '')}
+                </span>
+                {result?.recommended_action && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#475569]">
+                    {result.recommended_action === 'approve'
+                      ? 'Có thể duyệt'
+                      : result.recommended_action === 'reject'
+                        ? 'Nên từ chối'
+                        : 'Cần xem kỹ'}
+                  </span>
+                )}
+              </div>
+
+              {isAnalyzing ? (
+                <p className="mt-1 text-sm text-[#64748B] flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Đang phân tích nội dung...
+                </p>
+              ) : analysis.status === 'FAILED' ? (
+                <p className="mt-1 text-sm text-[#991B1B]">
+                  Phân tích thất bại{analysis.error ? `: ${analysis.error}` : '.'}
+                </p>
+              ) : result ? (
+                <>
+                  <p className="mt-1 text-sm text-[#475569]">
+                    Độ tin cậy là lừa đảo: <strong>{confidence}%</strong>
+                    {result.category ? <> · Đề xuất: <strong>{result.category}</strong></> : null}
+                  </p>
+                  <div className="mt-2 h-2 w-full max-w-[420px] rounded-full bg-white border border-[#E2E8F0] overflow-hidden">
+                    <div className={`h-full ${confidenceClass}`} style={{ width: `${confidence}%` }} />
+                  </div>
+                  {!compact && result.summary && (
+                    <p className="mt-3 text-sm text-[#334155]">{result.summary}</p>
+                  )}
+                  {signals.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {signals.slice(0, compact ? 3 : 5).map((signal, idx) => (
+                        <span key={idx} className="text-xs px-2.5 py-1 rounded-full bg-white border border-[#E2E8F0] text-[#475569]">
+                          {signal}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {analysis?.error && !compact && (
+                    <p className="mt-2 text-xs text-[#92400E]">{analysis.error}</p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-[#64748B]">Chưa có gợi ý cho bài viết này.</p>
+              )}
+            </div>
+          </div>
+
+          {post.status === 'PENDING' && (
+            <Button
+              onClick={() => handleAnalyzePost(post)}
+              disabled={isAnalyzing}
+              variant="outline"
+              size="sm"
+              className="shrink-0 bg-white border-[#BFDBFE] text-[#2563EB] hover:bg-[#EFF6FF] rounded-[8px]"
+            >
+              {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Phân tích
+            </Button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // ─── Cấu hình dialog ──────────────────────────────────────────────────────
@@ -236,6 +405,7 @@ export function AdminPosts() {
                       Lý do: {post.rejectionReason}
                     </p>
                   )}
+                  {renderAIAnalysis(post, true)}
                 </div>
               </div>
 
@@ -387,6 +557,8 @@ export function AdminPosts() {
               <div className="text-[15px] text-[#1E293B] leading-relaxed whitespace-pre-wrap">
                 {selectedPost.content}
               </div>
+
+              {renderAIAnalysis(selectedPost)}
 
               {/* Post Images */}
               {selectedPost.images && selectedPost.images.length > 0 && (

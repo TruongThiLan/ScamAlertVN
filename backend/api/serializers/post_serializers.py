@@ -114,6 +114,9 @@ class PostModerationSerializer(serializers.ModelSerializer):
             'rejection_reason',
             'reviewed_by', 'reviewed_by_detail',
             'reviewed_at',
+            'ai_analysis_status', 'ai_analysis_result',
+            'ai_analysis_provider', 'ai_analysis_error',
+            'ai_analyzed_at',
             'is_anonymous', 'images',
         ]
         read_only_fields = fields

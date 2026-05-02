@@ -28,9 +28,9 @@ export const Avatar: React.FC<AvatarProps> = ({
   };
 
   return (
-    <div className={`relative inline-block ${className}`}>
+    <div className="relative inline-flex shrink-0">
       <div 
-        className={`${sizeClasses[size]} rounded-full bg-[#E01515] flex items-center justify-center text-white font-bold shrink-0 shadow-sm border border-white/10`}
+        className={`${sizeClasses[size]} ${className} rounded-full bg-[#E01515] flex items-center justify-center text-white font-bold shrink-0 shadow-sm border border-white/10`}
         title={name}
       >
         {getInitials(name)}

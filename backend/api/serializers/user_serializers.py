@@ -48,8 +48,13 @@ class UserSerializer(serializers.ModelSerializer):
             target_type='COMMENT',
             target_id__in=Comment.objects.filter(user=obj).values_list('id', flat=True)
         ).count()
+
+        user_reports = ContentReport.objects.filter(
+            target_type='USER',
+            target_id=obj.id,
+        ).count()
         
-        return post_reports + comment_reports
+        return post_reports + comment_reports + user_reports
 
     def get_remaining_lock_time(self, obj):
         """
@@ -105,6 +110,15 @@ class UserBriefSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'reputation_score']
+
+
+class UserPublicProfileSerializer(serializers.ModelSerializer):
+    """Thong tin cong khai cho trang ho so tac gia."""
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'status', 'reputation_score', 'created_date']
+        read_only_fields = fields
 
 
 class ReputationHistorySerializer(serializers.ModelSerializer):

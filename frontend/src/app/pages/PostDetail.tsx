@@ -30,6 +30,28 @@ import { Lightbox } from '../components/Lightbox';
 import { ReportDialog } from '../components/ReportDialog';
 import { ShareDialog } from '../components/ShareDialog';
 
+async function fetchAllResults<T>(url: string): Promise<T[]> {
+  const items: T[] = [];
+  let nextUrl: string | null = url;
+
+  while (nextUrl) {
+    const res = await api.get(nextUrl);
+    const data = res.data;
+
+    if (Array.isArray(data)) {
+      items.push(...data);
+      break;
+    }
+
+    items.push(...(Array.isArray(data?.results) ? data.results : []));
+    nextUrl = data?.next ?? null;
+  }
+
+  return items;
+}
+
+const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
+
 export function PostDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -66,9 +88,10 @@ export function PostDetail() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [postRes, catRes] = await Promise.all([
+        const [postRes, allCategories, allPosts] = await Promise.all([
           api.get(`posts/${id}/`),
-          api.get('categories/')
+          fetchAllResults<any>('categories/'),
+          fetchAllResults<any>('posts/')
         ]);
         
         const postData = postRes.data;
@@ -76,8 +99,24 @@ export function PostDetail() {
         setLikesCount(postData.likes_count || 0);
         setIsLiked(postData.is_liked || false);
         setIsSaved(postData.is_bookmarked || false);
-        const catData = Array.isArray(catRes.data) ? catRes.data : (catRes.data.results || []);
-        setCategories(catData);
+        const approvedPosts = allPosts.filter((item) => item.status === 'APPROVED');
+        const uncategorizedCount = approvedPosts.filter(
+          (item) => !item.category_detail && !item.category
+        ).length;
+        const categoriesWithPublicCounts = allCategories.map((category) => ({
+          ...category,
+          post_count: approvedPosts.filter(
+            (item) => item.category_detail?.id === category.id || item.category === category.id
+          ).length,
+        }));
+        if (uncategorizedCount > 0) {
+          categoriesWithPublicCounts.push({
+            id: UNCATEGORIZED_CATEGORY_ID,
+            category_name: 'Chưa phân loại',
+            post_count: uncategorizedCount,
+          });
+        }
+        setCategories(categoriesWithPublicCounts);
         
         // Fetch comments
         const commentRes = await api.get('comments/', { params: { post: id } });
@@ -124,6 +163,7 @@ export function PostDetail() {
   }
 
   const maxCategoryCount = Math.max(...categories.map(c => c.post_count || 0), 1);
+  const shouldMaskPostAuthor = Boolean(post.is_anonymous && !post.user_detail?.id);
 
   const handleAddComment = async () => {
     // Sửa lỗi logic: Kiểm tra an toàn xem có gửi chữ hoặc ảnh hay không
@@ -317,10 +357,13 @@ export function PostDetail() {
     });
   };
 
-  const renderComment = (comment: Comment, isReply = false) => (
+  const renderComment = (comment: Comment, isReply = false) => {
+    const shouldMaskCommentAuthor = Boolean(comment.is_anonymous && !comment.user_detail?.id);
+
+    return (
     <div key={comment.id} className={`${isReply ? 'ml-14' : ''}`}>
       <div className="flex gap-3">
-        {comment.is_anonymous ? (
+        {shouldMaskCommentAuthor ? (
           <div className="flex-shrink-0 cursor-default">
             <Avatar name="?" size="md" className="grayscale" />
           </div>
@@ -331,7 +374,7 @@ export function PostDetail() {
         )}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            {comment.is_anonymous ? (
+            {shouldMaskCommentAuthor ? (
               <span className="font-semibold text-[#1E293B] italic text-gray-500">
                 {comment.user_detail.username}
               </span>
@@ -451,7 +494,8 @@ export function PostDetail() {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
@@ -483,7 +527,9 @@ export function PostDetail() {
 
               {/* Các danh mục */}
               {categories.map((category) => {
-                const isActive = category.id === post.category;
+                const isActive = category.id === UNCATEGORIZED_CATEGORY_ID
+                  ? !post.category_detail && !post.category
+                  : String(category.id) === String(post.category ?? post.category_detail?.id);
                 return (
                   <Link
                     key={category.id}
@@ -547,7 +593,7 @@ export function PostDetail() {
               {/* Author Info */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  {post.is_anonymous ? (
+                  {shouldMaskPostAuthor ? (
                     <Avatar name="?" size="lg" className="grayscale" />
                   ) : (
                     <Link to={`/user/${post.user_detail?.id}`}>
@@ -556,14 +602,14 @@ export function PostDetail() {
                   )}
                   <div className="flex flex-col gap-1"> 
                       <div className="flex items-center gap-2">
-                        {post.is_anonymous ? (
+                        {shouldMaskPostAuthor ? (
                           <span className="font-semibold text-[#1E293B] italic text-gray-500">Người dùng ẩn danh {post.user}</span>
                         ) : (
                           <Link to={`/user/${post.user_detail?.id}`} className="font-semibold text-[#1E293B] hover:text-[#E01515] transition-colors">
                             {post.user_detail?.username}
                           </Link>
                         )}
-                        {!post.is_anonymous && (
+                        {!shouldMaskPostAuthor && (
                           <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
                             <span className="text-[#C10007] text-xs font-semibold">⭐ {post.user_detail?.reputation_score || 0}</span>
                           </div>

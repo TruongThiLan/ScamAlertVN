@@ -49,7 +49,7 @@ export const router = createBrowserRouter([
       { path: 'scam-checker', Component: ScamChecker },
       { path: 'posts/:id', Component: PostDetail },
       { path: 'posts/create', Component: CreatePost },
-      { path: 'posts/:id/edit', Component: CreatePost },
+      { path: 'posts/:id/edit', Component: EditPost },
       { path: 'my-posts', Component: MyPosts },
       { path: 'saved-posts', Component: SavedPosts },
       { path: 'profile', Component: Profile },

@@ -30,6 +30,8 @@ import { useOutletContext } from 'react-router';
 import api from '../../../api/axiosInstance';
 import type { Post, Category } from './AdminLayout';
 
+const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
+
 // Re-export để AdminLayout không bị lỗi import cũ
 export type { Post };
 
@@ -82,7 +84,11 @@ export function AdminPosts() {
     const matchesSearch =
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter ? post.category?.id === categoryFilter : true;
+    const matchesCategory = categoryFilter
+      ? categoryFilter === UNCATEGORIZED_CATEGORY_ID
+        ? !post.category
+        : post.category?.id === categoryFilter
+      : true;
     const matchesStatus =
       statusFilter === 'all' || post.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;

@@ -114,6 +114,16 @@ class PublicPostSerializer(serializers.ModelSerializer):
     def get_comments_count(self, obj):
         return obj.comments.filter(status=Comment.CommentStatus.ACTIVE).count()
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.is_anonymous:
+            data['user_detail'] = {
+                'id': None,
+                'username': 'Người dùng ẩn danh',
+                'reputation_score': 0,
+            }
+        return data
+
 
 class PublicCommentSerializer(serializers.ModelSerializer):
     """Binh luan public: khach chi duoc doc, khong duoc tao/sua/xoa."""
@@ -131,3 +141,13 @@ class PublicCommentSerializer(serializers.ModelSerializer):
             'user_detail',
         ]
         read_only_fields = fields
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.is_anonymous:
+            data['user_detail'] = {
+                'id': None,
+                'username': 'Người dùng ẩn danh',
+                'reputation_score': 0,
+            }
+        return data

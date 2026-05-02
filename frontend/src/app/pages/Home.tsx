@@ -1,5 +1,5 @@
 import { FormEvent, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 // 1. Nhảy ra 2 lần (../../) để từ pages -> app -> src rồi vào api
 import api from '../../api/axiosInstance';
 import type { Post, ScamCategory } from '../types';
@@ -11,9 +11,32 @@ import { Search, ChevronRight, Plus } from 'lucide-react';
 // 4. Contexts cũng nằm trong src/app/ nên dùng ../
 import { useAuth } from '../contexts/AuthContext';
 
+const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
+
+async function fetchAllResults<T>(url: string): Promise<T[]> {
+  const items: T[] = [];
+  let nextUrl: string | null = url;
+
+  while (nextUrl) {
+    const res = await api.get(nextUrl);
+    const data = res.data;
+
+    if (Array.isArray(data)) {
+      items.push(...data);
+      break;
+    }
+
+    items.push(...(Array.isArray(data?.results) ? data.results : []));
+    nextUrl = data?.next ?? null;
+  }
+
+  return items;
+}
+
 export function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // --- STATE DỮ LIỆU THẬT ---
   const [posts, setPosts] = useState<Post[]>([]);
@@ -21,7 +44,7 @@ export function Home() {
   const [loading, setLoading] = useState(true);
 
   // --- STATE UI ---
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') ?? 'all');
   const [sortBy, setSortBy] = useState<string>('latest');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState('');
@@ -31,14 +54,14 @@ export function Home() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [postsRes, categoriesRes] = await Promise.all([
-          api.get('posts/'),
-          api.get('categories/')
+        const [allPosts, allCategories] = await Promise.all([
+          fetchAllResults<Post>('posts/'),
+          fetchAllResults<ScamCategory>('categories/')
         ]);
 
-        // Trích xuất mảng results từ response đã phân trang
-        setPosts(postsRes.data.results || []);
-        setCategories(categoriesRes.data.results || []);
+        // Load all paginated records so sidebar counts match the visible feed.
+        setPosts(allPosts.filter((post) => post.status === 'APPROVED'));
+        setCategories(allCategories);
       } catch (err) {
         console.error("Lỗi lấy dữ liệu từ Backend:", err);
       } finally {
@@ -48,10 +71,26 @@ export function Home() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setSelectedCategory(searchParams.get('category') ?? 'all');
+  }, [searchParams]);
+
   // --- LOGIC LỌC & SẮP XẾP ---
   const categoryFilteredPosts = selectedCategory === 'all'
     ? posts
-    : posts.filter(post => post.category_detail?.id.toString() === selectedCategory);
+    : selectedCategory === UNCATEGORIZED_CATEGORY_ID
+      ? posts.filter(post => !post.category_detail)
+      : posts.filter(post => post.category_detail?.id.toString() === selectedCategory);
+  const uncategorizedCount = posts.filter(post => !post.category_detail).length;
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    if (categoryId === 'all') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ category: categoryId });
+    }
+  };
 
   const filteredPosts = searchQuery.trim() === ''
     ? categoryFilteredPosts
@@ -90,7 +129,7 @@ export function Home() {
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
             <div className="space-y-3">
               <button
-                onClick={() => setSelectedCategory('all')}
+                onClick={() => handleCategorySelect('all')}
                 className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${selectedCategory === 'all' ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
                   }`}
               >
@@ -110,7 +149,7 @@ export function Home() {
                 return (
                   <button
                     key={category.id}
-                    onClick={() => setSelectedCategory(category.id.toString())}
+                    onClick={() => handleCategorySelect(category.id.toString())}
                     className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${isActive ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
                       }`}
                   >
@@ -125,6 +164,23 @@ export function Home() {
                   </button>
                 );
               })}
+
+              {uncategorizedCount > 0 && (
+                <button
+                  onClick={() => handleCategorySelect(UNCATEGORIZED_CATEGORY_ID)}
+                  className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                      }`}>
+                      {uncategorizedCount}
+                    </div>
+                    <span className={`font-medium ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'text-[#E01515]' : 'text-[#111827]'}`}>Chưa phân loại</span>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                </button>
+              )}
             </div>
           </div>
         </aside>

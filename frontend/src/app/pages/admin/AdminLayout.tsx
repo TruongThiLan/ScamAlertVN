@@ -5,6 +5,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
 import api from '../../../api/axiosInstance';
 
+const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
+
 // ─── Types (dùng chung cho toàn bộ admin) ────────────────────────────────────
 
 export interface Category {
@@ -69,6 +71,30 @@ function adaptPost(raw: any): Post {
   };
 }
 
+async function fetchAllResults(url: string) {
+  const items: any[] = [];
+  let nextUrl: string | null = url;
+  let totalCount = 0;
+
+  while (nextUrl) {
+    const res = await api.get(nextUrl);
+    const data = res.data;
+
+    if (Array.isArray(data)) {
+      items.push(...data);
+      totalCount = items.length;
+      break;
+    }
+
+    const results = Array.isArray(data?.results) ? data.results : [];
+    items.push(...results);
+    totalCount = Number(data?.count ?? items.length);
+    nextUrl = data?.next ?? null;
+  }
+
+  return { items, totalCount };
+}
+
 function adaptCategory(raw: any): Category {
   return {
     id: String(raw.id),
@@ -87,6 +113,7 @@ export function AdminLayout() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postsTotalCount, setPostsTotalCount] = useState(0);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -94,9 +121,9 @@ export function AdminLayout() {
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
     try {
-      const res = await api.get('posts/all/');
-      const results = res.data?.results ?? res.data ?? [];
-      setPosts(results.map(adaptPost));
+      const { items, totalCount } = await fetchAllResults('posts/all/');
+      setPosts(items.map(adaptPost));
+      setPostsTotalCount(totalCount);
     } catch (err) {
       console.error('Không thể tải danh sách bài viết:', err);
     } finally {
@@ -107,9 +134,8 @@ export function AdminLayout() {
   const fetchCategories = useCallback(async () => {
     setLoadingCategories(true);
     try {
-      const res = await api.get('categories/');
-      const results = res.data?.results ?? res.data ?? [];
-      setCategories(results.map(adaptCategory));
+      const { items } = await fetchAllResults('categories/');
+      setCategories(items.map(adaptCategory));
     } catch (err) {
       console.error('Không thể tải danh mục:', err);
     } finally {
@@ -134,12 +160,16 @@ export function AdminLayout() {
 
   if (!user || !is_admin) return null;
 
-  const getPendingCount = (categoryId?: string) =>
-    posts.filter(
-      (p) => 
-        String(p.status).toUpperCase() === 'PENDING' && 
-        (!categoryId || String(p.category?.id) === String(categoryId))
-    ).length;
+  const getPostCount = (categoryId?: string) => {
+    if (categoryId) {
+      if (categoryId === UNCATEGORIZED_CATEGORY_ID) {
+        return posts.filter((post) => !post.category).length;
+      }
+      return categories.find((category) => category.id === categoryId)?.postCount ?? 0;
+    }
+
+    return postsTotalCount || categories.reduce((sum, category) => sum + category.postCount, 0) || posts.length;
+  };
 
   const selectedCategory = new URLSearchParams(location.search).get('category');
   const isAllActive = location.pathname === '/admin/posts' && !selectedCategory;
@@ -170,7 +200,7 @@ export function AdminLayout() {
                         : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
                       }`}
                   >
-                    {loadingPosts ? '…' : getPendingCount()}
+                    {loadingPosts ? '…' : getPostCount()}
                   </div>
                   <span
                     className={`text-left font-medium transition-colors duration-200 ${isAllActive ? 'text-[#E01515] font-semibold' : 'text-[#111827] group-hover:text-[#E01515]'
@@ -189,8 +219,9 @@ export function AdminLayout() {
               {loadingCategories ? (
                 <p className="text-sm text-[#99A1AF] px-3">Đang tải...</p>
               ) : (
-                categories.map((category) => {
-                  const pendingCount = getPendingCount(category.id);
+                <>
+                {categories.map((category) => {
+                  const postCount = getPostCount(category.id);
                   const isActive =
                     location.pathname === '/admin/posts' && selectedCategory === category.id;
 
@@ -210,7 +241,7 @@ export function AdminLayout() {
                               : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
                             }`}
                         >
-                          {pendingCount}
+                          {postCount}
                         </div>
                         <span
                           className={`text-left font-medium transition-colors duration-200 ${isActive ? 'text-[#E01515] font-semibold' : 'text-[#111827] group-hover:text-[#E01515]'
@@ -225,7 +256,45 @@ export function AdminLayout() {
                       />
                     </button>
                   );
-                })
+                })}
+                {getPostCount(UNCATEGORIZED_CATEGORY_ID) > 0 && (() => {
+                  const postCount = getPostCount(UNCATEGORIZED_CATEGORY_ID);
+                  const isActive =
+                    location.pathname === '/admin/posts' && selectedCategory === UNCATEGORIZED_CATEGORY_ID;
+
+                  return (
+                    <button
+                      key={UNCATEGORIZED_CATEGORY_ID}
+                      onClick={() => navigate(`/admin/posts?category=${UNCATEGORIZED_CATEGORY_ID}`)}
+                      className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 ${isActive
+                          ? 'bg-[#FFF1F1] border-[#F7BABA]'
+                          : 'bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]'
+                        }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 ${isActive
+                              ? 'bg-[#E01515] text-white'
+                              : 'bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]'
+                            }`}
+                        >
+                          {postCount}
+                        </div>
+                        <span
+                          className={`text-left font-medium transition-colors duration-200 ${isActive ? 'text-[#E01515] font-semibold' : 'text-[#111827] group-hover:text-[#E01515]'
+                            }`}
+                        >
+                          Chưa phân loại
+                        </span>
+                      </div>
+                      <ChevronRight
+                        className={`h-5 w-5 shrink-0 transition-colors duration-200 ${isActive ? 'text-[#E01515]' : 'text-[#99A1AF] group-hover:text-[#E01515]'
+                          }`}
+                      />
+                    </button>
+                  );
+                })()}
+                </>
               )}
             </div>
           </div>

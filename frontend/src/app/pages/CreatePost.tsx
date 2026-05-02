@@ -6,6 +6,32 @@ import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
 import api from '../../api/axiosInstance';
 import { toast } from 'sonner';
 
+type CategoryOption = {
+  id: string;
+  name: string;
+  post_count: number;
+};
+
+async function fetchAllResults<T>(url: string): Promise<T[]> {
+  const items: T[] = [];
+  let nextUrl: string | null = url;
+
+  while (nextUrl) {
+    const res = await api.get(nextUrl);
+    const data = res.data;
+
+    if (Array.isArray(data)) {
+      items.push(...data);
+      break;
+    }
+
+    items.push(...(Array.isArray(data?.results) ? data.results : []));
+    nextUrl = data?.next ?? null;
+  }
+
+  return items;
+}
+
 export function CreatePost() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -15,7 +41,8 @@ export function CreatePost() {
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [uncategorizedCount, setUncategorizedCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -29,9 +56,19 @@ export function CreatePost() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await api.get('categories/');
-        const results = Array.isArray(res.data) ? res.data : (res.data.results || []);
-        setCategories(results.map((c: any) => ({ id: c.id, name: c.category_name })));
+        const [categoryResults, postResults] = await Promise.all([
+          fetchAllResults<any>('categories/'),
+          fetchAllResults<any>('posts/'),
+        ]);
+        const approvedPosts = postResults.filter((post) => post.status === 'APPROVED');
+        setUncategorizedCount(approvedPosts.filter((post) => !post.category_detail && !post.category).length);
+        setCategories(categoryResults.map((c: any) => ({
+          id: String(c.id),
+          name: c.category_name,
+          post_count: approvedPosts.filter(
+            (post) => String(post.category_detail?.id ?? post.category ?? '') === String(c.id)
+          ).length,
+        })));
       } catch (err) {
         toast.error('Không thể tải danh mục');
       }
@@ -134,7 +171,7 @@ export function CreatePost() {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
-                    {categories.reduce((acc, c) => acc + ((c as any).post_count || 0), 0)}
+                    {categories.reduce((acc, c) => acc + c.post_count, 0) + uncategorizedCount}
                   </div>
                   <span className="text-left font-medium transition-colors duration-200 text-[#111827] group-hover:text-[#E01515]">
                     Tất cả
@@ -151,7 +188,7 @@ export function CreatePost() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
-                        {(cat as any).post_count || 0}
+                        {cat.post_count}
                       </div>
                       <span className="text-left font-medium transition-colors duration-200 text-[#111827] group-hover:text-[#E01515]">
                         {cat.name}
@@ -160,6 +197,22 @@ export function CreatePost() {
                     <ChevronRight className="h-5 w-5 shrink-0 transition-colors duration-200 text-[#99A1AF] group-hover:text-[#E01515]" />
                   </Link>
                 ))}
+              {uncategorizedCount > 0 && (
+                <Link
+                  to="/?category=uncategorized"
+                  className="group w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-base border transition-all duration-200 bg-white border-transparent hover:bg-[#FFF5F5] hover:border-[#FFD6D6]"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B] group-hover:bg-[#FEE2E2] group-hover:text-[#E01515]">
+                      {uncategorizedCount}
+                    </div>
+                    <span className="text-left font-medium transition-colors duration-200 text-[#111827] group-hover:text-[#E01515]">
+                      Chưa phân loại
+                    </span>
+                  </div>
+                  <ChevronRight className="h-5 w-5 shrink-0 transition-colors duration-200 text-[#99A1AF] group-hover:text-[#E01515]" />
+                </Link>
+              )}
             </div>
           </div>
         </aside>

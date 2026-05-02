@@ -6,8 +6,12 @@
 # ============================================================
 
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from api.models import Comment, ContentReport, TargetType, Post
 from api.serializers.user_serializers import UserBriefSerializer
+
+
+User = get_user_model()
 
 
 # ------------------------------------------------------------------
@@ -68,14 +72,16 @@ class CommentSerializer(serializers.ModelSerializer):
 
         # Kiểm tra xem requester có được xem danh tính thật không
         is_admin = False
+        is_owner = False
         if request and request.user.is_authenticated:
             is_admin = request.user.is_staff or (
                     hasattr(request.user, 'role')
                     and request.user.role
                     and request.user.role.role_name == 'Admin'
             )
+            is_owner = instance.user_id == request.user.id
 
-        if not is_admin:
+        if not (is_admin or is_owner):
             data['user'] = None
             data['user_detail'] = {
                 'id': None,
@@ -158,6 +164,9 @@ class ContentReportSerializer(serializers.ModelSerializer):
                     'content': comment.content[:100],
                     'id'     : comment.id,
                 }
+            elif obj.target_type == TargetType.USER:
+                user = User.objects.get(pk=obj.target_id)
+                return {'type': 'user', 'username': user.username, 'id': user.id}
         except Exception:
             return None
 
@@ -182,6 +191,9 @@ class ContentReportCreateSerializer(serializers.ModelSerializer):
         elif target_type == TargetType.COMMENT:
             if not Comment.objects.filter(pk=target_id).exists():
                 raise serializers.ValidationError({'target_id': 'Bình luận không tồn tại.'})
+        elif target_type == TargetType.USER:
+            if not User.objects.filter(pk=target_id).exists():
+                raise serializers.ValidationError({'target_id': 'Người dùng không tồn tại.'})
         else:
             raise serializers.ValidationError({'target_type': 'Loại nội dung không hợp lệ.'})
 

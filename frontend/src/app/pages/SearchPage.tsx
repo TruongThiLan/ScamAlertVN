@@ -33,6 +33,8 @@ const makeExcerpt = (content: string) => {
   return text.length > 180 ? `${text.slice(0, 180)}...` : text;
 };
 
+const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
+
 export function SearchPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -67,8 +69,15 @@ export function SearchPage() {
     return Array.from(categoryMap.values());
   }, [posts]);
 
+  const uncategorizedCount = useMemo(() => {
+    return posts.filter((post) => !post.category_detail).length;
+  }, [posts]);
+
   const filteredPosts = useMemo(() => {
     if (selectedCategory === 'all') return posts;
+    if (selectedCategory === UNCATEGORIZED_CATEGORY_ID) {
+      return posts.filter((post) => !post.category_detail);
+    }
     return posts.filter((post) => post.category_detail?.id.toString() === selectedCategory);
   }, [posts, selectedCategory]);
 
@@ -210,6 +219,30 @@ export function SearchPage() {
                   </button>
                 );
               })}
+
+              {uncategorizedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory(UNCATEGORIZED_CATEGORY_ID)}
+                  className={`group flex w-full items-center justify-between rounded-[10px] border px-3 py-2 transition-all ${
+                    selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'border-[#F7BABA] bg-[#FFF1F1]' : 'border-transparent bg-white hover:bg-[#FFF5F5]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-sm font-semibold ${
+                        selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                      }`}
+                    >
+                      {uncategorizedCount}
+                    </div>
+                    <span className={`font-medium ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'text-[#E01515]' : 'text-[#111827]'}`}>
+                      Chưa phân loại
+                    </span>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                </button>
+              )}
             </div>
           </div>
         </aside>

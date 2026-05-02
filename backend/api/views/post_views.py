@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.db.models import Q
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -49,7 +50,12 @@ class PostViewSet(viewsets.ModelViewSet):
         is_admin = self._is_admin()
         
         if self.action in ['list', 'retrieve'] and not is_admin:
-            qs = Post.objects.filter(status=Post.PostStatus.APPROVED)
+            if self.action == 'retrieve' and self.request.user.is_authenticated:
+                qs = Post.objects.filter(
+                    Q(status=Post.PostStatus.APPROVED) | Q(user=self.request.user)
+                )
+            else:
+                qs = Post.objects.filter(status=Post.PostStatus.APPROVED)
             if user_id:
                 # Nếu lọc theo user, chỉ hiện bài KHÔNG ẩn danh 
                 # trừ khi đang xem chính mình (owner check)
@@ -131,14 +137,11 @@ class PostViewSet(viewsets.ModelViewSet):
 
         instance = serializer.save(user=self.request.user)
         self._handle_file_uploads(instance)
-        analyze_and_store_post(instance)
 
     def perform_update(self, serializer):
         """Xử lý cập nhật bài viết và upload thêm file mới."""
         instance = serializer.save()
         self._handle_file_uploads(instance)
-        if instance.status in [Post.PostStatus.PENDING, Post.PostStatus.REJECTED]:
-            analyze_and_store_post(instance)
 
     def _handle_file_uploads(self, instance):
         """

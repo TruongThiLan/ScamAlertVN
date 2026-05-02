@@ -115,12 +115,13 @@ export function PostCard({ post, showStatus = false, defaultSaved = false, onBoo
   const timeAgo = post.created_time
     ? formatDistanceToNow(new Date(post.created_time), { addSuffix: true, locale: vi })
     : 'Vừa xong';
+  const shouldMaskAuthor = Boolean(post.is_anonymous && !post.user_detail?.id);
 
   return (
     <Card className="hover:shadow-md transition-shadow border-[#D1D5DC] rounded-[12px] mb-4">
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
-          {post.is_anonymous ? (
+          {shouldMaskAuthor ? (
             <Avatar name="?" size="lg" className="shadow-sm grayscale" />
           ) : (
             <Link to={`/user/${post.user_detail?.id}`}>
@@ -135,7 +136,7 @@ export function PostCard({ post, showStatus = false, defaultSaved = false, onBoo
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 flex-wrap">
-                {post.is_anonymous ? (
+                {shouldMaskAuthor ? (
                   <span className="font-semibold text-sm text-gray-500 italic">
                     {post.user_detail?.username || 'Người dùng ẩn danh'}
                   </span>
@@ -144,7 +145,7 @@ export function PostCard({ post, showStatus = false, defaultSaved = false, onBoo
                     <span className="font-semibold text-sm">{post.user_detail?.username}</span>
                   </Link>
                 )}
-                {!post.is_anonymous && post.user_detail?.reputation_score !== undefined && (
+                {!shouldMaskAuthor && post.user_detail?.reputation_score !== undefined && (
                   <div className="px-1.5 py-0.5 bg-[#FFE2E2] rounded flex items-center gap-1">
                     <span className="text-[#C10007] text-xs font-semibold">
                       Uy tín {post.user_detail.reputation_score}

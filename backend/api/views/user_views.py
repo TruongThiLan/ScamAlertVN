@@ -11,6 +11,7 @@ from ..models import User, ActivityLog, Notification, Role, ReputationHistory
 from ..serializers.user_serializers import (
     UserSerializer,
     UserProfileSerializer,
+    UserPublicProfileSerializer,
     ChangePasswordSerializer,
     ReputationHistorySerializer,
 )
@@ -37,6 +38,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-created_date') # Sắp xếp mới nhất lên đầu
     serializer_class = UserSerializer
     pagination_class = UserPagination
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return UserPublicProfileSerializer
+        return UserSerializer
 
     def get_queryset(self):
         """
@@ -77,6 +83,8 @@ class UserViewSet(viewsets.ModelViewSet):
         - Hành động 'me' (lấy thông tin bản thân) chỉ cần IsAuthenticated.
         - Các hành động quản lý (list, lock, unlock, warn, destroy...) yêu cầu IsAdminRole.
         """
+        if self.action == 'retrieve':
+            return [permissions.AllowAny()]
         if self.action in ['me', 'profile', 'profile_availability', 'change_password', 'reputation_history']:
             return [permissions.IsAuthenticated()]
         return [IsAdminRole()]

@@ -31,14 +31,16 @@ class PostSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get('request')
         is_admin = False
+        is_owner = False
         if request and request.user.is_authenticated:
             is_admin = request.user.is_staff or (
                 hasattr(request.user, 'role') and 
                 request.user.role and 
                 request.user.role.role_name == 'Admin'
             )
+            is_owner = instance.user_id == request.user.id
         
-        if instance.is_anonymous and not is_admin:
+        if instance.is_anonymous and not (is_admin or is_owner):
             data['user_detail'] = {
                 "id": None,
                 "username": "Người dùng ẩn danh",
@@ -56,7 +58,7 @@ class PostSerializer(serializers.ModelSerializer):
         ).count()
 
     def get_comments_count(self, obj):
-        return obj.comments.count()
+        return obj.comments.filter(status='ACTIVE').count()
 
     def _get_user(self):
         request = self.context.get('request')

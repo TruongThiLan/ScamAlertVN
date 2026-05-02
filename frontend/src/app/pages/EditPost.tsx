@@ -7,6 +7,32 @@ import { getCategoryBadgeStyle } from '../utils/colorUtils';
 import api from '../../api/axiosInstance';
 import { toast } from 'sonner';
 
+type CategoryOption = {
+  id: string;
+  name: string;
+  post_count: number;
+};
+
+async function fetchAllResults<T>(url: string): Promise<T[]> {
+  const items: T[] = [];
+  let nextUrl: string | null = url;
+
+  while (nextUrl) {
+    const res = await api.get(nextUrl);
+    const data = res.data;
+
+    if (Array.isArray(data)) {
+      items.push(...data);
+      break;
+    }
+
+    items.push(...(Array.isArray(data?.results) ? data.results : []));
+    nextUrl = data?.next ?? null;
+  }
+
+  return items;
+}
+
 export function EditPost() {
   const { id } = useParams<{ id: string }>(); 
   const navigate = useNavigate();
@@ -18,7 +44,8 @@ export function EditPost() {
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [categoriesList, setCategoriesList] = useState<{id: string, name: string}[]>([]);
+  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>([]);
+  const [uncategorizedCount, setUncategorizedCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
@@ -32,13 +59,21 @@ export function EditPost() {
 
     const fetchData = async () => {
       try {
-        // Fetch categories and post details in parallel
-        const [catRes, postRes] = await Promise.all([
-          api.get('categories/'),
-          api.get(`posts/${id}/`)
+        const [categoryResults, postRes, postResults] = await Promise.all([
+          fetchAllResults<any>('categories/'),
+          api.get(`posts/${id}/`),
+          fetchAllResults<any>('posts/')
         ]);
 
-        setCategoriesList(catRes.data.map((c: any) => ({ id: String(c.id), name: c.category_name })));
+        const approvedPosts = postResults.filter((item) => item.status === 'APPROVED');
+        setUncategorizedCount(approvedPosts.filter((item) => !item.category_detail && !item.category).length);
+        setCategoriesList(categoryResults.map((c: any) => ({
+          id: String(c.id),
+          name: c.category_name,
+          post_count: approvedPosts.filter(
+            (item) => String(item.category_detail?.id ?? item.category ?? '') === String(c.id)
+          ).length,
+        })));
         
         const post = postRes.data;
         // Verify ownership (optional check, backend enforces)
@@ -171,7 +206,7 @@ export function EditPost() {
               <button onClick={() => navigate('/')} className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base hover:bg-gray-50 text-left">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B]">
-                    {categoriesList.reduce((acc, c) => acc + ((c as any).post_count || 0), 0)}
+                    {categoriesList.reduce((acc, c) => acc + c.post_count, 0) + uncategorizedCount}
                   </div>
                   <span>Tất cả</span>
                 </div>
@@ -185,13 +220,27 @@ export function EditPost() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B]">
-                      {(cat as any).post_count || 0}
+                      {cat.post_count}
                     </div>
                     <span>{cat.name}</span>
                   </div>
                   <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
                 </button>
               ))}
+              {uncategorizedCount > 0 && (
+                <button
+                  onClick={() => navigate('/?category=uncategorized')}
+                  className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-base hover:bg-gray-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm shrink-0 transition-all duration-200 bg-[#F3F4F6] text-[#64748B]">
+                      {uncategorizedCount}
+                    </div>
+                    <span>Chưa phân loại</span>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                </button>
+              )}
             </div>
           </div>
         </aside>

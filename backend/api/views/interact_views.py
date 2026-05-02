@@ -27,7 +27,7 @@ from rest_framework.exceptions import PermissionDenied
 from api.models import (
     ContentReport, Comment, Reaction, TargetType,
     Post, Bookmark, ReputationHistory, Notification,
-    Media, TargetMedia
+    Media, TargetMedia, User
 )
 from api.serializers.interact_serializers import (
     ContentReportSerializer,
@@ -449,6 +449,8 @@ class ContentReportViewSet(viewsets.ModelViewSet):
             comment = Comment.objects.filter(pk=report.target_id).first()
             if comment:
                 reported_user = comment.user
+        elif report.target_type == TargetType.USER:
+            reported_user = User.objects.filter(pk=report.target_id).first()
 
         if reported_user:
             _add_reputation(reported_user, -10, f'Bị báo cáo có căn cứ {suffix}')

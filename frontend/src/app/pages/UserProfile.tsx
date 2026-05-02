@@ -28,7 +28,7 @@ export function UserProfile() {
           api.get(`posts/`, { params: { user: userId } })
         ]);
         setProfileUser(userRes.data);
-        setUserPosts(postsRes.data);
+        setUserPosts(Array.isArray(postsRes.data) ? postsRes.data : postsRes.data.results || []);
       } catch (err: any) {
         console.error('Error fetching profile:', err);
         toast.error('Không thể tải thông tin người dùng');
@@ -108,7 +108,9 @@ export function UserProfile() {
                 </h1>
 
                 <div className="flex items-center gap-2 text-[14px] text-[#4B5563]">
-                  <span>Tham gia từ {profileUser.status === 'ACTIVE' ? 'Sớm' : 'Gần đây'}</span>
+                  <span>
+                    Tham gia từ {profileUser.created_date ? new Date(profileUser.created_date).toLocaleDateString('vi-VN') : 'Gần đây'}
+                  </span>
                 </div>
               </div>
             </div>

@@ -4,6 +4,10 @@ from api.models import ScamCategory
 from api.serializers import ScamCategorySerializer
 from api.permissions import IsAdminOrReadOnly
 
+# NOTE VAN DAP:
+# ScamCategoryViewSet quan ly danh muc lua dao.
+# User/khach duoc GET de hien sidebar; admin moi duoc them/sua/xoa.
+
 class ScamCategoryViewSet(viewsets.ModelViewSet):
     """
     UC 4.1 — Quản lý danh mục lừa đảo.

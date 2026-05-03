@@ -20,6 +20,14 @@ from api.views.statistics_views import SystemStatisticsView
 # Router chính của dự án
 router = DefaultRouter()
 
+# NOTE VAN DAP:
+# DefaultRouter tu sinh cac endpoint REST:
+# - /api/posts/ -> PostViewSet: list/create/retrieve/update...
+# - /api/posts/<id>/approve/ -> custom action @action trong PostViewSet.
+# - /api/users/me/ -> custom action trong UserViewSet.
+# - /api/comments/ -> CommentViewSet.
+# - /api/reactions/toggle/ -> ReactionViewSet.toggle.
+# Noi cach khac: URL o day chi dang ky, logic nam trong views/.
 router.register(r'posts', PostViewSet)
 router.register(r'users', UserViewSet)
 router.register(r'categories', ScamCategoryViewSet)

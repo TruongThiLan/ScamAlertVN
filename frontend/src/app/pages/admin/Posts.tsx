@@ -30,6 +30,12 @@ import { useOutletContext } from 'react-router';
 import api from '../../../api/axiosInstance';
 import type { Post, Category } from './AdminLayout';
 
+// NOTE VAN DAP:
+// AdminPosts la man hinh kiem duyet bai.
+// Du lieu posts den tu AdminLayout qua useOutletContext.
+// Admin co the xem chi tiet, goi AI analysis, approve/reject/hide/lock/delete.
+// Moi nut action tuong ung voi custom endpoint trong backend PostViewSet.
+
 const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
 
 // Re-export để AdminLayout không bị lỗi import cũ
@@ -40,6 +46,7 @@ type ActionType = 'approve' | 'reject' | 'hide' | 'lock' | 'delete' | null;
 type AIAnalysis = Post['aiAnalysis'];
 
 function mapAIAnalysis(raw: any): AIAnalysis {
+  // Backend luu ket qua AI bang snake_case, FE map ve object aiAnalysis.
   return {
     status: raw.ai_analysis_status ?? 'NOT_ANALYZED',
     provider: raw.ai_analysis_provider ?? '',
@@ -70,17 +77,18 @@ export function AdminPosts() {
 
   const { posts, setPosts, fetchPosts, loadingPosts } = useOutletContext<OutletCtx>();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [actionType, setActionType] = useState<ActionType>(null);
-  const [actionReason, setActionReason] = useState('');
-  const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState(''); // tu khoa tim bai trong admin.
+  const [statusFilter, setStatusFilter] = useState('all'); // loc theo trang thai bai.
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null); // bai dang xem/xu ly.
+  const [actionType, setActionType] = useState<ActionType>(null); // hanh dong admin sap xac nhan.
+  const [actionReason, setActionReason] = useState(''); // ly do reject/hide/lock/delete.
+  const [showDetailDialog, setShowDetailDialog] = useState(false); // popup xem chi tiet bai.
+  const [submitting, setSubmitting] = useState(false); // dang goi API action.
+  const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null); // bai dang chay AI.
 
   // ─── Lọc bài hiển thị ────────────────────────────────────────────────────
   const filteredPosts = posts.filter((post) => {
+    // Loc tai frontend de admin doi filter/search nhanh, khong can goi API moi.
     const matchesSearch =
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -110,6 +118,7 @@ export function AdminPosts() {
   const handleAnalyzePost = async (post: Post) => {
     setAnalyzingPostId(post.id);
     try {
+      // Goi backend phan tich AI thu cong; bai moi dang PENDING khong tu chay AI.
       const res = await api.post(`posts/${post.id}/ai-analyze/`);
       const rawPost = res.data?.post;
       const aiAnalysis = mapAIAnalysis(rawPost ?? {});
@@ -138,6 +147,7 @@ export function AdminPosts() {
   const confirmAction = async () => {
     if (!selectedPost || !actionType) return;
 
+    // Mot so action can reason de backend luu ly do va gui thong bao cho user.
     // Validate reason
     const needsReason = ['reject', 'hide', 'lock', 'delete'].includes(actionType);
     if (needsReason && actionReason.trim().length < 10) {
@@ -149,14 +159,14 @@ export function AdminPosts() {
     try {
       const id = selectedPost.id;
 
-      if (actionType === 'approve') {
+      if (actionType === 'approve') { // nut "Duyet bai".
         await api.post(`posts/${id}/approve/`, {});
         setPosts((prev) =>
           prev.map((p) => (p.id === id ? { ...p, status: 'APPROVED' } : p))
         );
         toast.success('Đã duyệt bài viết');
 
-      } else if (actionType === 'reject') {
+      } else if (actionType === 'reject') { // nut "Tu choi".
         await api.post(`posts/${id}/reject/`, { reason: actionReason });
         setPosts((prev) =>
           prev.map((p) =>
@@ -165,21 +175,21 @@ export function AdminPosts() {
         );
         toast.success('Đã từ chối bài viết');
 
-      } else if (actionType === 'hide') {
+      } else if (actionType === 'hide') { // nut "An".
         await api.post(`posts/${id}/hide/`, { reason: actionReason });
         setPosts((prev) =>
           prev.map((p) => (p.id === id ? { ...p, status: 'HIDDEN' } : p))
         );
         toast.success('Đã ẩn bài viết');
 
-      } else if (actionType === 'lock') {
+      } else if (actionType === 'lock') { // nut "Khoa".
         await api.post(`posts/${id}/lock/`, { reason: actionReason });
         setPosts((prev) =>
           prev.map((p) => (p.id === id ? { ...p, status: 'LOCKED' } : p))
         );
         toast.success('Đã khóa bài viết');
 
-      } else if (actionType === 'delete') {
+      } else if (actionType === 'delete') { // nut "Xoa".
         await api.delete(`posts/${id}/admin-delete/`, {
           data: { reason: actionReason, confirm: true },
         });
@@ -350,7 +360,7 @@ export function AdminPosts() {
     <div className="p-8">
       <h1 className="text-2xl font-bold text-[#1E293B] mb-6">Kiểm duyệt và quản lý nội dung</h1>
 
-      {/* Search & Filter */}
+      {/* Thanh tim kiem va bo loc trang thai bai viet */}
       <div className="mb-6 flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
@@ -385,7 +395,7 @@ export function AdminPosts() {
       ) : filteredPosts.length === 0 ? (
         <div className="text-center py-20 text-[#99A1AF]">Không tìm thấy bài viết nào.</div>
       ) : (
-        /* Posts List */
+        /* Danh sach bai viet trong admin */
         <div className="space-y-4">
           {filteredPosts.map((post) => (
             <div
@@ -415,7 +425,7 @@ export function AdminPosts() {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Cac nut thao tac kiem duyet tren tung bai */}
               <div className="flex items-center gap-2 pt-4 border-t border-[#D1D5DC] flex-wrap">
                 <Button
                   onClick={() => { setSelectedPost(post); setShowDetailDialog(true); }}
@@ -481,7 +491,7 @@ export function AdminPosts() {
         </div>
       )}
 
-      {/* ─── Action Confirmation Dialog ─── */}
+      {/* Popup xac nhan hanh dong approve/reject/hide/lock/delete */}
       {actionType && dialogConfig && (
         <Dialog open={!!actionType} onOpenChange={cancelAction}>
           <DialogContent className="max-w-md">
@@ -539,7 +549,7 @@ export function AdminPosts() {
         </Dialog>
       )}
 
-      {/* ─── Post Detail Dialog ─── */}
+      {/* Popup xem chi tiet bai viet cho admin */}
       {showDetailDialog && selectedPost && (
         <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
           <DialogContent className="sm:max-w-[950px] w-[95vw] p-8 gap-6">

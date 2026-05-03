@@ -10,6 +10,13 @@ from api.serializers.public_serializers import (
     RegisterSerializer,
 )
 
+# NOTE VAN DAP:
+# public_views.py la nhom API cho khach hoac user chua dang nhap:
+# - /api/register/ tao tai khoan.
+# - /api/public/posts/ doc/tim bai APPROVED.
+# - /api/public/posts/check_scam/ kiem tra nhanh link/SDT trong bai da duyet.
+# - /api/public/comments/?post=<id> doc comment cua bai da duyet.
+
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -34,6 +41,7 @@ class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [PublicPostSearchFilter]
 
     def get_queryset(self):
+        # Public chi duoc thay bai APPROVED; cac bai PENDING/REJECTED/HIDDEN/LOCKED bi an.
         return (
             Post.objects
             .filter(status=Post.PostStatus.APPROVED)
@@ -52,6 +60,8 @@ class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({'is_scam': False, 'message': 'Vui lòng nhập thông tin cần kiểm tra.', 'matches': []})
 
         # Tim trong title hoac content cua cac bai APPROVED
+        # Kiem tra nhanh bang cach tim query trong title/content cac bai da duyet.
+        # Neu co match thi canh bao va tra ve toi da 5 bai lien quan cho FE hien link.
         matches = self.get_queryset().filter(
             Q(title__icontains=query) | Q(content__icontains=query)
         )[:5]  # Lay toi da 5 ket qua

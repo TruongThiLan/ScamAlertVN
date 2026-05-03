@@ -5,6 +5,12 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
 import api from '../../../api/axiosInstance';
 
+// NOTE VAN DAP:
+// AdminLayout la layout chung cho dashboard admin.
+// No load posts/categories mot lan, adapter ve shape FE can, roi truyen xuong
+// cac trang con qua Outlet context. Nho vay AdminPosts/AdminCategories khong phai
+// tu goi lai cac API nen sidebar va noi dung dung chung mot state.
+
 const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
 
 // ─── Types (dùng chung cho toàn bộ admin) ────────────────────────────────────
@@ -47,6 +53,8 @@ export interface Post {
 // ─── Adapter: Chuyển response API → shape frontend cần ───────────────────────
 
 function adaptPost(raw: any): Post {
+  // Adapter chuyen snake_case tu DRF sang field frontend dang dung.
+  // Vi du created_time -> createdAt, user_detail -> author.
   return {
     id: String(raw.id),
     title: raw.title ?? '',
@@ -72,6 +80,7 @@ function adaptPost(raw: any): Post {
 }
 
 async function fetchAllResults(url: string) {
+  // Backend co phan trang, ham nay lay het page de dashboard co day du du lieu.
   const items: any[] = [];
   let nextUrl: string | null = url;
   let totalCount = 0;
@@ -144,6 +153,7 @@ export function AdminLayout() {
   }, []);
 
   useEffect(() => {
+    // Khi vao admin, load bai viet va danh muc song song theo hai useCallback.
     fetchPosts();
     fetchCategories();
   }, [fetchPosts, fetchCategories]);

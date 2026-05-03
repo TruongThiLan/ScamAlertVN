@@ -14,19 +14,29 @@ from api.serializers import (
 from api.permissions import IsAdminRole
 from api.services.ai_content_analysis import analyze_and_store_post
 
+# NOTE VAN DAP:
+# post_views.py la file nghiep vu chinh cua bai viet.
+# Luong tao bai:
+# FE gui POST /api/posts/ -> PostCreateSerializer validate -> perform_create gan user,
+# check blacklist -> save Post PENDING -> luu file upload vao Media/TargetMedia.
+# Luong kiem duyet:
+# Admin goi /approve, /reject, /hide, /lock, /admin-delete -> doi status,
+# ghi reviewed_by/reviewed_at, tao Notification/AuditLog va cap nhat diem uy tin neu can.
+
 # ========================================================
 # HELPERS
 # ========================================================
 
 def _send_notification(user: User, message: str):
     """Tạo notification cho user."""
+    # Ham nho nay gom viec tao thong bao, de cac action admin goi lai.
     Notification.objects.create(user=user, content=message)
 
 
 def _mark_reviewed(post: Post, admin_user: User, reason: str = None):
     """Cập nhật tracking fields của post sau khi Admin xử lý."""
-    post.reviewed_by = admin_user
-    post.reviewed_at = timezone.now()
+    post.reviewed_by = admin_user  # luu admin nao xu ly bai.
+    post.reviewed_at = timezone.now()  # luu thoi diem xu ly.
     if reason:
         post.rejection_reason = reason
 
@@ -46,16 +56,20 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Mặc định chỉ trả bài APPROVED cho public. Admin thấy tất cả."""
+        # Day la lop loc du lieu quan trong:
+        # - Admin thay toan bo bai.
+        # - User thuong chi thay APPROVED; rieng chu bai duoc xem bai cua minh.
+        # - Khi xem profile user khac, bai an danh se bi an khoi danh sach.
         user_id = self.request.query_params.get('user')
-        is_admin = self._is_admin()
+        is_admin = self._is_admin()  # kiem tra nguoi goi API co phai admin khong.
         
         if self.action in ['list', 'retrieve'] and not is_admin:
             if self.action == 'retrieve' and self.request.user.is_authenticated:
-                qs = Post.objects.filter(
+                qs = Post.objects.filter(  # chu bai duoc xem bai cua minh ke ca chua duyet.
                     Q(status=Post.PostStatus.APPROVED) | Q(user=self.request.user)
                 )
             else:
-                qs = Post.objects.filter(status=Post.PostStatus.APPROVED)
+                qs = Post.objects.filter(status=Post.PostStatus.APPROVED)  # khach/user thuong chi thay bai da duyet.
             if user_id:
                 # Nếu lọc theo user, chỉ hiện bài KHÔNG ẩn danh 
                 # trừ khi đang xem chính mình (owner check)
@@ -77,14 +91,14 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """Chọn serializer phù hợp từng action."""
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action in ['create', 'update', 'partial_update']:  # tao/sua bai dung serializer it field hon.
             return PostCreateSerializer
         if self.action in [
             'pending_list', 'all_posts',
             'approve', 'reject', 'hide', 'lock', 'admin_delete',
             'ai_analyze',
         ]:
-            return PostModerationSerializer
+            return PostModerationSerializer  # admin can field kiem duyet/AI.
         return PostSerializer
 
     def retrieve(self, request, *args, **kwargs):
@@ -92,7 +106,7 @@ class PostViewSet(viewsets.ModelViewSet):
         Lấy chi tiết bài viết.
         # [Chương 7] Quản lý phiên - Lưu vết các bài viết đã xem vào session
         """
-        instance = self.get_object()
+        instance = self.get_object()  # lay bai theo pk tren URL.
         
         # Lấy danh sách ID bài viết đã xem từ session của người dùng (mặc định list rỗng)
         viewed_posts = request.session.get('viewed_posts', [])
@@ -102,7 +116,7 @@ class PostViewSet(viewsets.ModelViewSet):
             # Chỉ lưu 20 bài viết xem gần nhất để tối ưu session
             request.session['viewed_posts'] = viewed_posts[-20:]
             
-        serializer = self.get_serializer(instance)
+        serializer = self.get_serializer(instance)  # chuyen Post thanh JSON tra ve FE.
         response = Response(serializer.data)
         
         # Gửi danh sách ID đã xem qua header để frontend (hoặc giảng viên) dễ kiểm chứng
@@ -120,8 +134,10 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Tự động gán user, mặc định status PENDING, và kiểm tra độ dài nội dung."""
-        title = self.request.data.get('title', '')
-        content = self.request.data.get('content', '')
+        # Server khong tin hoan toan vao FE: lap lai validate do dai va blacklist.
+        # Sau khi save, status mac dinh van la PENDING cho admin duyet.
+        title = self.request.data.get('title', '')  # lay title tu request.
+        content = self.request.data.get('content', '')  # lay content tu request.
         
         if len(title.strip()) < 10:
             raise PermissionDenied('Tiêu đề phải có ít nhất 10 ký tự.')
@@ -129,14 +145,14 @@ class PostViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Nội dung phải có nhất 30 ký tự.')
 
         # Content Guard: Lọc từ khóa cấm
-        blacklisted_keywords = Blacklist.objects.values_list('keyword', flat=True)
-        full_text = (title + " " + content).lower()
+        blacklisted_keywords = Blacklist.objects.values_list('keyword', flat=True)  # lay danh sach tu cam.
+        full_text = (title + " " + content).lower()  # gop title + content de scan tu khoa.
         for kw in blacklisted_keywords:
             if kw.lower() in full_text:
                 raise PermissionDenied(f'Nội dung chứa từ khóa không hợp lệ: "{kw}"')
 
-        instance = serializer.save(user=self.request.user)
-        self._handle_file_uploads(instance)
+        instance = serializer.save(user=self.request.user)  # luu Post va gan tac gia la user dang dang nhap.
+        self._handle_file_uploads(instance)  # neu co file thi luu file kem theo.
 
     def perform_update(self, serializer):
         """Xử lý cập nhật bài viết và upload thêm file mới."""
@@ -148,15 +164,19 @@ class PostViewSet(viewsets.ModelViewSet):
         Xử lý tệp tin từ request.FILES. 
         Lưu tệp vào thư mục media và tạo bản ghi trong bảng Media & TargetMedia.
         """
+        # Flow upload:
+        # 1. FE gui multipart/form-data voi key attachments.
+        # 2. Backend luu file vao media/posts/<post_id>/.
+        # 3. Tao Media va TargetMedia de serializer doc lai danh sach URL.
         from api.models import Media, TargetType, TargetMedia
         import os
         import json
 
-        files = self.request.FILES.getlist('attachments')
+        files = self.request.FILES.getlist('attachments')  # tat ca file FE gui bang key attachments.
         
         # 1. Đồng bộ ảnh cũ (Dùng khi Edit)
         # Frontend gửi danh sách URL các ảnh muốn giữ lại
-        raw_images_data = self.request.data.get('images', None)
+        raw_images_data = self.request.data.get('images', None)  # danh sach anh cu FE muon giu lai khi edit.
         if raw_images_data:
             try:
                 # Có thể là chuỗi JSON hoặc list tùy cách client gửi
@@ -186,16 +206,16 @@ class PostViewSet(viewsets.ModelViewSet):
 
             for f in files:
                 # Detect media type
-                ext = os.path.splitext(f.name)[1].lower()
-                media_type = Media.MediaType.IMAGE
+                ext = os.path.splitext(f.name)[1].lower()  # lay duoi file de xac dinh loai.
+                media_type = Media.MediaType.IMAGE  # mac dinh xem la anh.
                 if ext in ['.mp4', '.mov', '.avi', '.mkv']:
                     media_type = Media.MediaType.VIDEO
                 elif ext in ['.pdf', '.doc', '.docx', '.txt']:
                     media_type = Media.MediaType.DOCUMENT
 
                 # Lưu file
-                path = default_storage.save(f'posts/{instance.id}/{f.name}', f)
-                url = f"{settings.MEDIA_URL}{path}"
+                path = default_storage.save(f'posts/{instance.id}/{f.name}', f)  # luu file vao thu muc media.
+                url = f"{settings.MEDIA_URL}{path}"  # URL de frontend load file.
                 
                 # Tạo Media & Liên kết
                 media_obj = Media.objects.create(
@@ -211,7 +231,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_object(self):
         """Kiểm tra object-level permission & State Machine."""
-        obj = super().get_object()
+        obj = super().get_object()  # lay object theo id tu URL.
         is_admin = self._is_admin()
         
         if self.action in ['update', 'partial_update', 'destroy']:
@@ -235,7 +255,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[IsAdminRole], url_path='pending')
     def pending_list(self, request):
-        posts = Post.objects.filter(status=Post.PostStatus.PENDING).order_by('-created_time')
+        posts = Post.objects.filter(status=Post.PostStatus.PENDING).order_by('-created_time')  # danh sach cho duyet.
         page = self.paginate_queryset(posts)
         serializer = PostModerationSerializer(page if page is not None else posts, many=True)
         return self.get_paginated_response(serializer.data) if page is not None else Response(serializer.data)
@@ -243,7 +263,7 @@ class PostViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[IsAdminRole], url_path='all')
     def all_posts(self, request):
         status_filter = request.query_params.get('status', None)
-        posts = Post.objects.all().select_related('user', 'category', 'reviewed_by')
+        posts = Post.objects.all().select_related('user', 'category', 'reviewed_by')  # admin xem moi trang thai.
         if status_filter:
             posts = posts.filter(status=status_filter.upper())
         posts = posts.order_by('-created_time')
@@ -253,13 +273,14 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated], url_path='mine')
     def mine(self, request):
-        posts = Post.objects.filter(user=request.user).order_by('-created_time')
+        posts = Post.objects.filter(user=request.user).order_by('-created_time')  # bai cua user dang dang nhap.
         page = self.paginate_queryset(posts)
         serializer = PostSerializer(page if page is not None else posts, many=True)
         return self.get_paginated_response(serializer.data) if page is not None else Response(serializer.data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='ai-analyze')
     def ai_analyze(self, request, pk=None):
+        # Admin bam "Phan tich": goi service AI va luu ket qua vao post.
         post = self.get_object()
         analyze_and_store_post(post)
         return Response({
@@ -273,6 +294,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='approve')
     def approve(self, request, pk=None):
+        # PENDING -> APPROVED: bai duoc public, tac gia +10 diem, nhan notification.
         post = self.get_object()
         if post.status != Post.PostStatus.PENDING:
             return Response({'detail': 'Chỉ có thể duyệt bài PENDING.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -305,6 +327,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='reject')
     def reject(self, request, pk=None):
+        # PENDING -> REJECTED: luu ly do de user biet vi sao bai bi tu choi.
         post = self.get_object()
         if post.status != Post.PostStatus.PENDING:
             return Response({'detail': 'Chỉ có thể từ chối bài PENDING.'}, status=status.HTTP_400_BAD_REQUEST)

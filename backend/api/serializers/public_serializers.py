@@ -7,6 +7,11 @@ from api.models import Comment, Post, ScamCategory
 
 User = get_user_model()
 
+# NOTE VAN DAP:
+# public_serializers.py chi tra cac truong an toan cho khach chua dang nhap.
+# Khac voi PostSerializer chinh, serializer public khong tra field quan tri
+# va van mask tac gia neu bai/comment dang o che do an danh.
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -64,6 +69,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        # create_user tu hash password; khong bao gio luu password plain text.
         return User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -115,6 +121,7 @@ class PublicPostSerializer(serializers.ModelSerializer):
         return obj.comments.filter(status=Comment.CommentStatus.ACTIVE).count()
 
     def to_representation(self, instance):
+        # Bao ve danh tinh tac gia tren API public neu bai viet an danh.
         data = super().to_representation(instance)
         if instance.is_anonymous:
             data['user_detail'] = {

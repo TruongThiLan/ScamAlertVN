@@ -9,6 +9,11 @@ import { ReportUserDialog } from '../components/ReportUserDialog';
 import { toast } from 'sonner';
 import { Avatar } from '../components/Avatar';
 
+// NOTE VAN DAP:
+// UserProfile hien ho so cong khai cua tac gia va cac bai public cua user do.
+// Khi goi posts/?user=<id>, backend se an bai anonymous neu nguoi xem khong phai chu bai/admin.
+// User dang nhap co the report nguoi dung tu dialog.
+
 export function UserProfile() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();

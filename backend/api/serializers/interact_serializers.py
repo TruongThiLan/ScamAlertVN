@@ -13,6 +13,10 @@ from api.serializers.user_serializers import UserBriefSerializer
 
 User = get_user_model()
 
+# Serializer trong file nay phuc vu cac thao tac tuong tac:
+# comment/reply, report, reaction toggle, share link.
+# View se dung serializer de validate payload, sau do moi ghi DB.
+
 
 # ------------------------------------------------------------------
 # UC 10.2 – Bình luận bài viết / UC 10.2b – Phản hồi bình luận

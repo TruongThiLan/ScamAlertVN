@@ -7,6 +7,10 @@ import { toast } from 'sonner';
 import { Avatar } from '../components/Avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 
+// NOTE VAN DAP:
+// MyPosts hien cac bai cua user dang dang nhap, ke ca bai PENDING/REJECTED.
+// FE goi /api/posts/mine/; backend loc theo request.user trong PostViewSet.mine.
+
 export function MyPosts() {
   const navigate = useNavigate();
   const { user } = useAuth();

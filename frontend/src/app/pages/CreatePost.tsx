@@ -6,6 +6,14 @@ import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
 import api from '../../api/axiosInstance';
 import { toast } from 'sonner';
 
+// NOTE VAN DAP:
+// CreatePost la form user tao canh bao moi.
+// Flow:
+// 1. Neu chua dang nhap -> day ve /login.
+// 2. Load categories de user chon danh muc.
+// 3. Khi submit, tao FormData gom title/content/category/is_anonymous/attachments.
+// 4. POST /api/posts/; backend luu bai o trang thai PENDING cho admin duyet.
+
 type CategoryOption = {
   id: string;
   name: string;
@@ -13,6 +21,7 @@ type CategoryOption = {
 };
 
 async function fetchAllResults<T>(url: string): Promise<T[]> {
+  // Lay het du lieu phan trang de tinh so bai theo danh muc trong sidebar.
   const items: T[] = [];
   let nextUrl: string | null = url;
 
@@ -35,13 +44,13 @@ async function fetchAllResults<T>(url: string): Promise<T[]> {
 export function CreatePost() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [content, setContent] = useState('');
-  const [images, setImages] = useState<string[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [isAnonymous, setIsAnonymous] = useState(false); // cong tac dang bai an danh.
+  const [title, setTitle] = useState(''); // gia tri o input tieu de.
+  const [category, setCategory] = useState(''); // id danh muc user chon.
+  const [content, setContent] = useState(''); // noi dung bai viet.
+  const [images, setImages] = useState<string[]>([]); // URL preview anh/video tren giao dien.
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // file that se gui len backend.
+  const [categories, setCategories] = useState<CategoryOption[]>([]); // danh muc hien trong sidebar va select.
   const [uncategorizedCount, setUncategorizedCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
@@ -80,7 +89,7 @@ export function CreatePost() {
     return null;
   }
 
-  const hasUnsavedChanges = title.trim() || content.trim() || category;
+  const hasUnsavedChanges = title.trim() || content.trim() || category; // dung de hien dialog khi bam quay lai.
 
   const handleBack = () => {
     if (hasUnsavedChanges) {
@@ -108,6 +117,8 @@ export function CreatePost() {
 
     setIsSubmitting(true);
     try {
+      // Dung FormData vi bai viet co the kem file anh/video.
+      // Neu gui JSON thuong thi request.FILES o Django se khong co du lieu.
       const formData = new FormData();
       formData.append('title', title);
       formData.append('content', content);
@@ -160,6 +171,7 @@ export function CreatePost() {
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
         
+        {/* Sidebar ben trai: hien danh muc lua dao va so bai moi danh muc */}
         <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-screen">
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
@@ -217,8 +229,10 @@ export function CreatePost() {
           </div>
         </aside>
 
+        {/* Khu vuc ben phai: form tao bai canh bao */}
         <main className="flex-1">
           <div className="max-w-[943px] mx-auto px-6 py-8">
+            {/* Nut quay lai, neu form co thay doi thi hoi xac nhan */}
             <button
               onClick={handleBack}
               className="flex items-center gap-2 text-[#4A5565] hover:text-[#E01515] mb-6 transition-colors"
@@ -233,6 +247,7 @@ export function CreatePost() {
                 Chia sẻ thông tin và cảnh báo cho cộng đồng về các hành vi lừa đảo
               </p>
 
+              {/* Cong tac dang bai an danh */}
               <div className="mb-6 pb-6 border-b border-[#D1D5DC]">
                 <div className="flex items-center justify-between">
                   <div>
@@ -256,6 +271,7 @@ export function CreatePost() {
                 </div>
               </div>
 
+              {/* O nhap tieu de bai viet */}
               <div className="mb-6">
                 <label className="block font-semibold mb-2">
                   Tiêu đề bài viết <span className="text-[#E01515]">*</span>
@@ -269,6 +285,7 @@ export function CreatePost() {
                 />
               </div>
 
+              {/* Dropdown chon danh muc/hinh thuc lua dao */}
               <div className="mb-6">
                 <label className="block font-semibold mb-2">
                   Danh mục / Hình thức lừa đảo <span className="text-[#E01515]">*</span>
@@ -287,6 +304,7 @@ export function CreatePost() {
                 </select>
               </div>
 
+              {/* O nhap noi dung chi tiet */}
               <div className="mb-6">
                 <label className="block font-semibold mb-2">
                   Nội dung bài viết <span className="text-[#E01515]">*</span>
@@ -303,11 +321,11 @@ export function CreatePost() {
                 </p>
               </div>
 
-              {/* Media Upload */}
+              {/* Khu upload anh/video minh chung */}
               <div className="mb-6">
                 <label className="block font-semibold mb-2">Hình ảnh chứng minh</label>
                 
-                {/* Preview Grid */}
+                {/* Luoi preview anh/video da chon truoc khi submit */}
                 {images.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                     {images.map((url, idx) => (
@@ -355,6 +373,7 @@ export function CreatePost() {
                 )}
               </div>
 
+              {/* Hang nut cuoi form: huy hoac dang bai */}
               <div className="flex items-center justify-end gap-4 pt-6 border-t border-[#D1D5DC]">
                 <button
                   onClick={handleBack}

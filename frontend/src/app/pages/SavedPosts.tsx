@@ -5,6 +5,10 @@ import { PostCard } from '../components/PostCard';
 import { Search, Bookmark, Loader2 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 
+// NOTE VAN DAP:
+// SavedPosts hien danh sach bai da bookmark cua user.
+// FE goi /api/bookmarks/mine/; backend tra cac Post APPROVED ma user da luu.
+
 export function SavedPosts() {
   const navigate = useNavigate();
   const { user } = useAuth();

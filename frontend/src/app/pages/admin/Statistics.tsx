@@ -19,6 +19,11 @@ import api from '../../../api/axiosInstance';
 import { Button } from '../../components/ui/button';
 import { ReputationStatsSection, type ReputationStatsData } from './ReputationStats';
 
+// NOTE VAN DAP:
+// AdminStatistics doc mot endpoint tong hop /api/statistics/.
+// Backend da tinh san overview, monthly_activity, growth_trend,
+// category_distribution va reputation de FE chi render chart/table.
+
 interface OverviewStats {
   total_posts: number;
   active_users: number;

@@ -1,4 +1,9 @@
 export type UserStatus = 'active' | 'inactive' | 'banned' | 'warning' | 'ACTIVE' | 'INACTIVE' | 'BANNED' | 'WARNING';
+
+// NOTE VAN DAP:
+// types.ts la hop dong du lieu phia frontend.
+// Cac interface o day map voi JSON ma Django REST Framework tra ve.
+// Khi API thay doi field, file nay la noi can kiem tra dau tien o frontend.
 export type PostStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'LOCKED';
 export type ReportStatus = 'PENDING' | 'PROCESSED' | 'DISMISSED';
 export type ReactionType = 'UPVOTE' | 'DOWNVOTE';

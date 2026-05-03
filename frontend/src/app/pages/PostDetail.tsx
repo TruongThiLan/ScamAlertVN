@@ -30,7 +30,16 @@ import { Lightbox } from '../components/Lightbox';
 import { ReportDialog } from '../components/ReportDialog';
 import { ShareDialog } from '../components/ShareDialog';
 
+// NOTE VAN DAP:
+// PostDetail la trang chi tiet bai viet.
+// Flow:
+// 1. Lay post theo id, categories va comments cua post.
+// 2. Hien tac gia/danh muc/noi dung/anh va danh sach comment + reply.
+// 3. User co the like, comment, reply, report, share va xem anh bang lightbox.
+// 4. Cac thao tac nay goi API trong interact_views.py o backend.
+
 async function fetchAllResults<T>(url: string): Promise<T[]> {
+  // Dung cho categories/posts vi DRF co the tra phan trang.
   const items: T[] = [];
   let nextUrl: string | null = url;
 
@@ -57,26 +66,26 @@ export function PostDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [post, setPost] = useState<any>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [post, setPost] = useState<any>(null); // du lieu bai viet dang xem.
+  const [comments, setComments] = useState<Comment[]>([]); // danh sach comment/reply cua bai.
+  const [categories, setCategories] = useState<any[]>([]); // danh muc hien o sidebar.
+  const [isLoading, setIsLoading] = useState(true); // trang thai loading ban dau.
   
-  const [newComment, setNewComment] = useState('');
+  const [newComment, setNewComment] = useState(''); // noi dung comment moi.
   const [newCommentImage, setNewCommentImage] = useState<{
     file: File;
     previewUrl: string;
   } | null>(null);
-  const [replyTo, setReplyTo] = useState<number | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [likedComments, setLikedComments] = useState<Set<number>>(new Set());
-  const [commentLikes, setCommentLikes] = useState<Record<number, number>>({});
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [replyTo, setReplyTo] = useState<number | null>(null); // id comment dang mo o reply.
+  const [replyText, setReplyText] = useState(''); // noi dung reply dang nhap.
+  const [likedComments, setLikedComments] = useState<Set<number>>(new Set()); // comment nao user da like tren UI.
+  const [commentLikes, setCommentLikes] = useState<Record<number, number>>({}); // so like tam thoi cua comment.
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false); // mo popup bao cao.
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false); // mo popup chia se.
   const [reportTarget, setReportTarget] = useState<{ type: 'post' | 'comment'; id: string } | null>(null);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isLiked, setIsLiked] = useState(false); // nut like bai viet dang active khong.
+  const [likesCount, setLikesCount] = useState(0); // so like bai viet hien tren giao dien.
+  const [isSaved, setIsSaved] = useState(false); // bai da duoc bookmark chua.
   
   // Lightbox state
   const [lightbox, setLightbox] = useState<{
@@ -88,6 +97,7 @@ export function PostDetail() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Load cac du lieu can cho trang chi tiet trong mot lan vao page.
         const [postRes, allCategories, allPosts] = await Promise.all([
           api.get(`posts/${id}/`),
           fetchAllResults<any>('categories/'),
@@ -173,6 +183,7 @@ export function PostDetail() {
     if ((!hasText && !hasImage) || !user) return;
 
     try {
+      // Comment co the kem anh nen dung FormData/multipart.
       const formData = new FormData();
       formData.append('post', post.id.toString());
 
@@ -275,6 +286,7 @@ export function PostDetail() {
     if (!user) return;
 
     try {
+      // Backend toggle: neu chua like thi tao Reaction, neu da like thi xoa Reaction.
       const res = await api.post('reactions/toggle/', {
         target_type: 'COMMENT',
         target_id: commentId,
@@ -311,6 +323,7 @@ export function PostDetail() {
     if (!reportTarget) return;
 
     try {
+      // Report gui target_type/target_id de backend biet dang bao cao post hay comment.
       await api.post('reports/', {
         target_type: reportTarget.type.toUpperCase(),
         target_id: reportTarget.id,
@@ -500,7 +513,7 @@ export function PostDetail() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex">
-        {/* Sidebar - Categories */}
+        {/* Sidebar ben trai: danh muc lua dao de quay ve loc theo danh muc */}
         <aside className="w-[320px] shrink-0 bg-white border-r border-[#D1D5DC] min-h-[calc(100vh-70px)] sticky top-[70px] h-[calc(100vh-70px)] overflow-y-auto">
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">
@@ -576,10 +589,10 @@ export function PostDetail() {
           </div>
         </aside>
 
-        {/* Main Content */}
+        {/* Noi dung chinh ben phai: chi tiet bai + comment */}
         <main className="flex-1 px-8 py-8">
           <div className="max-w-[900px] ml-24">
-            {/* Back Button */}
+            {/* Nut quay lai trang truoc */}
             <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 text-[#4A5565] hover:text-[#E01515] mb-6 transition-colors"
@@ -588,9 +601,9 @@ export function PostDetail() {
               <span>Quay lại</span>
             </button>
 
-            {/* Post Card */}
+            {/* Card hien toan bo thong tin bai viet */}
             <div className="bg-white rounded-[10px] border border-[#D1D5DC] p-6 mb-4">
-              {/* Author Info */}
+              {/* Dong thong tin tac gia + menu thao tac */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {shouldMaskPostAuthor ? (
@@ -666,24 +679,24 @@ export function PostDetail() {
                 )}
               </div>
 
-              {/* Category Tag */}
+              {/* The danh muc cua bai viet */}
               <div className="mb-4">
                 <span className="inline-block px-3 py-1 rounded-full border border-[#E01515] text-[#E01515] text-sm">
                   {post.category_detail?.category_name}
                 </span>
               </div>
 
-              {/* Post Title */}
+              {/* Tieu de bai viet */}
               <h1 className="text-2xl font-semibold text-[#1E293B] mb-4">
                 {post.title}
               </h1>
 
-              {/* Post Content */}
+              {/* Noi dung bai viet */}
               <div className="text-[#4A5565] whitespace-pre-wrap mb-6">
                 {post.content}
               </div>
 
-              {/* Post Images */}
+              {/* Khu anh minh chung cua bai viet, bam de mo lightbox */}
               {post.images && post.images.length > 0 && (
                 <div className={`mb-6 grid gap-2 ${
                   post.images.length === 1 ? 'grid-cols-1' :
@@ -714,7 +727,7 @@ export function PostDetail() {
                 </div>
               )}
 
-              {/* Post Stats */}
+              {/* Hang nut like, so comment va chia se */}
               <div className="flex items-center gap-6 pt-4 border-t border-[#D1D5DC]">
                 <button
                   onClick={handleLikePost}
@@ -745,11 +758,11 @@ export function PostDetail() {
               </div>
             </div>
 
-            {/* Comments Section */}
+            {/* Khu vuc binh luan */}
             <div className="bg-white rounded-[10px] border border-[#D1D5DC] p-6">
               <h2 className="text-lg font-semibold mb-4">Bình luận</h2>
 
-              {/* Add Comment */}
+              {/* Form them binh luan moi */}
               {user ? (
                 <div className="mb-6">
                   <div className="rounded-xl border border-[#D1D5DC] bg-[#FAFAFB] p-4">
@@ -813,7 +826,7 @@ export function PostDetail() {
                 </div>
               )}
 
-              {/* Comments List */}
+              {/* Danh sach binh luan va reply */}
               <div className="space-y-6">
                 {comments.length === 0 ? (
                   <p className="text-center text-[#99A1AF] py-8">Chưa có bình luận nào</p>

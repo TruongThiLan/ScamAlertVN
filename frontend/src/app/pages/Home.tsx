@@ -11,9 +11,19 @@ import { Search, ChevronRight, Plus } from 'lucide-react';
 // 4. Contexts cũng nằm trong src/app/ nên dùng ../
 import { useAuth } from '../contexts/AuthContext';
 
+// NOTE VAN DAP:
+// Home la trang feed public da duyet.
+// Flow:
+// 1. Goi posts/ va categories/ qua axiosInstance.
+// 2. Chi giu bai status APPROVED de hien len trang chu.
+// 3. Loc theo category/searchQuery va sap xep latest/trending o frontend.
+// 4. Bam tao bai thi di sang CreatePost neu user da dang nhap.
+
 const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
 
 async function fetchAllResults<T>(url: string): Promise<T[]> {
+  // DRF co the tra ket qua dang phan trang {results,next}.
+  // Ham nay di qua tat ca page de sidebar count va list bai khop nhau.
   const items: T[] = [];
   let nextUrl: string | null = url;
 
@@ -39,20 +49,21 @@ export function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // --- STATE DỮ LIỆU THẬT ---
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [categories, setCategories] = useState<ScamCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<Post[]>([]); // danh sach bai viet hien tren feed.
+  const [categories, setCategories] = useState<ScamCategory[]>([]); // danh muc hien o sidebar trai.
+  const [loading, setLoading] = useState(true); // true thi hien man hinh dang tai.
 
   // --- STATE UI ---
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') ?? 'all');
-  const [sortBy, setSortBy] = useState<string>('latest');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchError, setSearchError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') ?? 'all'); // category dang duoc chon.
+  const [sortBy, setSortBy] = useState<string>('latest'); // latest hoac trending.
+  const [searchQuery, setSearchQuery] = useState(''); // tu khoa trong o tim kiem.
+  const [searchError, setSearchError] = useState(''); // loi neu bam tim nhung chua nhap gi.
 
   // --- GỌI API KHI VÀO TRANG ---
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Goi song song bai viet va danh muc de trang load nhanh hon.
         setLoading(true);
         const [allPosts, allCategories] = await Promise.all([
           fetchAllResults<Post>('posts/'),
@@ -76,7 +87,7 @@ export function Home() {
   }, [searchParams]);
 
   // --- LOGIC LỌC & SẮP XẾP ---
-  const categoryFilteredPosts = selectedCategory === 'all'
+  const categoryFilteredPosts = selectedCategory === 'all' // loc bai theo danh muc o sidebar.
     ? posts
     : selectedCategory === UNCATEGORIZED_CATEGORY_ID
       ? posts.filter(post => !post.category_detail)
@@ -92,14 +103,14 @@ export function Home() {
     }
   };
 
-  const filteredPosts = searchQuery.trim() === ''
+  const filteredPosts = searchQuery.trim() === '' // loc tiep theo tu khoa tim kiem.
     ? categoryFilteredPosts
     : categoryFilteredPosts.filter(post =>
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.content.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
+  const sortedPosts = [...filteredPosts].sort((a, b) => { // sap xep bai truoc khi render.
     if (sortBy === 'trending') {
       return (b.likes_count || 0) - (a.likes_count || 0);
     }
@@ -123,11 +134,12 @@ export function Home() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex items-start">
-        {/* Sidebar - Categories */}
+        {/* Khu vuc ben trai: sidebar danh muc lua dao */}
         <aside className="sticky top-[70px] h-[calc(100vh-70px)] w-[320px] shrink-0 overflow-y-auto bg-white border-r border-[#D1D5DC]">
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-6 text-[#111827]">Danh mục lừa đảo</h2>
             <div className="space-y-3">
+              {/* Nut "Tat ca": hien moi bai APPROVED */}
               <button
                 onClick={() => handleCategorySelect('all')}
                 className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${selectedCategory === 'all' ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
@@ -143,6 +155,7 @@ export function Home() {
                 <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
               </button>
 
+              {/* Cac nut category ben duoi: moi nut loc feed theo mot danh muc */}
               {categories.map((category) => {
                 const count = posts.filter(p => p.category_detail?.id === category.id).length;
                 const isActive = selectedCategory === category.id.toString();
@@ -185,7 +198,7 @@ export function Home() {
           </div>
         </aside>
 
-        {/* Main Content */}
+        {/* Khu vuc noi dung chinh: tieu de, tim kiem, sap xep va danh sach bai */}
         <main className="flex-1 px-[88px] py-8">
           <div className="max-w-[943px]">
             <div className="mb-8">
@@ -193,6 +206,7 @@ export function Home() {
                 <div>
                   <h1 className="text-[28px] font-semibold mb-1">Cảnh báo lừa đảo</h1>
                 </div>
+                {/* Neu da dang nhap thi hien nut tao bai */}
                 {user && (
                   <Link to="/create-post">
                     <Button className="bg-[#E01515] text-white rounded-[10px] gap-2">
@@ -204,6 +218,7 @@ export function Home() {
 
               <div className="flex gap-4">
                 <form onSubmit={handleSearchSubmit} className="flex-1">
+                  {/* O tim kiem bai viet tren trang chu */}
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
                     <Input
@@ -222,6 +237,7 @@ export function Home() {
                   {searchError && <p className="mt-2 text-sm font-medium text-[#E01515]">{searchError}</p>}
                 </form>
                 <Select value={sortBy} onValueChange={setSortBy}>
+                  {/* Dropdown sap xep: moi nhat hoac thinh hanh */}
                   <SelectTrigger className="w-[200px] bg-[#F3F3F5] rounded-[10px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -234,6 +250,7 @@ export function Home() {
             </div>
 
             <div className="space-y-4">
+              {/* Danh sach card bai viet sau khi loc/sap xep */}
               {sortedPosts.length === 0 ? (
                 <div className="bg-white rounded-[10px] border p-8 text-center text-gray-500">
                   Không tìm thấy bài viết nào phù hợp.

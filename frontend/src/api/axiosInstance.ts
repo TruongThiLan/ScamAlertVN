@@ -1,5 +1,10 @@
 import axios from 'axios';
 
+// NOTE VAN DAP:
+// api la Axios instance dung cho cac API can/duoc phep gui JWT.
+// Moi request se tu dong doc access_token trong localStorage va gan vao
+// Authorization: Bearer <token>. Nho vay cac page khong can lap lai code gan token.
+
 // 1. Khởi tạo instance với cấu hình cơ bản
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/', // Địa chỉ Backend của Nguyệt

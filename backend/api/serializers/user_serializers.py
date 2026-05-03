@@ -6,15 +6,20 @@ from django.utils import timezone
 from datetime import timedelta
 from ..models import User, ActivityLog, ContentReport, Post, Comment, Notification, ReputationHistory
 
+# NOTE VAN DAP:
+# UserSerializer phuc vu admin xem/loc user. UserProfileSerializer va
+# ChangePasswordSerializer phuc vu tai khoan dang dang nhap. Cac field tinh toan
+# nhu report_count/remaining_lock_time khong co trong DB ma duoc tinh luc serialize.
+
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer cho model User, bao gồm các trường thông tin cơ bản
     và các trường tính toán (SerializerMethodField) cho admin.
     """
-    remaining_lock_time = serializers.SerializerMethodField()
-    password = serializers.CharField(write_only=True)
-    report_count = serializers.SerializerMethodField()
-    role_name = serializers.SerializerMethodField()
+    remaining_lock_time = serializers.SerializerMethodField()  # thoi gian khoa con lai, tinh tu ActivityLog.
+    password = serializers.CharField(write_only=True)  # chi nhan luc tao user, khong tra password ve FE.
+    report_count = serializers.SerializerMethodField()  # tong so lan user bi bao cao.
+    role_name = serializers.SerializerMethodField()  # ten role de FE biet admin/user.
 
     class Meta:
         model = User
@@ -26,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_role_name(self, obj):
         """Lấy tên vai trò từ quan hệ ForeignKey Role hoặc kiểm tra superuser."""
-        if obj.is_superuser:
+        if obj.is_superuser:  # superuser Django duoc xem nhu Admin.
             return "Admin"
         return obj.role.role_name if obj.role else "User"
 
@@ -39,16 +44,19 @@ class UserSerializer(serializers.ModelSerializer):
         Tính tổng số lượt bị báo cáo vi phạm của người dùng này
         (bao gồm báo cáo trên bài viết và báo cáo trên bình luận).
         """
+        # Dem report tren cac bai viet cua user nay.
         post_reports = ContentReport.objects.filter(
             target_type='POST', 
             target_id__in=Post.objects.filter(user=obj).values_list('id', flat=True)
         ).count()
         
+        # Dem report tren cac binh luan cua user nay.
         comment_reports = ContentReport.objects.filter(
             target_type='COMMENT',
             target_id__in=Comment.objects.filter(user=obj).values_list('id', flat=True)
         ).count()
 
+        # Dem report truc tiep vao chinh tai khoan user.
         user_reports = ContentReport.objects.filter(
             target_type='USER',
             target_id=obj.id,
@@ -65,13 +73,17 @@ class UserSerializer(serializers.ModelSerializer):
             return None
         
         # Tìm log khóa/mở khóa mới nhất của user này
+        # Flow tinh thoi gian khoa:
+        # 1. Tim ActivityLog khoa/mo khoa gan nhat cua user.
+        # 2. Parse duration tu chuoi action.
+        # 3. Lay created_time + duration de tinh con bao lau.
         latest_log = ActivityLog.objects.filter(
             action__contains=f"target={obj.username}"
         ).filter(
             models.Q(action__contains="LOCK_INFO") | models.Q(action__contains="UNLOCK_INFO")
         ).order_by('-created_time').first()
 
-        if not latest_log or "UNLOCK_INFO" in latest_log.action:
+        if not latest_log or "UNLOCK_INFO" in latest_log.action:  # neu da mo khoa thi khong con thoi gian khoa.
             return None
 
         try:
@@ -81,13 +93,13 @@ class UserSerializer(serializers.ModelSerializer):
             if not match:
                 return "Không rõ"
             
-            duration_str = match.group(1)
+            duration_str = match.group(1)  # so ngay khoa hoac "forever".
             if duration_str == 'forever':
                 return "Vĩnh viễn"
             
             duration_days = int(duration_str)
-            expiry_date = latest_log.created_time + timedelta(days=duration_days)
-            remaining = expiry_date - timezone.now()
+            expiry_date = latest_log.created_time + timedelta(days=duration_days)  # ngay het han khoa.
+            remaining = expiry_date - timezone.now()  # khoang thoi gian con lai.
 
             if remaining.total_seconds() <= 0:
                 return "Đã hết hạn"
@@ -156,7 +168,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         }
 
     def validate_username(self, value):
-        value = value.strip()
+        value = value.strip()  # bo khoang trang dau/cuoi truoc khi kiem tra.
         if not value:
             raise serializers.ValidationError('Tên đăng nhập không được để trống.')
         if len(value) < 6 or len(value) > 20:
@@ -166,7 +178,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if not re.fullmatch(r'[A-Za-z0-9]+', value):
             raise serializers.ValidationError('Tên đăng nhập chỉ được bao gồm chữ cái và chữ số.')
 
-        queryset = User.objects.filter(username__iexact=value)
+        queryset = User.objects.filter(username__iexact=value)  # kiem tra trung username khong phan biet hoa thuong.
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
         if queryset.exists():
@@ -178,7 +190,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError('Email không được để trống.')
 
-        queryset = User.objects.filter(email__iexact=value)
+        queryset = User.objects.filter(email__iexact=value)  # kiem tra trung email.
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
         if queryset.exists():
@@ -194,17 +206,17 @@ class ChangePasswordSerializer(serializers.Serializer):
     confirm_password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        user = self.context['request'].user
+        user = self.context['request'].user  # user dang dang nhap doi mat khau.
         old_password = attrs.get('old_password', '')
         new_password = attrs.get('new_password', '')
         confirm_password = attrs.get('confirm_password', '')
 
-        if not user.check_password(old_password):
+        if not user.check_password(old_password):  # mat khau cu phai dung moi cho doi.
             raise serializers.ValidationError('Mật khẩu cũ không đúng. Vui lòng nhập lại.')
 
-        has_letter = re.search(r'[A-Za-z]', new_password)
-        has_number = re.search(r'\d', new_password)
-        has_special = re.search(r'[^A-Za-z0-9]', new_password)
+        has_letter = re.search(r'[A-Za-z]', new_password)  # co chu cai.
+        has_number = re.search(r'\d', new_password)  # co chu so.
+        has_special = re.search(r'[^A-Za-z0-9]', new_password)  # co ky tu dac biet.
         if len(new_password) < 8 or not has_letter or not has_number or not has_special:
             raise serializers.ValidationError(
                 'Vui lòng nhập mật khẩu có tối thiểu 8 ký tự, bao gồm chữ, số và ký tự đặc biệt.'

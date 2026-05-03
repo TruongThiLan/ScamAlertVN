@@ -38,6 +38,14 @@ from api.serializers.interact_serializers import (
 )
 from api.permissions import IsAdminRole
 
+# NOTE VAN DAP:
+# interact_views.py gom cac chuc nang "sau khi co bai viet":
+# - reaction: like/unlike bai viet/comment.
+# - comment: binh luan/reply va upload anh comment.
+# - report: gui bao cao va admin xu ly bao cao.
+# - bookmark/share: luu bai va tao link chia se.
+# Cac action nay thua du lieu tu Post/User nen thuong tao Notification/ReputationHistory.
+
 
 # ============================================================
 # HELPERS – Dùng nội bộ trong file này
@@ -146,9 +154,14 @@ class ReactionViewSet(viewsets.ViewSet):
           - Bài viết đạt 5000 upvote → tác giả +5 điểm uy tín (tổng +9)
           - Khi số like tụt xuống dưới ngưỡng → trừ lại điểm tương ứng
         """
-        serializer = ReactionToggleSerializer(data=request.data)
+        serializer = ReactionToggleSerializer(data=request.data)  # validate target_type/target_id user gui.
         serializer.is_valid(raise_exception=True)
 
+        # Flow toggle:
+        # 1. Validate target_type/target_id.
+        # 2. Neu reaction da ton tai -> delete (unlike).
+        # 3. Neu chua co -> create (like).
+        # 4. Neu target la POST, dong bo milestone diem uy tin.
         target_type   = serializer.validated_data['target_type']
         target_id     = serializer.validated_data['target_id']
         reaction_val  = serializer.validated_data['reaction_type']
@@ -160,14 +173,14 @@ class ReactionViewSet(viewsets.ViewSet):
                 raise PermissionDenied('Không thể tương tác với bài viết đã bị khóa hoặc bị ẩn.')
 
         # ---- Đếm trước khi toggle ----
-        old_count = Reaction.objects.filter(
+        old_count = Reaction.objects.filter(  # dem like truoc khi toggle.
             target_type=target_type,
             target_id=target_id,
             reaction_type='UPVOTE'
         ).count()
 
         # ---- Toggle ----
-        reaction, created = Reaction.objects.get_or_create(
+        reaction, created = Reaction.objects.get_or_create(  # neu chua like thi tao reaction moi.
             user=request.user,
             target_type=target_type,
             target_id=target_id,
@@ -176,11 +189,11 @@ class ReactionViewSet(viewsets.ViewSet):
 
         if not created:
             # Đã like → Unlike
-            reaction.delete()
+            reaction.delete()  # da like roi thi bam lan nua la unlike.
             new_count = old_count - 1
             result_status = 'unreacted'
         else:
-            new_count = old_count + 1
+            new_count = old_count + 1  # moi like nen tang so dem.
             result_status = 'reacted'
 
         # ---- Cập nhật milestone điểm uy tín (chỉ áp dụng cho POST) ----
@@ -236,8 +249,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         Mặc định chỉ trả comment cấp 1 (parent_comment=None) để tránh duplicate.
         Replies sẽ được lồng bên trong qua get_replies() của serializer.
         """
-        qs      = super().get_queryset()
-        post_id = self.request.query_params.get('post')
+        qs      = super().get_queryset()  # queryset goc da select_related/prefetch.
+        post_id = self.request.query_params.get('post')  # FE gui ?post=<id> de lay comment bai do.
         if post_id:
             qs = qs.filter(post_id=post_id, parent_comment__isnull=True)
         return qs
@@ -253,7 +266,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         # Lý do: DRF validate FK bằng cách query Post.objects.all() không có
         # select_related('user'), nên post.user_id có thể không được load đúng.
         # Để chắc chắn, query lại với select_related('user') trước khi so sánh.
-        post_raw = serializer.validated_data.get('post')
+        post_raw = serializer.validated_data.get('post')  # post ma comment thuoc ve.
         post = None
         if post_raw is not None:
             post = Post.objects.select_related('user').filter(pk=post_raw.pk).first()
@@ -270,7 +283,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             and int(post.user_id) == int(self.request.user.pk)
         )
         # Lưu comment, tự gán user từ request
-        instance = serializer.save(
+        # Comment chi an danh khi chinh tac gia comment vao bai an danh cua minh.
+        # Neu nguoi khac comment vao bai an danh, danh tinh cua nguoi comment van hien binh thuong.
+        instance = serializer.save(  # luu comment va gan user dang dang nhap.
             user=self.request.user,
             is_anonymous=is_anonymous,
         )
@@ -307,7 +322,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         FE gửi file qua multipart/form-data với key 'attachments'.
         Lưu vào thư mục media/comments/<comment_id>/ và tạo bản ghi TargetMedia.
         """
-        files = self.request.FILES.getlist('attachments')
+        files = self.request.FILES.getlist('attachments')  # anh/video dinh kem comment.
         if not files:
             return
 
@@ -387,12 +402,13 @@ class ContentReportViewSet(viewsets.ModelViewSet):
         Lưu báo cáo, gán reporter_user từ request.
         Điểm uy tín và việc ẩn nội dung chỉ được áp dụng sau khi Admin xử lý.
         """
+        # User chi tao report; viec cong/tru diem doi admin bam process.
         serializer.save(reporter_user=self.request.user)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='dismiss')
     def dismiss(self, request, pk=None):
         """Admin bac bo bao cao va khong thay doi diem/noi dung."""
-        report = self.get_object()
+        report = self.get_object()  # report admin dang xu ly.
         if report.processing_status != ContentReport.ProcessStatus.PENDING:
             return Response(
                 {'detail': 'Báo cáo này đã được xử lý trước đó.'},
@@ -521,7 +537,7 @@ class BookmarkViewSet(viewsets.ViewSet):
           - { status: 'bookmarked' }   khi lưu thành công
           - { status: 'unbookmarked' } khi bỏ lưu
         """
-        post_id = request.data.get('post_id')
+        post_id = request.data.get('post_id')  # id bai user muon bookmark/unbookmark.
         if not post_id:
             return Response(
                 {'detail': 'Thiếu post_id.'},
@@ -536,12 +552,12 @@ class BookmarkViewSet(viewsets.ViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        bookmark, created = Bookmark.objects.get_or_create(
+        bookmark, created = Bookmark.objects.get_or_create(  # chua co thi tao bookmark.
             user=request.user,
             post=post,
         )
         if not created:
-            bookmark.delete()
+            bookmark.delete()  # da bookmark roi thi bam lan nua la bo luu.
             return Response({'status': 'unbookmarked'})
 
         return Response({'status': 'bookmarked'})

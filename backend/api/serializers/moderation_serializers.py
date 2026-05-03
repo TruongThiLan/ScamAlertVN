@@ -1,5 +1,8 @@
 from rest_framework import serializers
 
+# Cac serializer nay khong gan voi Model, chi validate input cho admin action.
+# Vi du reject/hide/lock/delete bat buoc co reason de luu ly do xu ly.
+
 class ApprovePostSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, allow_blank=True, max_length=500)
 

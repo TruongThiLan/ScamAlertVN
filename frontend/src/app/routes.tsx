@@ -25,6 +25,11 @@ import { Toaster } from './components/ui/sonner';
 import { EditPost } from './pages/EditPost';
 import { useAuth } from './contexts/AuthContext';
 
+// NOTE VAN DAP:
+// routes.tsx la ban do man hinh frontend.
+// RootLayout la layout user public, AdminLayout la layout admin.
+// AdminProtectedRoute chan nguoi khong co role Admin truy cap /admin.
+
 function AuthLayout() {
   return (
     <>
@@ -35,6 +40,7 @@ function AuthLayout() {
 }
 
 function AdminProtectedRoute() {
+  // Neu user khong phai admin, dieu huong ve trang chu.
   const { is_admin } = useAuth();
   return is_admin ? <Outlet /> : <Navigate to="/" replace />;
 }

@@ -30,6 +30,11 @@ def _first_serializer_error(serializer):
 from ..permissions import IsAdminRole 
 from ..pagination import UserPagination # Import pagination tùy chỉnh
 
+# NOTE VAN DAP:
+# user_views.py quan ly tai khoan:
+# - User dang nhap goi /api/users/me/, /profile/, /change-password/.
+# - Admin goi /api/users/ de list/search/filter va lock/unlock/warn/delete.
+# - Soft delete khong xoa khoi DB, chi doi status=inactive.
 class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet cho phép quản trị viên quản lý danh sách người dùng và xử lý các vi phạm.
@@ -40,6 +45,8 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = UserPagination
 
     def get_serializer_class(self):
+        # Phan quyen theo action giup cung mot ViewSet phuc vu ca user va admin:
+        # retrieve public, me/profile/change-password can login, con quan ly user can Admin.
         if self.action == 'retrieve':
             return UserPublicProfileSerializer
         return UserSerializer
@@ -48,10 +55,10 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         Hỗ trợ lọc server-side (Tìm kiếm, Trạng thái, Vai trò) cho toàn bộ database.
         """
-        queryset = User.objects.all().order_by('-created_date')
+        queryset = User.objects.all().order_by('-created_date')  # mac dinh user moi nhat len dau.
         
         # 1. Lọc theo Tìm kiếm (Search)
-        search = self.request.query_params.get('search', None)
+        search = self.request.query_params.get('search', None)  # tu khoa admin nhap tren o tim kiem.
         if search:
             queryset = queryset.filter(
                 models.Q(username__icontains=search) | 
@@ -59,14 +66,14 @@ class UserViewSet(viewsets.ModelViewSet):
             )
             
         # 2. Lọc theo Trạng thái (Status)
-        status = self.request.query_params.get('status', None)
+        status = self.request.query_params.get('status', None)  # loc active/banned/inactive/warning.
         if status and status != 'all':
             # Map 'locked' (UI) sang 'banned' (Backend) nếu cần
             backend_status = 'banned' if status == 'locked' else status
             queryset = queryset.filter(status__iexact=backend_status)
             
         # 3. Lọc theo Vai trò (Role)
-        role_param = self.request.query_params.get('role', None)
+        role_param = self.request.query_params.get('role', None)  # loc Admin/User.
         if role_param and role_param != 'all':
             role_val = role_param.lower()
             if role_val == 'admin':
@@ -95,10 +102,11 @@ class UserViewSet(viewsets.ModelViewSet):
         1. Tự động mở khóa các tài khoản hết hạn.
         2. Bổ sung globalStats vào response để Frontend hiển thị thanh thống kê.
         """
+        # Moi lan admin mo danh sach user, backend tranh thu mo khoa cac tai khoan het han.
         self._auto_unlock_expired_users()
         
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
+        queryset = self.filter_queryset(self.get_queryset())  # ap dung bo loc.
+        page = self.paginate_queryset(queryset)  # cat du lieu theo trang.
         
         # Tính toán thống kê nhanh (Quét tất cả biến thể hoa/thường để tránh sót dữ liệu)
         stats = {
@@ -125,7 +133,7 @@ class UserViewSet(viewsets.ModelViewSet):
         Quét tất cả user đang bị banned, tìm log khóa gần nhất để tính thời hạn.
         Nếu đã quá thời hạn, chuyển trạng thái về active và gửi thông báo.
         """
-        banned_users = User.objects.filter(status=User.UserStatus.BANNED)
+        banned_users = User.objects.filter(status=User.UserStatus.BANNED)  # chi quet user dang bi khoa.
         for user in banned_users:
             # Tìm log mới nhất có chứa thông tin LOCK hoặc UNLOCK của user này
             latest_log = ActivityLog.objects.filter(
@@ -189,7 +197,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         """Lấy thông tin cá nhân của người dùng hiện tại."""
-        serializer = self.get_serializer(request.user)
+        serializer = self.get_serializer(request.user)  # tra thong tin user dang dang nhap.
         return Response(serializer.data)
 
     @action(
@@ -200,14 +208,14 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def reputation_history(self, request):
         """Lay lich su thay doi diem uy tin cua user dang dang nhap."""
-        histories = ReputationHistory.objects.filter(user=request.user).order_by('-created_time')
+        histories = ReputationHistory.objects.filter(user=request.user).order_by('-created_time')  # lich su diem cua minh.
         serializer = ReputationHistorySerializer(histories, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['put', 'patch'], permission_classes=[permissions.IsAuthenticated])
     def profile(self, request):
         """Cap nhat username/email cua user hien tai va tra ve user moi nhat."""
-        serializer = UserProfileSerializer(
+        serializer = UserProfileSerializer(  # validate username/email moi.
             request.user,
             data=request.data,
             partial=request.method == 'PATCH',
@@ -229,8 +237,8 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def profile_availability(self, request):
         """Kiem tra username/email co bi trung voi user khac khong."""
-        username = request.query_params.get('username', '').strip()
-        email = request.query_params.get('email', '').strip()
+        username = request.query_params.get('username', '').strip()  # username FE dang kiem tra.
+        email = request.query_params.get('email', '').strip()  # email FE dang kiem tra.
         errors = {}
 
         if username:
@@ -251,7 +259,7 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def change_password(self, request):
         """Doi mat khau cho user hien tai va giu session dang nhap."""
-        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})  # validate mat khau cu/moi.
         if not serializer.is_valid():
             return Response(
                 {'detail': _first_serializer_error(serializer)},
@@ -269,17 +277,18 @@ class UserViewSet(viewsets.ModelViewSet):
         UC 2.1: Khóa tài khoản người dùng.
         Admin gửi lên: reason (lý do) và duration (số ngày khóa).
         """
-        user = self.get_object()
+        user = self.get_object()  # user bi admin thao tac.
         if user == request.user:
             return Response({'error': 'Bạn không thể tự khóa chính mình'}, status=400)
             
+        # Khong xoa user khi khoa; chi doi status de login/FE co the chan theo trang thai.
         user.status = User.UserStatus.BANNED
         user.save()
         
         # Ghi log và gửi thông báo
         admin_user = request.user
-        reason = request.data.get('reason', 'Vi phạm quy định')
-        duration = request.data.get('duration', '3')
+        reason = request.data.get('reason', 'Vi phạm quy định')  # ly do khoa.
+        duration = request.data.get('duration', '3')  # so ngay khoa hoac forever.
         
         ActivityLog.objects.create(
             user=admin_user,
@@ -296,7 +305,7 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         UC 2.1: Mở khóa tài khoản thủ công bởi Admin.
         """
-        user = self.get_object()
+        user = self.get_object()  # user can mo khoa.
         if user == request.user:
             return Response({'error': 'Bạn không thể tự thao tác trên chính mình'}, status=400)
             
@@ -320,15 +329,15 @@ class UserViewSet(viewsets.ModelViewSet):
         UC 2.2: Gửi thông báo vi phạm (Cảnh báo).
         Chuyển trạng thái user sang 'warning'.
         """
-        user = self.get_object()
+        user = self.get_object()  # user nhan canh bao.
         if user == request.user:
             return Response({'error': 'Bạn không thể tự cảnh báo chính mình'}, status=400)
             
         user.status = User.UserStatus.WARNING
         user.save()
         
-        reason = request.data.get('warning_type', 'Cảnh báo vi phạm')
-        details = request.data.get('details', '')
+        reason = request.data.get('warning_type', 'Cảnh báo vi phạm')  # loai canh bao FE chon.
+        details = request.data.get('details', '')  # noi dung chi tiet admin nhap.
         admin_user = request.user
         
         ActivityLog.objects.create(
@@ -346,14 +355,14 @@ class UserViewSet(viewsets.ModelViewSet):
         UC 2.3: Xóa tài khoản (Soft delete).
         Chuyển trạng thái user sang 'inactive'.
         """
-        user = self.get_object()
+        user = self.get_object()  # user bi xoa mem.
         if user == request.user:
             return Response({'error': 'Bạn không thể tự xóa tài khoản của chính mình'}, status=400)
             
         user.status = User.UserStatus.INACTIVE
         user.save()
         
-        reason = request.data.get('reason', 'Xóa tài khoản')
+        reason = request.data.get('reason', 'Xóa tài khoản')  # ly do xoa mem.
         admin_user = request.user
         
         ActivityLog.objects.create(

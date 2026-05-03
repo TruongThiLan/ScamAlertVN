@@ -4,6 +4,12 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# NOTE VAN DAP:
+# File settings.py la "bang dieu khien" cua Django. Nhung cau hinh quan trong:
+# - INSTALLED_APPS: bat DRF, CORS, JWT va app api.
+# - AUTH_USER_MODEL: dung bang User tu api/models.py thay vi User mac dinh.
+# - REST_FRAMEWORK + SIMPLE_JWT: cau hinh xac thuc Bearer token cho API.
+# - MEDIA_ROOT/MEDIA_URL: noi luu anh/video user upload.
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-local-dev-key-change-before-deploy')
 DEBUG = True
 

@@ -3,9 +3,14 @@ import { Search, ShieldAlert, CheckCircle, ExternalLink, Loader2 } from 'lucide-
 import { Link } from 'react-router';
 import publicApi from '../../api/publicApi';
 
+// NOTE VAN DAP:
+// ScamChecker la cong cu kiem tra nhanh cho khach.
+// FE goi publicApi -> /api/public/posts/check_scam/?query=...
+// Backend tim query trong cac bai APPROVED va tra ve is_scam + matches.
+
 export function ScamChecker() {
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState(''); // noi dung user nhap: link hoac so dien thoai.
+  const [loading, setLoading] = useState(false); // hien spinner tren nut kiem tra.
   const [result, setResult] = useState<{
     is_scam: boolean;
     message: string;
@@ -26,6 +31,7 @@ export function ScamChecker() {
     // Lưu ý: Không reset result ngay lập tức để tránh giao diện bị giật (flicker)
     
     try {
+      // encodeURIComponent giup URL/SDT co ky tu dac biet khong lam hong query string.
       const res = await publicApi.get(`public/posts/check_scam/?query=${encodeURIComponent(trimmedQuery)}`);
       setResult(res.data);
     } catch (err: any) {
@@ -53,6 +59,7 @@ export function ScamChecker() {
   return (
     <div className="min-h-[calc(100vh-70px)] bg-[#F9FAFB] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
+        {/* Tieu de va mo ta cong cu kiem tra nhanh */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-[#111827] mb-4">
             Công cụ kiểm tra nhanh
@@ -62,6 +69,7 @@ export function ScamChecker() {
           </p>
         </div>
 
+        {/* Khung form nhap link/SDT can kiem tra */}
         <div className="bg-white rounded-2xl shadow-sm border border-[#D1D5DC] p-6 md:p-8 mb-8">
           <form onSubmit={handleCheck} className="relative">
             <div className="flex flex-col md:flex-row gap-4">
@@ -90,6 +98,8 @@ export function ScamChecker() {
         </div>
 
         {result && (
+          <>
+          {/* Khung ket qua: mau do neu co nguy co, mau xanh neu chua thay rui ro */}
           <div className={`rounded-2xl p-6 md:p-8 border ${result.is_scam ? 'bg-[#FEF2F2] border-[#FCA5A5]' : 'bg-[#F0FDF4] border-[#86EFAC]'} transition-all animate-in fade-in slide-in-from-bottom-4 duration-500`}>
             <div className="flex items-start gap-4">
               <div className={`shrink-0 p-3 rounded-full ${result.is_scam ? 'bg-[#FEE2E2] text-[#E01515]' : 'bg-[#DCFCE7] text-[#16A34A]'}`}>
@@ -124,6 +134,7 @@ export function ScamChecker() {
               </div>
             </div>
           </div>
+          </>
         )}
         
         <div className="mt-12 text-center text-sm text-[#64748B]">

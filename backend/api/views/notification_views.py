@@ -4,6 +4,11 @@ from rest_framework.response import Response
 from ..models import Notification
 from ..serializers.notification_serializers import NotificationSerializer
 
+# NOTE VAN DAP:
+# NotificationViewSet chi tra thong bao cua user dang dang nhap.
+# Cac file khac (post_views/user_views/interact_views) tao Notification,
+# file nay phu trach doc va mark_as_read.
+
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet cho phép người dùng xem danh sách thông báo của chính mình.

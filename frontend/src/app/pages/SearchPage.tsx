@@ -6,6 +6,11 @@ import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
+// NOTE VAN DAP:
+// SearchPage dung publicApi de tim bai APPROVED cho ca khach chua dang nhap.
+// Query duoc lay tu URL ?q=..., sau do FE goi /api/public/posts/?search=...
+// va loc/sap xep ket qua hien thi.
+
 type PublicPost = {
   id: number;
   title: string;
@@ -38,14 +43,14 @@ const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
 export function SearchPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const keyword = searchParams.get('q')?.trim() ?? '';
-  const [query, setQuery] = useState(keyword);
-  const [posts, setPosts] = useState<PublicPost[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [searchError, setSearchError] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('latest');
+  const keyword = searchParams.get('q')?.trim() ?? ''; // tu khoa tren URL.
+  const [query, setQuery] = useState(keyword); // gia tri trong o search.
+  const [posts, setPosts] = useState<PublicPost[]>([]); // ket qua bai viet public.
+  const [loading, setLoading] = useState(false); // loading khi dang goi API.
+  const [error, setError] = useState(''); // loi goi API.
+  const [searchError, setSearchError] = useState(''); // loi form tim kiem.
+  const [selectedCategory, setSelectedCategory] = useState<string>('all'); // danh muc dang loc.
+  const [sortBy, setSortBy] = useState<string>('latest'); // sap xep ket qua.
 
   const title = useMemo(() => {
     return keyword ? `Kết quả tìm kiếm cho "${keyword}"` : 'Tìm kiếm cảnh báo công khai';
@@ -166,6 +171,7 @@ export function SearchPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <div className="flex items-start">
+        {/* Sidebar ben trai: loc ket qua tim kiem theo danh muc */}
         <aside className="sticky top-[70px] h-[calc(100vh-70px)] w-[320px] shrink-0 overflow-y-auto border-r border-[#D1D5DC] bg-white">
           <div className="p-6">
             <h2 className="mb-6 text-lg font-semibold text-[#111827]">Danh mục lừa đảo</h2>
@@ -247,6 +253,7 @@ export function SearchPage() {
           </div>
         </aside>
 
+        {/* Noi dung ben phai: o tim kiem, sap xep va danh sach ket qua */}
         <main className="flex-1 px-[88px] py-8">
           <div className="max-w-[943px]">
             <div className="mb-8">
@@ -256,6 +263,7 @@ export function SearchPage() {
 
             <div className="mb-8 flex gap-4">
               <form onSubmit={handleSubmit} className="flex-1">
+                {/* O nhap tu khoa tim kiem */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#99A1AF]" />
                   <Input
@@ -274,6 +282,7 @@ export function SearchPage() {
                 </div>
               </form>
               <Select value={sortBy} onValueChange={setSortBy}>
+                {/* Dropdown sap xep ket qua */}
                 <SelectTrigger className="h-12 w-[200px] rounded-[10px] bg-white">
                   <SelectValue />
                 </SelectTrigger>

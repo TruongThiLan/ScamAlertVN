@@ -18,6 +18,11 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
+// NOTE VAN DAP:
+// Profile la trang user tu cap nhat username/email va doi mat khau.
+// FE validate nhanh de hien loi som, backend van validate lai trong UserProfileSerializer
+// va ChangePasswordSerializer truoc khi luu DB.
+
 const get_api_error_message = (error: any) => {
   const data = error.response?.data;
   if (typeof data === 'string') return data;

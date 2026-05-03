@@ -20,6 +20,13 @@ import {
 } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 
+// NOTE VAN DAP:
+// AdminUsers la man hinh quan ly tai khoan.
+// Flow:
+// 1. FE gui search/status/role/page len /api/users/.
+// 2. Backend tra results + count + status_summary.
+// 3. Admin bam lock/unlock/warn/delete thi FE goi custom action cua UserViewSet.
+
 interface User {
   id: string;
   username: string;
@@ -38,11 +45,11 @@ type DialogType = 'lock' | 'unlock' | 'warning' | 'delete' | null;
 
 export function AdminUsers() {
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [dialogType, setDialogType] = useState<DialogType>(null);
+  const [users, setUsers] = useState<User[]>([]); // danh sach user dang hien trong bang/list.
+  const [searchQuery, setSearchQuery] = useState(''); // tu khoa tim username/email.
+  const [filterStatus, setFilterStatus] = useState('all'); // loc theo trang thai user.
+  const [selectedUser, setSelectedUser] = useState<User | null>(null); // user dang duoc admin thao tac.
+  const [dialogType, setDialogType] = useState<DialogType>(null); // popup dang mo: lock/unlock/warning/delete.
   
   // Dialog states
   const [lockAction, setLockAction] = useState('');
@@ -62,9 +69,9 @@ export function AdminUsers() {
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
   // Các state mới cho phân trang và lọc server-side
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filterRole, setFilterRole] = useState('all');
-  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1); // trang hien tai cua phan trang.
+  const [filterRole, setFilterRole] = useState('all'); // loc Admin/User.
+  const [totalCount, setTotalCount] = useState(0); // tong user backend tra ve.
   const [globalStats, setGlobalStats] = useState({
     active: 0,
     banned: 0,
@@ -79,6 +86,7 @@ export function AdminUsers() {
   const fetchUsers = async () => {
     try {
       // Gửi các tham số lọc lên server
+      // Loc/phan trang lam o backend de danh sach user lon van chay on.
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
       if (filterStatus !== 'all') {
@@ -138,6 +146,7 @@ export function AdminUsers() {
     setIsFormSubmitted(true);
 
     try {
+      // Moi dialogType map voi mot endpoint admin rieng trong user_views.py.
       if (dialogType === 'lock') {
         if (!lockReason) {
           toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc');
@@ -226,7 +235,7 @@ export function AdminUsers() {
     <div className="p-8">
       <h1 className="text-2xl font-bold text-[#1E293B] mb-6">Quản lý người dùng</h1>
 
-      {/* Search and Filter */}
+      {/* Thanh tim kiem va bo loc user */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#99A1AF]" />
@@ -266,7 +275,7 @@ export function AdminUsers() {
         </div>
       </div>
 
-      {/* Stats Summary Bar */}
+      {/* Thanh thong ke nhanh: tong user, active, bi khoa, da xoa */}
       <div className="bg-[#F8FAFC] border border-[#D1D5DC] rounded-[10px] p-4 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <span className="font-medium text-[#1E293B]">
@@ -282,7 +291,7 @@ export function AdminUsers() {
         </div>
       </div>
 
-      {/* Users List */}
+      {/* Danh sach user: moi card la mot tai khoan */}
       <div className="space-y-4">
         {filteredUsers.map((user) => (
           <div
@@ -291,12 +300,12 @@ export function AdminUsers() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
-                {/* Avatar */}
+                {/* Avatar chu cai dau cua username */}
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E01515] to-[#F59E0B] flex items-center justify-center text-white font-semibold text-lg">
                   {user.username.charAt(0)}
                 </div>
 
-                {/* User Info */}
+                {/* Thong tin user: ten, email, ngay tham gia, diem uy tin, so bao cao */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="font-semibold text-[#1E293B] flex items-center gap-2">
@@ -331,7 +340,7 @@ export function AdminUsers() {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Cac nut admin thao tac voi user */}
               <div className="flex items-center gap-2">
                 {String(user.id) === String(currentUser?.id) ? (
                   <span className="text-sm text-[#94A3B8] italic font-medium">Tài khoản của bạn</span>
@@ -383,7 +392,7 @@ export function AdminUsers() {
           </div>
         )}
 
-        {/* Pagination Controls */}
+        {/* Nut phan trang danh sach user */}
         {totalCount > 10 && (
           <div className="flex items-center justify-center gap-2 mt-8">
             <Button
@@ -410,7 +419,7 @@ export function AdminUsers() {
         )}
       </div>
 
-      {/* Lock Account Dialog */}
+      {/* Popup khoa tai khoan */}
       <Dialog open={dialogType === 'lock'} onOpenChange={closeDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -486,7 +495,7 @@ export function AdminUsers() {
         </DialogContent>
       </Dialog>
 
-      {/* Unlock Account Dialog */}
+      {/* Popup mo khoa tai khoan */}
       <Dialog open={dialogType === 'unlock'} onOpenChange={closeDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -546,7 +555,7 @@ export function AdminUsers() {
         </DialogContent>
       </Dialog>
 
-      {/* Warning Dialog */}
+      {/* Popup gui canh bao user */}
       <Dialog open={dialogType === 'warning'} onOpenChange={closeDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -600,7 +609,7 @@ export function AdminUsers() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Account Dialog */}
+      {/* Popup xoa mem tai khoan user */}
       <Dialog open={dialogType === 'delete'} onOpenChange={closeDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>

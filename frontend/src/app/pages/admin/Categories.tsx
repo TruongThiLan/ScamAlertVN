@@ -13,6 +13,11 @@ import { Button } from '../../components/ui/button';
 import api from '../../../api/axiosInstance';
 import type { Category } from './AdminLayout';
 
+// NOTE VAN DAP:
+// AdminCategories quan ly danh muc lua dao.
+// Du lieu categories duoc truyen tu AdminLayout; khi them/sua/xoa thanh cong
+// thi goi fetchCategories de dong bo lai sidebar va bang danh muc.
+
 type DialogType = 'add' | 'edit' | 'delete' | null;
 
 interface OutletCtx {

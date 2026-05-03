@@ -6,6 +6,11 @@ from rest_framework.views import APIView
 from api.models import ContentReport, Post, ReputationHistory, ScamCategory, User
 from api.permissions import IsAdminRole
 
+# NOTE VAN DAP:
+# statistics_views.py la API dashboard admin.
+# Endpoint /api/statistics/ gom so lieu tong quan, bieu do 6 thang,
+# phan bo danh muc va bang diem uy tin. Tat ca chi Admin duoc xem.
+
 
 CHART_COLORS = [
     '#E01515',
@@ -24,6 +29,8 @@ class SystemStatisticsView(APIView):
     permission_classes = [IsAdminRole]
 
     def get(self, request):
+        # Flow dashboard: tinh tung nhom du lieu rieng roi gom vao mot JSON duy nhat
+        # de frontend khong phai goi nhieu API nho.
         months = _last_months(6)
         monthly_activity = _monthly_activity(months)
         category_rows = _category_rows()

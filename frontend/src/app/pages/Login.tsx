@@ -6,6 +6,11 @@ import { Input } from '../components/ui/input';
 import { ShieldAlert, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
+// NOTE VAN DAP:
+// Login goi ham login() tu AuthContext.
+// AuthContext se POST /api/login/, luu JWT, goi /api/users/me/,
+// roi tra user ve de trang nay dieu huong admin vao dashboard, user ve trang chu.
+
 export function Login() {
   // Nguyệt giữ tên biến là email cũng được, nhưng nó sẽ đại diện cho Username/Email gửi sang Django
   const [identifier, setIdentifier] = useState('');

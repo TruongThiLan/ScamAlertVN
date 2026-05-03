@@ -10,6 +10,15 @@ from django.utils import timezone
 
 from api.models import Post, ScamCategory
 
+# NOTE VAN DAP:
+# Service nay chi chay khi Admin bam "Phan tich" tren trang kiem duyet.
+# Flow:
+# 1. analyze_and_store_post doi status PROCESSING.
+# 2. Chon provider: gemini/openai/local tuy settings va API key.
+# 3. Chuan hoa ket qua ve schema chung: is_scam, confidence, category, signals...
+# 4. Luu ket qua JSON vao Post.ai_analysis_result de admin xem.
+# Neu API ngoai loi, he thong fallback local de demo khong bi dung.
+
 
 def analyze_and_store_post(post: Post) -> Post:
     """Run AI-assisted analysis and persist the normalized suggestion on the post."""

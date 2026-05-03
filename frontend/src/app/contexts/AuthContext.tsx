@@ -3,6 +3,14 @@ import { toast } from 'sonner';
 import api from '../../api/axiosInstance';
 import { User } from '../types';
 
+// NOTE VAN DAP:
+// AuthContext la noi quan ly phien dang nhap cua frontend.
+// Luong:
+// 1. Khi app mo, checkAuth doc access_token trong localStorage.
+// 2. Neu token hop le, goi users/me/ de lay thong tin user.
+// 3. login/register/logout/updateUser duoc export qua useAuth().
+// 4. routes.tsx dung is_admin de bao ve trang admin.
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -17,6 +25,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const normalizeUser = (rawUser: any): User => ({
+  // Backend tra snake_case, mot so component cu lai dung name/reputationScore.
+  // Ham nay gom du lieu ve mot shape de cac page dung thong nhat.
   ...rawUser,
   role_name: rawUser.role_name ?? null,
   is_staff: Boolean(rawUser.is_staff),
@@ -32,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Reload trang khong lam mat dang nhap vi token duoc luu localStorage.
       const token = localStorage.getItem('access_token');
       if (!token) {
         setLoading(false);
@@ -54,12 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string): Promise<User | null> => {
     try {
+      // 1. Lay JWT tu /api/login/.
       const res = await api.post('login/', { username, password });
       const { access, refresh } = res.data;
 
       localStorage.setItem('access_token', access);
       localStorage.setItem('refresh_token', refresh);
 
+      // 2. Co token roi moi goi /api/users/me/ de lay role/status/user info.
       const userRes = await api.get('users/me/');
       const userData = normalizeUser(userRes.data);
       setUser(userData);
@@ -92,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // Logout phia frontend: xoa token va reset user state.
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     setUser(null);

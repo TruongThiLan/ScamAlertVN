@@ -4,6 +4,10 @@ __pycache__/
 *$py.class
 venv/
 env/
+.env
+.env.*
+db.sqlite3
+media/
 
 # IDE
 .idea/
@@ -11,3 +15,4 @@ env/
 
 # Node
 node_modules/
+

@@ -20,9 +20,15 @@ import { Button } from '../../components/ui/button';
 import { ReputationStatsSection, type ReputationStatsData } from './ReputationStats';
 
 // NOTE VAN DAP:
-// AdminStatistics doc mot endpoint tong hop /api/statistics/.
-// Backend da tinh san overview, monthly_activity, growth_trend,
-// category_distribution va reputation de FE chi render chart/table.
+// Statistics.tsx là trang dashboard thống kê cho admin.
+// Gọi DUY NHẤT 1 API: GET /api/statistics/ → lấy toàn bộ số liệu.
+// Kết quả JSON được tách ra thành:
+//   - overview.cards : 4 thẻ tổng quan (tổng bài, user active, chờ duyệt, báo cáo).
+//   - BarChart       : hoạt động theo tháng (bài mới, user mới, báo cáo mới).
+//   - LineChart      : xu hướng tăng trưởng tích lũy.
+//   - PieChart       : phân bố bài viết theo danh mục.
+//   - Bảng reputation: điểm uy tín từng user.
+// Recharts được dùng cho tất cả các biểu đồ (ResponsiveContainer tự scale theo kích thước).
 
 interface OverviewStats {
   total_posts: number;
@@ -98,6 +104,8 @@ export function AdminStatistics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Hàm fetchStats: Gọi API statistics một lần duy nhất, lưu vào state.
+  // Backend đã gộm tất cả số liệu (đọc SystemStatisticsView trong statistics_views.py).
   const fetchStats = useCallback(async () => {
     setLoading(true);
     setError('');

@@ -15,115 +15,145 @@ from api.permissions import IsAdminRole
 from api.services.ai_content_analysis import analyze_and_store_post
 
 # NOTE VAN DAP:
-# post_views.py la file nghiep vu chinh cua bai viet.
-# Luong tao bai:
-# FE gui POST /api/posts/ -> PostCreateSerializer validate -> perform_create gan user,
-# check blacklist -> save Post PENDING -> luu file upload vao Media/TargetMedia.
-# Luong kiem duyet:
-# Admin goi /approve, /reject, /hide, /lock, /admin-delete -> doi status,
-# ghi reviewed_by/reviewed_at, tao Notification/AuditLog va cap nhat diem uy tin neu can.
+# post_views.py là file nghiệp vụ CHÍNH của bài viết, gồm 2 luồng:
+#
+# ── Luồng tạo bài (User) ─────────────────────────────────────────────────────
+# FE gửi POST /api/posts/ với FormData (title, content, category, file)
+#   => PostCreateSerializer validate title/content (độ dài tối thiểu)
+#   => perform_create() kiểm tra blacklist, gán user=request.user
+#   => save Post với status=PENDING (chưa public ngay)
+#   => _handle_file_uploads() lưu ảnh/video vào Media + TargetMedia.
+#
+# ── Luồng kiểm duyệt (Admin) ─────────────────────────────────────────────────
+# Admin gọi các endpoint custom (@action):
+#   /approve  => PENDING => APPROVED, +10 điểm uy tín tác giả
+#   /reject   => PENDING => REJECTED, lưu reason
+#   /hide     => bất kỳ => HIDDEN, bài không hiển thị public
+#   /lock     => bất kỳ => LOCKED, bài không cho tương tác thêm
+#   /admin-delete => xóa vĩnh viễn khỏi DB
+# Mỗi action đều: ghi reviewed_by/reviewed_at, tạo AuditLog, gửi Notification.
 
-# ========================================================
-# HELPERS
-# ========================================================
-
+# --- KIEM DUYET BAI VIET -------------------------------
 def _send_notification(user: User, message: str):
-    """Tạo notification cho user."""
-    # Ham nho nay gom viec tao thong bao, de cac action admin goi lai.
+    """Tạo notification trong bảng Notification cho user.
+    Các action kiểm duyệt (approve/reject/hide/lock/delete) đều gọi hàm này
+    để báo cho tác giả biết kết quả xử lý bài của họ.
+    """
     Notification.objects.create(user=user, content=message)
 
 
 def _mark_reviewed(post: Post, admin_user: User, reason: str = None):
-    """Cập nhật tracking fields của post sau khi Admin xử lý."""
-    post.reviewed_by = admin_user  # luu admin nao xu ly bai.
-    post.reviewed_at = timezone.now()  # luu thoi diem xu ly.
+    """Ghi lại metadata 'ai xử lý bài này và lúc nào' vào Post.
+
+    Được gọi sau mỗi action kiểm duyệt trước khi post.save().
+    Ba field này giúp admin tra cứu lịch sử xử lý và hiển thị trong PostModerationSerializer.
+    """
+    post.reviewed_by = admin_user    # lưu admin nào đã approve/reject/hide/lock.
+    post.reviewed_at = timezone.now()  # lưu thời điểm xử lý để audit.
     if reason:
-        post.rejection_reason = reason
+        post.rejection_reason = reason  # lưu lý do để user đọc được qua Notification/UI.
 
 
+# --- PHAN CUA LAN BEM ---------------------------
 # ========================================================
 # POST VIEWSET
 # ========================================================
 
 class PostViewSet(viewsets.ModelViewSet):
     """
-    Quản lý bài viết + kiểm duyệt.
+    ViewSet quản lý toàn bộ nghiệp vụ bài viết.
+    DRF tự map:
+      GET    /api/posts/        => list()
+      POST   /api/posts/        => create()
+      GET    /api/posts/<id>/   => retrieve()
+      PUT    /api/posts/<id>/   => update()
+      DELETE /api/posts/<id>/   => destroy()
+    Ngoài ra còn các @action custom (approve/reject/hide/lock...) bên dưới.
     """
-    # [Chương 2] Tối ưu hóa truy vấn (Giải quyết N+1 query problem) bằng select_related
+    # select_related giải quyết N+1 query: thay vì mỗi post query thêm user/category,
+    # Django JOIN sẵn trong một câu SQL duy nhất.
     queryset = Post.objects.all().select_related('user', 'category', 'reviewed_by')
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]  # khách đọc được, phải đăng nhập mới ghi.
 
     def get_queryset(self):
-        """Mặc định chỉ trả bài APPROVED cho public. Admin thấy tất cả."""
-        # Day la lop loc du lieu quan trong:
-        # - Admin thay toan bo bai.
-        # - User thuong chi thay APPROVED; rieng chu bai duoc xem bai cua minh.
-        # - Khi xem profile user khac, bai an danh se bi an khoi danh sach.
-        user_id = self.request.query_params.get('user')
-        is_admin = self._is_admin()  # kiem tra nguoi goi API co phai admin khong.
-        
+        """
+        Lớp lọc dữ liệu quan trọng nhất của hệ thống.
+        Quy tắc:
+          - Admin => thấy TẤT CẢ bài (mọi trạng thái).
+          - retrieve (xem chi tiết): chủ bài thấy bài của mình dù chưa duyệt.
+          - list / khách / user thường => chỉ thấy APPROVED.
+          - Xem profile người khác => bài ẩn danh bị ẩn.
+        """
+        user_id = self.request.query_params.get('user')  # ?user=<id> để lọc theo tác giả.
+        is_admin = self._is_admin()
+
         if self.action in ['list', 'retrieve'] and not is_admin:
             if self.action == 'retrieve' and self.request.user.is_authenticated:
-                qs = Post.objects.filter(  # chu bai duoc xem bai cua minh ke ca chua duyet.
+                # Chủ bài được xem bài của mình kể cả khi chưa duyệt.
+                qs = Post.objects.filter(
                     Q(status=Post.PostStatus.APPROVED) | Q(user=self.request.user)
                 )
             else:
-                qs = Post.objects.filter(status=Post.PostStatus.APPROVED)  # khach/user thuong chi thay bai da duyet.
+                # Khách / user thường chỉ thấy bài đã được duyệt.
+                qs = Post.objects.filter(status=Post.PostStatus.APPROVED)
+
             if user_id:
-                # Nếu lọc theo user, chỉ hiện bài KHÔNG ẩn danh 
-                # trừ khi đang xem chính mình (owner check)
+                # Xem profile người khác => ẩn bài ẩn danh của họ.
                 is_owner = (
-                    self.request.user.is_authenticated and 
+                    self.request.user.is_authenticated and
                     str(self.request.user.id) == str(user_id)
                 )
                 if not is_owner:
-                    qs = qs.filter(is_anonymous=False)
+                    qs = qs.filter(is_anonymous=False)  # người khác không thấy bài ẩn danh.
                 qs = qs.filter(user_id=user_id)
             return qs.select_related('user', 'category').order_by('-created_time')
-            
+
+        # Admin hoặc các action kiểm duyệt => trả toàn bộ bài.
         qs = Post.objects.all().select_related('user', 'category', 'reviewed_by')
         if user_id:
-            # Cho Admin hoặc các action khác, nếu có user_id thì vẫn lọc theo user đó
             qs = qs.filter(user_id=user_id)
         return qs
 
-
     def get_serializer_class(self):
-        """Chọn serializer phù hợp từng action."""
-        if self.action in ['create', 'update', 'partial_update']:  # tao/sua bai dung serializer it field hon.
+        """
+        Chọn Serializer phù hợp với từng action.
+        - PostCreateSerializer : tạo/sửa bài (ít field hơn, user tự điền).
+        - PostModerationSerializer : admin kiểm duyệt (đầy đủ reviewed_by, AI...).
+        - PostSerializer : mặc định cho public/user xem bài.
+        """
+        if self.action in ['create', 'update', 'partial_update']:
             return PostCreateSerializer
         if self.action in [
             'pending_list', 'all_posts',
             'approve', 'reject', 'hide', 'lock', 'admin_delete',
             'ai_analyze',
         ]:
-            return PostModerationSerializer  # admin can field kiem duyet/AI.
+            return PostModerationSerializer  # trả đầy đủ field kem duyet cho admin.
         return PostSerializer
 
     def retrieve(self, request, *args, **kwargs):
         """
-        Lấy chi tiết bài viết.
-        # [Chương 7] Quản lý phiên - Lưu vết các bài viết đã xem vào session
+        Lấy chi tiết một bài viết.
+        Ngoài JSON bài viết, lưu ID bài vào session để theo dõi lịch sử xem.
+        Header X-Recently-Viewed trả về danh sách ID đã xem.
         """
-        instance = self.get_object()  # lay bai theo pk tren URL.
-        
-        # Lấy danh sách ID bài viết đã xem từ session của người dùng (mặc định list rỗng)
+        instance = self.get_object()  # lấy bài theo pk trên URL, kiểm tra permission tự động.
+
+        # Lưu lịch sử bài đã xem vào Django session (server-side, không dùng cookie FE).
         viewed_posts = request.session.get('viewed_posts', [])
-        
         if instance.id not in viewed_posts:
             viewed_posts.append(instance.id)
-            # Chỉ lưu 20 bài viết xem gần nhất để tối ưu session
-            request.session['viewed_posts'] = viewed_posts[-20:]
-            
-        serializer = self.get_serializer(instance)  # chuyen Post thanh JSON tra ve FE.
+            request.session['viewed_posts'] = viewed_posts[-20:]  # giữ tối đa 20 bài gần nhất.
+
+        serializer = self.get_serializer(instance)
         response = Response(serializer.data)
-        
-        # Gửi danh sách ID đã xem qua header để frontend (hoặc giảng viên) dễ kiểm chứng
+        # Đính kèm danh sách ID vào response header để dễ demo session management.
         response['X-Recently-Viewed'] = str(request.session['viewed_posts'])
         return response
 
     def _is_admin(self):
+        """Kiểm tra user hiện tại có quyền Admin không (is_staff hoặc role Admin)."""
         user = self.request.user
         if not user or not user.is_authenticated:
             return False
@@ -133,20 +163,25 @@ class PostViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        """Tự động gán user, mặc định status PENDING, và kiểm tra độ dài nội dung."""
-        # Server khong tin hoan toan vao FE: lap lai validate do dai va blacklist.
-        # Sau khi save, status mac dinh van la PENDING cho admin duyet.
-        title = self.request.data.get('title', '')  # lay title tu request.
-        content = self.request.data.get('content', '')  # lay content tu request.
-        
+        """
+        Hook của DRF, gọi sau khi serializer.is_valid(). Thực hiện:
+          1. Validate lại title/content ở server (không tin hoàn toàn vào FE).
+          2. Quét từ khóa cấm (Blacklist) trong title + content.
+          3. Lưu Post với user=request.user; status mặc định là PENDING.
+          4. Gọi _handle_file_uploads() để lưu file đính kèm.
+        """
+        title = self.request.data.get('title', '')
+        content = self.request.data.get('content', '')
+
+        # Validate lại server-side (PostCreateSerializer cũng validate, nhưng double-check để chắc).
         if len(title.strip()) < 10:
             raise PermissionDenied('Tiêu đề phải có ít nhất 10 ký tự.')
         if len(content.strip()) < 30:
             raise PermissionDenied('Nội dung phải có nhất 30 ký tự.')
 
-        # Content Guard: Lọc từ khóa cấm
-        blacklisted_keywords = Blacklist.objects.values_list('keyword', flat=True)  # lay danh sach tu cam.
-        full_text = (title + " " + content).lower()  # gop title + content de scan tu khoa.
+        # Quét Blacklist: nếu title/content chứa từ khóa cấm => từ chối ngay.
+        blacklisted_keywords = Blacklist.objects.values_list('keyword', flat=True)
+        full_text = (title + " " + content).lower()  # gộp và lowercase để match không phân biệt hoa thường.
         for kw in blacklisted_keywords:
             if kw.lower() in full_text:
                 raise PermissionDenied(f'Nội dung chứa từ khóa không hợp lệ: "{kw}"')
@@ -172,7 +207,7 @@ class PostViewSet(viewsets.ModelViewSet):
         import os
         import json
 
-        files = self.request.FILES.getlist('attachments')  # tat ca file FE gui bang key attachments.
+        files = self.request.FILES.getlist('attachments')  # cac file FE gui bang key attachments.
         
         # 1. Đồng bộ ảnh cũ (Dùng khi Edit)
         # Frontend gửi danh sách URL các ảnh muốn giữ lại
@@ -235,76 +270,92 @@ class PostViewSet(viewsets.ModelViewSet):
         is_admin = self._is_admin()
         
         if self.action in ['update', 'partial_update', 'destroy']:
-            # 1. Kiểm tra quyền sở hữu
+            # Kiểm tra quyền sở hữu: user chỉ sửa/xóa bài của chính mình.
             if not is_admin and obj.user != self.request.user:
                 raise PermissionDenied('Bạn chỉ có thể chỉnh sửa hoặc xóa bài viết của chính mình.')
-            
-            # 2. State Machine: Bài APPROVED không được sửa/xóa bởi User (phải hạ về Draft/Pending nếu cần)
+            # State Machine: bài APPROVED không được sửa/xóa bởi User thường.
             if not is_admin:
                 if obj.status == Post.PostStatus.APPROVED:
                     raise PermissionDenied('Bài viết đã được duyệt không thể chỉnh sửa. Liên hệ Admin nếu cần thay đổi.')
-                
-                # Chỉ cho phép sửa khi PENDING hoặc REJECTED (hoặc DRAFT nếu có)
                 if obj.status not in [Post.PostStatus.PENDING, Post.PostStatus.REJECTED]:
                     raise PermissionDenied(f'Không thể thực hiện thao tác này khi bài viết ở trạng thái {obj.status}.')
         return obj
 
-    # ---------------------------------------------------------
-    # CUSTOM ACTIONS
-    # ---------------------------------------------------------
-
+    # --- DANH SACH BAI CHO ADMIN KIEM DUYET  - NN -------------------
     @action(detail=False, methods=['get'], permission_classes=[IsAdminRole], url_path='pending')
     def pending_list(self, request):
-        posts = Post.objects.filter(status=Post.PostStatus.PENDING).order_by('-created_time')  # danh sach cho duyet.
+        """Trả danh sách bài PENDING cho trang kiểm duyệt của admin."""
+        posts = Post.objects.filter(status=Post.PostStatus.PENDING).order_by('-created_time')
         page = self.paginate_queryset(posts)
         serializer = PostModerationSerializer(page if page is not None else posts, many=True)
         return self.get_paginated_response(serializer.data) if page is not None else Response(serializer.data)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAdminRole], url_path='all')
     def all_posts(self, request):
+        """
+        Trả toàn bộ bài viết (mọi trạng thái) cho trang quản lý admin.
+        Hỗ trợ lọc bằng ?status=PENDING|APPROVED|REJECTED|HIDDEN|LOCKED.
+        """
         status_filter = request.query_params.get('status', None)
-        posts = Post.objects.all().select_related('user', 'category', 'reviewed_by')  # admin xem moi trang thai.
+        posts = Post.objects.all().select_related('user', 'category', 'reviewed_by')
         if status_filter:
-            posts = posts.filter(status=status_filter.upper())
+            posts = posts.filter(status=status_filter.upper())  # đổi về uppercase cho khớp enum PostStatus.
         posts = posts.order_by('-created_time')
         page = self.paginate_queryset(posts)
         serializer = PostModerationSerializer(page if page is not None else posts, many=True)
         return self.get_paginated_response(serializer.data) if page is not None else Response(serializer.data)
 
+    # --- DANH SACH BAI CHO ADMIN KIEM DUYET ---------------
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated], url_path='mine')
     def mine(self, request):
-        posts = Post.objects.filter(user=request.user).order_by('-created_time')  # bai cua user dang dang nhap.
+        """Trả danh sách bài của user đang đăng nhập (mọi trạng thái, kể cả PENDING)."""
+        posts = Post.objects.filter(user=request.user).order_by('-created_time')
         page = self.paginate_queryset(posts)
         serializer = PostSerializer(page if page is not None else posts, many=True)
         return self.get_paginated_response(serializer.data) if page is not None else Response(serializer.data)
 
+    # --- AI GOI Y CHO KIEM DUYET BAI VIET ----------------------
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='ai-analyze')
     def ai_analyze(self, request, pk=None):
-        # Admin bam "Phan tich": goi service AI va luu ket qua vao post.
+        """
+        Endpoint: POST /api/posts/<id>/ai-analyze/
+        Admin bấm 'Phân tích' => gọi service AI, lưu kết quả vào post.
+        AI không tự chạy khi user đăng bài; chỉ chạy khi admin bấm thủ công.
+        Kết quả trả về luôn là gợi ý, admin vẫn là người quyết định cuối cùng.
+        """
         post = self.get_object()
-        analyze_and_store_post(post)
+        analyze_and_store_post(post)  # cập nhật các field ai_analysis_* trên Post.
         return Response({
             'detail': 'Đã phân tích nội dung bằng AI.',
             'post': PostModerationSerializer(post).data,
         })
 
-    # ---------------------------------------------------------
-    # MODERATION ACTIONS
-    # ---------------------------------------------------------
+
+    # --- CAC NUT KIEM DUYET BAI VIET (ADMIN) ------------------
+    # Tất cả các action bên dưới đều yêu cầu permission IsAdminRole.
+    # DRF tự map URL nhờ url_path, ví dụ: url_path='approve' => /api/posts/<id>/approve/
+
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='approve')
     def approve(self, request, pk=None):
-        # PENDING -> APPROVED: bai duoc public, tac gia +10 diem, nhan notification.
+        """
+        Duyệt bài: PENDING => APPROVED.
+        - Đặt published_time để bài xuất hiện public.
+        - Cộng +10 điểm uy tín tác giả, ghi ReputationHistory.
+        - Tạo AuditLog lưu vết thao tác admin.
+        - Gửi Notification cho tác giả.
+        """
         post = self.get_object()
         if post.status != Post.PostStatus.PENDING:
+            # Chỉ approve bài đang chờ duyệt, tránh approve lại bài đã xử lý.
             return Response({'detail': 'Chỉ có thể duyệt bài PENDING.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        post.status = Post.PostStatus.APPROVED
-        post.published_time = timezone.now()
-        _mark_reviewed(post, request.user)
+
+        post.status = Post.PostStatus.APPROVED  # bài xuất hiện ở public list.
+        post.published_time = timezone.now()    # mốc thời gian được phép public.
+        _mark_reviewed(post, request.user)      # lưu admin nào đã duyệt và lúc nào.
         post.save()
-        
-        # Side Effect: Tăng điểm uy tín cho User (+10)
+
+        # Thưởng +10 điểm uy tín cho tác giả vì bài hợp lệ.
         author = post.user
         author.reputation_score += 10
         author.save()
@@ -315,94 +366,88 @@ class PostViewSet(viewsets.ModelViewSet):
             score_change=10
         )
 
-        # Audit Log
-        AuditLog.objects.create(
-            action='APPROVE',
-            admin_user=request.user,
-            target_post=post
-        )
-
+        # Ghi AuditLog để admin tra cứu lịch sử.
+        AuditLog.objects.create(action='APPROVE', admin_user=request.user, target_post=post)
         _send_notification(post.user, f'Bài viết "{post.title}" của bạn đã được phê duyệt.')
         return Response({'detail': 'Bài viết đã được duyệt.', 'post': PostModerationSerializer(post).data})
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='reject')
     def reject(self, request, pk=None):
-        # PENDING -> REJECTED: luu ly do de user biet vi sao bai bi tu choi.
+        """
+        Từ chối bài: PENDING => REJECTED.
+        Bắt buộc body { "reason": "..." } (≥ 10 ký tự) để lưu lý do và gửi Notification.
+        """
         post = self.get_object()
         if post.status != Post.PostStatus.PENDING:
             return Response({'detail': 'Chỉ có thể từ chối bài PENDING.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = RejectPostSerializer(data=request.data)
+
+        serializer = RejectPostSerializer(data=request.data)  # validate reason từ FE gửi lên.
         serializer.is_valid(raise_exception=True)
         reason = serializer.validated_data['reason']
-        post.status = Post.PostStatus.REJECTED
+
+        post.status = Post.PostStatus.REJECTED  # bài không hiển thị public.
         _mark_reviewed(post, request.user, reason)
         post.save()
 
-        # Audit Log
-        AuditLog.objects.create(
-            action='REJECT',
-            admin_user=request.user,
-            target_post=post,
-            reason=reason
-        )
-
+        AuditLog.objects.create(action='REJECT', admin_user=request.user, target_post=post, reason=reason)
         _send_notification(post.user, f'Bài viết "{post.title}" đã bị từ chối. Lý do: {reason}')
         return Response({'detail': 'Bài viết đã bị từ chối.', 'post': PostModerationSerializer(post).data})
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='hide')
     def hide(self, request, pk=None):
+        """
+        Ẩn bài: bất kỳ trạng thái => HIDDEN.
+        Bài vẫn còn trong DB nhưng không hiển thị trang public.
+        Dùng khi bài đã APPROVED nhưng phát hiện vi phạm sau đó.
+        """
         post = self.get_object()
-        serializer = HidePostSerializer(data=request.data)
+        serializer = HidePostSerializer(data=request.data)  # bắt buộc reason ≥ 10 ký tự.
         serializer.is_valid(raise_exception=True)
         reason = serializer.validated_data['reason']
-        post.status = Post.PostStatus.HIDDEN
+
+        post.status = Post.PostStatus.HIDDEN  # public query không trả bài HIDDEN.
         _mark_reviewed(post, request.user, reason)
         post.save()
 
-        # Audit Log
-        AuditLog.objects.create(
-            action='HIDE',
-            admin_user=request.user,
-            target_post=post,
-            reason=reason
-        )
+        AuditLog.objects.create(action='HIDE', admin_user=request.user, target_post=post, reason=reason)
         return Response({'detail': 'Bài viết đã được ẩn.'})
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminRole], url_path='lock')
     def lock(self, request, pk=None):
+        """
+        Khóa bài: bất kỳ trạng thái => LOCKED.
+        Bài vẫn hiển thị nhưng không cho bình luận / chỉnh sửa thêm.
+        """
         post = self.get_object()
         serializer = LockPostSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         reason = serializer.validated_data['reason']
-        post.status = Post.PostStatus.LOCKED
+
+        post.status = Post.PostStatus.LOCKED  # FE hiển thị badge "Đã khóa".
         _mark_reviewed(post, request.user, reason)
         post.save()
 
-        # Audit Log
-        AuditLog.objects.create(
-            action='LOCK',
-            admin_user=request.user,
-            target_post=post,
-            reason=reason
-        )
+        AuditLog.objects.create(action='LOCK', admin_user=request.user, target_post=post, reason=reason)
         return Response({'detail': 'Bài viết đã bị khóa.'})
 
     @action(detail=True, methods=['delete'], permission_classes=[IsAdminRole], url_path='admin-delete')
     def admin_delete(self, request, pk=None):
+        # DELETE: xoa vinh vien, nen FE phai gui reason va confirm=true.
         post = self.get_object()
         serializer = AdminDeletePostSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        reason = serializer.validated_data.get('reason', '')
-        _send_notification(post.user, f'Bài viết "{post.title}" đã bị xóa do vi phạm.')
+        reason = serializer.validated_data.get('reason', '')  # ly do xoa duoc luu vao audit log.
+        _send_notification(post.user, f'Bài viết "{post.title}" đã bị xóa do vi phạm.')  # thong bao truoc khi xoa object.
         
         # Audit Log
         AuditLog.objects.create(
-            action='DELETE',
+            action='DELETE',  # target_post=None vi sau do post.delete() se xoa ban ghi.
             admin_user=request.user,
             target_post=None,  # Bài viết bị xóa khỏi DB, giữ ID logic trong Audit nếu cần
             reason=reason
         )
         
-        post.delete()
+        post.delete()  # xoa ban ghi Post khoi database.
         return Response({'detail': 'Bài viết đã bị xóa vĩnh viễn.'})
+
+

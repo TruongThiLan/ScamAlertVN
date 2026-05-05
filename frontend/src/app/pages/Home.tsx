@@ -11,7 +11,6 @@ import { Search, ChevronRight, Plus } from 'lucide-react';
 // 4. Contexts cũng nằm trong src/app/ nên dùng ../
 import { useAuth } from '../contexts/AuthContext';
 
-// NOTE VAN DAP:
 // Home la trang feed public da duyet.
 // Flow:
 // 1. Goi posts/ va categories/ qua axiosInstance.
@@ -142,17 +141,15 @@ export function Home() {
               {/* Nut "Tat ca": hien moi bai APPROVED */}
               <button
                 onClick={() => handleCategorySelect('all')}
-                className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${selectedCategory === 'all' ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
+                className={`group grid min-h-[52px] w-full grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-all ${selectedCategory === 'all' ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
                   }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                    }`}>
-                    {posts.length}
-                  </div>
-                  <span className={`font-medium ${selectedCategory === 'all' ? 'text-[#E01515]' : 'text-[#111827]'}`}>Tất cả</span>
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-semibold ${selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                  }`}>
+                  {posts.length}
                 </div>
-                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                <span className={`min-w-0 font-medium leading-snug ${selectedCategory === 'all' ? 'text-[#E01515]' : 'text-[#111827]'}`}>Tất cả</span>
+                <ChevronRight className="h-5 w-5 shrink-0 justify-self-end text-[#99A1AF]" />
               </button>
 
               {/* Cac nut category ben duoi: moi nut loc feed theo mot danh muc */}
@@ -163,17 +160,15 @@ export function Home() {
                   <button
                     key={category.id}
                     onClick={() => handleCategorySelect(category.id.toString())}
-                    className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${isActive ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
+                    className={`group grid min-h-[52px] w-full grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-all ${isActive ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
                       }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                        }`}>
-                        {count}
-                      </div>
-                      <span className={`font-medium ${isActive ? 'text-[#E01515]' : 'text-[#111827]'}`}>{category.category_name}</span>
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-semibold ${isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                      }`}>
+                      {count}
                     </div>
-                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                    <span className={`min-w-0 font-medium leading-snug ${isActive ? 'text-[#E01515]' : 'text-[#111827]'}`}>{category.category_name}</span>
+                    <ChevronRight className="h-5 w-5 shrink-0 justify-self-end text-[#99A1AF]" />
                   </button>
                 );
               })}
@@ -181,17 +176,15 @@ export function Home() {
               {uncategorizedCount > 0 && (
                 <button
                   onClick={() => handleCategorySelect(UNCATEGORIZED_CATEGORY_ID)}
-                  className={`group w-full flex items-center justify-between px-3 py-2 rounded-[10px] border transition-all ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
+                  className={`group grid min-h-[52px] w-full grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-all ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#FFF1F1] border-[#F7BABA]' : 'bg-white border-transparent hover:bg-[#FFF5F5]'
                     }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center font-semibold text-sm ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                      }`}>
-                      {uncategorizedCount}
-                    </div>
-                    <span className={`font-medium ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'text-[#E01515]' : 'text-[#111827]'}`}>Chưa phân loại</span>
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-semibold ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                    }`}>
+                    {uncategorizedCount}
                   </div>
-                  <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                  <span className={`min-w-0 font-medium leading-snug ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'text-[#E01515]' : 'text-[#111827]'}`}>Chưa phân loại</span>
+                  <ChevronRight className="h-5 w-5 shrink-0 justify-self-end text-[#99A1AF]" />
                 </button>
               )}
             </div>

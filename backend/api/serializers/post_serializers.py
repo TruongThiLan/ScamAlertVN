@@ -75,7 +75,7 @@ class PostSerializer(serializers.ModelSerializer):
         return obj.comments.filter(status='ACTIVE').count()
 
     def _get_user(self):
-        # Helper lay user dang dang nhap tu context serializer.
+        # Helper lay user dang nhap tu context serializer.
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return request.user
@@ -112,11 +112,16 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 
+# --- KIEM DUYET BAI VIET (ADMIN) ------------------------------
+# Serializer nay la phan de admin xem/xu ly bai cho duyet.
+# ---------------------------------------------------------------------------
 class PostModerationSerializer(serializers.ModelSerializer):
     """
     Serializer đầy đủ cho trang kiểm duyệt của Admin.
     Hiển thị thêm rejection_reason, reviewed_by, reviewed_at.
     """
+    # Serializer nay duoc backend tra ve cho /posts/pending/, /posts/all/ va cac action approve/reject...
+    # Nen no phai co du thong tin de admin quyet dinh: tac gia, danh muc, ly do, nguoi duyet, AI, anh minh chung.
     user_detail = UserBriefSerializer(source='user', read_only=True)  # admin can xem tac gia that.
     category_detail = ScamCategorySerializer(source='category', read_only=True)  # hien danh muc trong bang admin.
     reviewed_by_detail = UserBriefSerializer(source='reviewed_by', read_only=True)  # admin nao da xu ly.
@@ -131,12 +136,12 @@ class PostModerationSerializer(serializers.ModelSerializer):
             'status',
             'user', 'user_detail',
             'category', 'category_detail',
-            'rejection_reason',
-            'reviewed_by', 'reviewed_by_detail',
-            'reviewed_at',
-            'ai_analysis_status', 'ai_analysis_result',
-            'ai_analysis_provider', 'ai_analysis_error',
-            'ai_analyzed_at',
+            'rejection_reason',  # ly do reject/hide/lock de FE hien trong admin/user.
+            'reviewed_by', 'reviewed_by_detail',  # admin nao da xu ly bai.
+            'reviewed_at',  # thoi diem xu ly.
+            'ai_analysis_status', 'ai_analysis_result',  # trang thai va JSON ket qua AI.
+            'ai_analysis_provider', 'ai_analysis_error',  # nguon AI va loi fallback neu co.
+            'ai_analyzed_at',  # lan phan tich AI gan nhat.
             'is_anonymous', 'images',
         ]
         read_only_fields = fields
@@ -151,6 +156,9 @@ class PostModerationSerializer(serializers.ModelSerializer):
 
 
 
+# --- KIEM DUYET BAI VIET (ADMIN) --------------------------
+# Ben duoi quay lai serializer tao/sua bai cua user.
+# ---------------------------------------------------------------------------
 class PostCreateSerializer(serializers.ModelSerializer):
     """
     Serializer dùng khi User đăng bài mới (POST /api/posts/).

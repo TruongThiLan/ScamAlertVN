@@ -23,31 +23,37 @@ export interface Category {
 }
 
 export interface AIAnalysis {
+  // Shape cua ket qua AI sau khi backend tra ve cho man hinh kiem duyet.
   status: 'NOT_ANALYZED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   provider: string;
   result: {
-    is_scam?: boolean;
-    confidence?: number;
-    category?: string | null;
-    summary?: string;
-    signals?: string[];
-    recommended_action?: 'approve' | 'reject' | 'review' | string;
+    is_scam?: boolean; // AI co nghi bai nay la lua dao khong.
+    confidence?: number; // diem 0-100, FE ve thanh progress bar.
+    category?: string | null; // danh muc AI goi y.
+    is_spam?: boolean; // AI co nghi bai nay la spam/rao vat lech chu de khong.
+    spam_confidence?: number; // diem 0-100 cho spam/le chu de.
+    spam_type?: string | null; // loai spam goi y, vi du rao vat bat dong san.
+    summary?: string; // tom tat nhan dinh cua AI.
+    signals?: string[]; // cac dau hieu canh bao hien thanh chip.
+    spam_signals?: string[]; // cac dau hieu spam/rao vat hien thanh chip rieng.
+    recommended_action?: 'approve' | 'reject' | 'review' | string; // goi y thao tac cho admin.
   } | null;
   error?: string;
   analyzedAt?: string | null;
 }
 
 export interface Post {
+  // Type Post nay la shape frontend dung trong admin, khong phai y nguyen model Django.
   id: string;
   title: string;
   author: { id: string; name: string };
   category: { id: string; name: string } | null;
   content: string;
   createdAt: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'LOCKED';
-  rejectionReason?: string;
-  images: string[];
-  aiAnalysis: AIAnalysis;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'LOCKED'; // trang thai kiem duyet cua bai.
+  rejectionReason?: string; // ly do reject/hide/lock, neu backend tra ve.
+  images: string[]; // anh minh chung de admin xem khi duyet bai.
+  aiAnalysis: AIAnalysis; // goi y AI gan voi bai.
 }
 
 // ─── Adapter: Chuyển response API → shape frontend cần ───────────────────────
@@ -55,6 +61,7 @@ export interface Post {
 function adaptPost(raw: any): Post {
   // Adapter chuyen snake_case tu DRF sang field frontend dang dung.
   // Vi du created_time -> createdAt, user_detail -> author.
+  // PostModerationSerializer tra ve cac field kiem duyet/AI, ham nay gom chung lai cho UI.
   return {
     id: String(raw.id),
     title: raw.title ?? '',
@@ -64,6 +71,7 @@ function adaptPost(raw: any): Post {
     rejectionReason: raw.rejection_reason ?? undefined,
     images: Array.isArray(raw.images) ? raw.images : [],
     aiAnalysis: {
+      // Nhom cac field ai_analysis_* thanh mot object de AdminPosts render de hon.
       status: raw.ai_analysis_status ?? 'NOT_ANALYZED',
       provider: raw.ai_analysis_provider ?? '',
       result: raw.ai_analysis_result ?? null,
@@ -130,6 +138,7 @@ export function AdminLayout() {
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
     try {
+      // Trang admin goi endpoint posts/all/ de lay ca PENDING/APPROVED/REJECTED/HIDDEN/LOCKED.
       const { items, totalCount } = await fetchAllResults('posts/all/');
       setPosts(items.map(adaptPost));
       setPostsTotalCount(totalCount);

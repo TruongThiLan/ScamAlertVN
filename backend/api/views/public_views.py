@@ -10,7 +10,6 @@ from api.serializers.public_serializers import (
     RegisterSerializer,
 )
 
-# NOTE VAN DAP:
 # public_views.py la nhom API cho khach hoac user chua dang nhap:
 # - /api/register/ tao tai khoan.
 # - /api/public/posts/ doc/tim bai APPROVED.

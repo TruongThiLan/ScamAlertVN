@@ -90,12 +90,9 @@ export function Register() {
     setLoading(true);
 
     try {
-      const success = await register({ email, password, username: name });
+      const success = await register(email.trim(), password, name.trim());
       if (success) {
-        toast.success('Đăng ký thành công!');
         navigate('/');
-      } else {
-        toast.error('Email đã được sử dụng');
       }
     } catch (error) {
       toast.error('Đã có lỗi xảy ra');

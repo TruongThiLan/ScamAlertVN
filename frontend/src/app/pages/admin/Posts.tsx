@@ -30,7 +30,6 @@ import { useOutletContext } from 'react-router';
 import api from '../../../api/axiosInstance';
 import type { Post, Category } from './AdminLayout';
 
-// NOTE VAN DAP:
 // AdminPosts la man hinh kiem duyet bai.
 // Du lieu posts den tu AdminLayout qua useOutletContext.
 // Admin co the xem chi tiet, goi AI analysis, approve/reject/hide/lock/delete.
@@ -47,6 +46,7 @@ type AIAnalysis = Post['aiAnalysis'];
 
 function mapAIAnalysis(raw: any): AIAnalysis {
   // Backend luu ket qua AI bang snake_case, FE map ve object aiAnalysis.
+  // Ham nay giup AdminPosts khong phu thuoc truc tiep vao ten field DB.
   return {
     status: raw.ai_analysis_status ?? 'NOT_ANALYZED',
     provider: raw.ai_analysis_provider ?? '',
@@ -57,6 +57,7 @@ function mapAIAnalysis(raw: any): AIAnalysis {
 }
 
 function formatProvider(provider: string) {
+  // Doi ma provider trong DB thanh label de hien trong badge "Goi y AI".
   if (provider === 'openai') return 'OpenAI GPT';
   if (provider === 'gemini') return 'Google Gemini';
   if (provider === 'local') return 'Local AI';
@@ -104,12 +105,14 @@ export function AdminPosts() {
 
   // ─── Mở dialog hành động ─────────────────────────────────────────────────
   const handleAction = (post: Post, type: ActionType) => {
+    // Luu bai + action de popup xac nhan biet dang approve/reject/hide/lock/delete bai nao.
     setSelectedPost(post);
     setActionType(type);
     setActionReason('');
   };
 
   const cancelAction = () => {
+    // Reset state popup sau khi admin huy hoac action thanh cong.
     setActionType(null);
     setSelectedPost(null);
     setActionReason('');
@@ -121,15 +124,15 @@ export function AdminPosts() {
       // Goi backend phan tich AI thu cong; bai moi dang PENDING khong tu chay AI.
       const res = await api.post(`posts/${post.id}/ai-analyze/`);
       const rawPost = res.data?.post;
-      const aiAnalysis = mapAIAnalysis(rawPost ?? {});
+      const aiAnalysis = mapAIAnalysis(rawPost ?? {}); // doi response backend ve field FE dang dung.
 
       setPosts((prev) =>
         prev.map((item) =>
-          item.id === post.id ? { ...item, aiAnalysis } : item
+          item.id === post.id ? { ...item, aiAnalysis } : item // cap nhat card trong danh sach.
         )
       );
       setSelectedPost((current) =>
-        current?.id === post.id ? { ...current, aiAnalysis } : current
+        current?.id === post.id ? { ...current, aiAnalysis } : current // neu dang mo detail thi cap nhat luon popup.
       );
       toast.success('Đã cập nhật gợi ý AI');
     } catch (err: any) {
@@ -143,7 +146,7 @@ export function AdminPosts() {
     }
   };
 
-  // ─── Gọi API & cập nhật state ────────────────────────────────────────────
+  // ─── Gọi API và cập nhật state ────────────────────────────────────────────
   const confirmAction = async () => {
     if (!selectedPost || !actionType) return;
 
@@ -228,6 +231,7 @@ export function AdminPosts() {
   };
 
   const renderAIAnalysis = (post: Post, compact = false) => {
+    // Component con trong cung file: ve khung "Goi y AI" tren card va popup chi tiet.
     const analysis = post.aiAnalysis ?? {
       status: 'NOT_ANALYZED',
       provider: '',
@@ -235,32 +239,52 @@ export function AdminPosts() {
       error: '',
       analyzedAt: null,
     } as AIAnalysis;
-    const result = analysis?.result;
-    const isAnalyzing = analyzingPostId === post.id || analysis?.status === 'PROCESSING';
-    const confidence = Math.max(0, Math.min(100, Number(result?.confidence ?? 0)));
-    const signals = Array.isArray(result?.signals) ? result.signals : [];
-    const isScam = Boolean(result?.is_scam);
+    const result = analysis?.result; // JSON backend luu trong ai_analysis_result.
+    const isAnalyzing = analyzingPostId === post.id || analysis?.status === 'PROCESSING'; // hien spinner khi dang goi API.
+    const confidence = Math.max(0, Math.min(100, Number(result?.confidence ?? 0))); // ep 0-100 de ve progress bar.
+    const spamConfidence = Math.max(0, Math.min(100, Number(result?.spam_confidence ?? 0))); // diem spam/rao vat.
+    const signals = Array.isArray(result?.signals) ? result.signals : []; // cac dau hieu AI trich xuat.
+    const spamSignals = Array.isArray(result?.spam_signals) ? result.spam_signals : []; // dau hieu spam/le chu de.
+    const isScam = Boolean(result?.is_scam); // doi mau khung neu AI nghi la lua dao.
+    const isSpam = Boolean(result?.is_spam); // doi mau khung neu AI nghi la spam/rao vat.
     const confidenceClass =
       confidence >= 80
         ? 'bg-[#DC2626]'
         : confidence >= 55
           ? 'bg-[#F59E0B]'
           : 'bg-[#10B981]';
+    const spamConfidenceClass =
+      spamConfidence >= 70
+        ? 'bg-[#EA580C]'
+        : spamConfidence >= 45
+          ? 'bg-[#F59E0B]'
+          : 'bg-[#10B981]';
 
-    if (post.status !== 'PENDING' && !result) return null;
+    if (post.status !== 'PENDING' && !result) return null; // bai da xu ly va chua co AI thi khong can hien khung trong list.
 
     return (
       <div className={`mt-4 rounded-[8px] border p-4 ${
         isScam
           ? 'border-[#FECACA] bg-[#FFF7F7]'
+          : isSpam
+            ? 'border-[#FED7AA] bg-[#FFFBF5]'
           : 'border-[#BFDBFE] bg-[#F8FBFF]'
       }`}>
+        {/* Khung nay la phan frontend hien thi ket qua AI: icon, provider, action goi y, confidence va signals. */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             <div className={`h-9 w-9 rounded-[8px] flex items-center justify-center shrink-0 ${
-              isScam ? 'bg-[#FEE2E2] text-[#DC2626]' : 'bg-[#DBEAFE] text-[#2563EB]'
+              isScam
+                ? 'bg-[#FEE2E2] text-[#DC2626]'
+                : isSpam
+                  ? 'bg-[#FFEDD5] text-[#EA580C]'
+                  : 'bg-[#DBEAFE] text-[#2563EB]'
             }`}>
-              {isScam ? <ShieldAlert className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+              {isScam
+                ? <ShieldAlert className="h-5 w-5" />
+                : isSpam
+                  ? <AlertTriangle className="h-5 w-5" />
+                  : <Sparkles className="h-5 w-5" />}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -277,25 +301,46 @@ export function AdminPosts() {
                         : 'Cần xem kỹ'}
                   </span>
                 )}
+                {isSpam && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FFEDD5] text-[#9A3412]">
+                    Có dấu hiệu spam
+                  </span>
+                )}
               </div>
 
               {isAnalyzing ? (
+                // Dang phan tich: hien spinner de admin biet request ai-analyze chua xong.
                 <p className="mt-1 text-sm text-[#64748B] flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Đang phân tích nội dung...
                 </p>
               ) : analysis.status === 'FAILED' ? (
+                // Backend luu FAILED thi hien error ngay trong khung AI.
                 <p className="mt-1 text-sm text-[#991B1B]">
                   Phân tích thất bại{analysis.error ? `: ${analysis.error}` : '.'}
                 </p>
               ) : result ? (
+                // Co ket qua: hien do tin cay lua dao + spam, category goi y, tom tat va cac dau hieu.
                 <>
-                  <p className="mt-1 text-sm text-[#475569]">
-                    Độ tin cậy là lừa đảo: <strong>{confidence}%</strong>
-                    {result.category ? <> · Đề xuất: <strong>{result.category}</strong></> : null}
-                  </p>
-                  <div className="mt-2 h-2 w-full max-w-[420px] rounded-full bg-white border border-[#E2E8F0] overflow-hidden">
-                    <div className={`h-full ${confidenceClass}`} style={{ width: `${confidence}%` }} />
+                  <div className="mt-2 grid w-full max-w-[460px] gap-2 text-sm text-[#475569]">
+                    <div>
+                      <p>
+                        Lừa đảo: <strong>{confidence}%</strong>
+                        {result.category ? <> · Đề xuất: <strong>{result.category}</strong></> : null}
+                      </p>
+                      <div className="mt-1 h-2 rounded-full bg-white border border-[#E2E8F0] overflow-hidden">
+                        <div className={`h-full ${confidenceClass}`} style={{ width: `${confidence}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <p>
+                        Spam/lệch chủ đề: <strong>{spamConfidence}%</strong>
+                        {result.spam_type ? <> · Loại: <strong>{result.spam_type}</strong></> : null}
+                      </p>
+                      <div className="mt-1 h-2 rounded-full bg-white border border-[#E2E8F0] overflow-hidden">
+                        <div className={`h-full ${spamConfidenceClass}`} style={{ width: `${spamConfidence}%` }} />
+                      </div>
+                    </div>
                   </div>
                   {!compact && result.summary && (
                     <p className="mt-3 text-sm text-[#334155]">{result.summary}</p>
@@ -304,6 +349,15 @@ export function AdminPosts() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       {signals.slice(0, compact ? 3 : 5).map((signal, idx) => (
                         <span key={idx} className="text-xs px-2.5 py-1 rounded-full bg-white border border-[#E2E8F0] text-[#475569]">
+                          {signal}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {spamSignals.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {spamSignals.slice(0, compact ? 2 : 5).map((signal, idx) => (
+                        <span key={idx} className="text-xs px-2.5 py-1 rounded-full bg-[#FFF7ED] border border-[#FED7AA] text-[#9A3412]">
                           {signal}
                         </span>
                       ))}
@@ -320,6 +374,7 @@ export function AdminPosts() {
           </div>
 
           {post.status === 'PENDING' && (
+            // Nut nay chi hien voi bai cho duyet, admin bam de goi endpoint ai-analyze.
             <Button
               onClick={() => handleAnalyzePost(post)}
               disabled={isAnalyzing}
@@ -338,6 +393,7 @@ export function AdminPosts() {
 
   // ─── Cấu hình dialog ──────────────────────────────────────────────────────
   const getDialogConfig = () => {
+    // Gom title/label/button class theo action de JSX popup phia duoi gon hon.
     switch (actionType) {
       case 'approve':
         return { title: 'Duyệt bài viết', needsReason: false, confirmText: 'Duyệt bài', confirmClass: 'bg-green-600 hover:bg-green-700', reasonLabel: null };
@@ -437,6 +493,7 @@ export function AdminPosts() {
 
                 {post.status === 'PENDING' && (
                   <>
+                    {/* Bai PENDING moi co 2 nut chinh: Duyet hoac Tu choi. */}
                     <Button
                       onClick={() => handleAction(post, 'approve')}
                       className="flex items-center gap-1.5 h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-[8px]"
@@ -456,6 +513,7 @@ export function AdminPosts() {
                 )}
 
                 {post.status !== 'HIDDEN' && post.status !== 'REJECTED' && (
+                  /* Nut An: chuyen bai sang HIDDEN, khong xoa khoi database. */
                   <Button
                     onClick={() => handleAction(post, 'hide')}
                     variant="outline"
@@ -467,6 +525,7 @@ export function AdminPosts() {
                 )}
 
                 {post.status !== 'LOCKED' && post.status !== 'REJECTED' && post.status !== 'HIDDEN' && (
+                  /* Nut Khoa: chuyen bai sang LOCKED de admin danh dau bai bi khoa. */
                   <Button
                     onClick={() => handleAction(post, 'lock')}
                     variant="outline"
@@ -477,6 +536,7 @@ export function AdminPosts() {
                   </Button>
                 )}
 
+                {/* Nut Xoa: mo popup bat ly do + confirm=true roi goi admin-delete. */}
                 <Button
                   onClick={() => handleAction(post, 'delete')}
                   variant="outline"
@@ -500,6 +560,7 @@ export function AdminPosts() {
             </DialogHeader>
 
             {actionType !== 'approve' && (
+              // Canh bao hien voi action co rui ro: reject/hide/lock/delete.
               <div className="bg-[#FFF5F5] border border-[#FEE2E2] rounded-lg p-4 flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-[#E01515] shrink-0 mt-0.5" />
                 <div>
@@ -513,12 +574,14 @@ export function AdminPosts() {
             )}
 
             {actionType === 'approve' && (
+              // Approve khong can ly do, chi nhac admin bai se public ngay.
               <p className="text-sm text-[#4A5565]">
                 Bạn đang duyệt bài viết của <strong>{selectedPost?.author.name}</strong>. Bài sẽ xuất bản ngay lập tức.
               </p>
             )}
 
             {dialogConfig.needsReason && (
+              // O nhap ly do: du lieu nay gui len backend field reason.
               <div className="mt-2">
                 <label className="block text-sm font-medium text-[#1E293B] mb-2">
                   {dialogConfig.reasonLabel} <span className="text-[#E01515]">*</span>
@@ -571,12 +634,14 @@ export function AdminPosts() {
               <div className="border-t border-[#E2E8F0] mb-6" />
 
               <div className="text-[15px] text-[#1E293B] leading-relaxed whitespace-pre-wrap">
+                {/* Noi dung bai viet day du de admin doc truoc khi quyet dinh duyet/tu choi. */}
                 {selectedPost.content}
               </div>
 
+              {/* Khung goi y AI trong popup chi tiet, hien day du hon so voi card ngoai danh sach. */}
               {renderAIAnalysis(selectedPost)}
 
-              {/* Post Images */}
+              {/* Bang chung/hinh anh kem theo bai viet, giup admin doi chieu noi dung bi bao cao. */}
               {selectedPost.images && selectedPost.images.length > 0 && (
                 <div className="mt-6 max-w-3xl mx-auto">
                   <div className={`grid gap-3 ${
@@ -612,6 +677,7 @@ export function AdminPosts() {
               <div className="flex items-center gap-3 flex-wrap">
                 {selectedPost.status === 'PENDING' && (
                   <>
+                    {/* Nut duyet/tu choi trong popup chi tiet cung goi chung handleAction nhu card. */}
                     <Button onClick={() => { setShowDetailDialog(false); handleAction(selectedPost, 'approve'); }}
                       className="bg-[#00B14F] hover:bg-[#009241] h-10 text-white px-5 rounded-[8px]">
                       <Check className="h-4 w-4 mr-2" />Duyệt bài

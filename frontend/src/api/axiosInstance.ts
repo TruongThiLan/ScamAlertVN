@@ -1,20 +1,19 @@
 import axios from 'axios';
 
-// NOTE VAN DAP:
 // api la Axios instance dung cho cac API can/duoc phep gui JWT.
 // Moi request se tu dong doc access_token trong localStorage va gan vao
 // Authorization: Bearer <token>. Nho vay cac page khong can lap lai code gan token.
 
 // 1. Khởi tạo instance với cấu hình cơ bản
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/', // Địa chỉ Backend của Nguyệt
+  baseURL: 'http://127.0.0.1:8000/api/', // Địa chỉ Backend
   timeout: 10000, // Chờ tối đa 10 giây
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// 2. "Trạm thu phí" Request (Interceptors)
+// 2. Request (Interceptors)
 // Trước khi gửi yêu cầu đi, nó sẽ tự động lấy Token từ máy người dùng dán vào Header
 api.interceptors.request.use(
   (config) => {
@@ -29,8 +28,8 @@ api.interceptors.request.use(
   }
 );
 
-// 3. "Trạm kiểm soát" Response
-// Nếu Backend báo lỗi (ví dụ Token hết hạn), bạn xử lý tập trung ở đây
+// 3. Response
+// Nếu Backend báo lỗi (ví dụ Token hết hạn)
 api.interceptors.response.use(
   (response) => response,
   (error) => {

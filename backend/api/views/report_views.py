@@ -4,12 +4,20 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from ..models import Post, ScamCategory, User, Notification
 from ..serializers.report_serializers import PostSerializer, ScamCategorySerializer
+from ..serializers.post_serializers import PostModerationSerializer
 from ..serializers.moderation_serializers import (
-    PostModerationSerializer, ApprovePostSerializer, 
-    RejectPostSerializer, HidePostSerializer, 
+    RejectPostSerializer, HidePostSerializer,
     LockPostSerializer, AdminDeletePostSerializer
 )
 from ..permissions import IsAdminRole, IsAdminOrReadOnly
+
+# NOTE VAN DAP:
+# report_views.py chứa 2 ViewSet:
+#   1. ScamCategoryViewSet – quản lý danh mục lừa đảo (CRUD).
+#      - GET (list/retrieve): mọi người xem được (IsAdminOrReadOnly).
+#      - POST/PUT/PATCH/DELETE: chỉ Admin.
+#      - Không cho xóa danh mục đang có bài viết liên kết.
+#   2. PostViewSet (bản sao nhẹ hơn so với post_views.py, dùng trong môi trường report).
 
 # ========================================================
 # HELPER FUNCTIONS
@@ -32,24 +40,30 @@ def _mark_reviewed(post: Post, admin_user: User, reason: str = None):
 
 class ScamCategoryViewSet(viewsets.ModelViewSet):
     """
-    Quản lý danh mục lừa đảo.
-    - GET (list/retrieve): Mọi người xem được.
-    - POST/PUT/PATCH/DELETE: Chỉ Admin.
+    Quản lý danh mục lừa đảo (ScamCategory).
+    URL: /api/categories/
+    - GET list/retrieve: mọi người (kể cả khách) xem được nhờ IsAdminOrReadOnly.
+    - POST/PUT/PATCH/DELETE: chỉ Admin.
+    pagination_class=None: trả toàn bộ danh mục trong một response (số lượng nhỏ).
     """
     queryset = ScamCategory.objects.all()
     serializer_class = ScamCategorySerializer
     permission_classes = [IsAdminOrReadOnly]
-    pagination_class = None
+    pagination_class = None  # không phân trang, trả hết một lần.
 
     def destroy(self, request, *args, **kwargs):
-        """Không cho xóa danh mục nếu đang có bài viết liên kết."""
+        """
+        Override destroy() để ngăn xóa danh mục đang có bài viết.
+        Nếu xóa danh mục khi bài viết vẫn tồn tại, bài sẽ mất thông tin phân loại.
+        Frontend cũng kiểm tra điều này, nhưng server là lớp bảo vệ thực sự.
+        """
         instance = self.get_object()
-        if instance.posts.exists():
+        if instance.posts.exists():  # kiểm tra qua related_name 'posts' trên model Post.
             return Response(
                 {'detail': f'Không thể xóa danh mục "{instance.category_name}" vì đang có {instance.posts.count()} bài viết sử dụng.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        return super().destroy(request, *args, **kwargs)
+        return super().destroy(request, *args, **kwargs)  # gọi destroy gốc nếu an toàn.
 
 class PostViewSet(viewsets.ModelViewSet):
     """

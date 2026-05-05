@@ -79,17 +79,17 @@ class ScamCategory(models.Model):
 class Post(models.Model):
     # Post la bang trung tam: user dang bai, admin duyet, frontend public chi hien APPROVED.
     class PostStatus(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        APPROVED = 'APPROVED', 'Approved'
-        REJECTED = 'REJECTED', 'Rejected'
-        HIDDEN = 'HIDDEN', 'Hidden'
-        LOCKED = 'LOCKED', 'Locked'
+        PENDING = 'PENDING', 'Pending'  # vua tao, dang cho admin duyet.
+        APPROVED = 'APPROVED', 'Approved'  # da duyet, duoc hien public.
+        REJECTED = 'REJECTED', 'Rejected'  # bi tu choi, user xem duoc ly do.
+        HIDDEN = 'HIDDEN', 'Hidden'  # admin an bai, giu trong DB de audit.
+        LOCKED = 'LOCKED', 'Locked'  # admin khoa bai vi can han che xu ly/tiep tuc tuong tac.
 
     class AIAnalysisStatus(models.TextChoices):
-        NOT_ANALYZED = 'NOT_ANALYZED', 'Not analyzed'
-        PROCESSING = 'PROCESSING', 'Processing'
-        COMPLETED = 'COMPLETED', 'Completed'
-        FAILED = 'FAILED', 'Failed'
+        NOT_ANALYZED = 'NOT_ANALYZED', 'Not analyzed'  # admin chua bam phan tich.
+        PROCESSING = 'PROCESSING', 'Processing'  # backend dang goi AI/local rule.
+        COMPLETED = 'COMPLETED', 'Completed'  # da co JSON goi y.
+        FAILED = 'FAILED', 'Failed'  # phan tich loi, FE hien error.
 
     title = models.CharField(max_length=255)  # tieu de bai canh bao.
     content = models.TextField()  # noi dung chi tiet user viet.
@@ -200,7 +200,6 @@ class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')  # nguoi viet comment.
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')  # comment thuoc bai nao.
 
-    # Đổi sang CASCADE để giống logic Facebook (Xóa cha mất con)
     parent_comment = models.ForeignKey(
         'self',
         on_delete=models.CASCADE,

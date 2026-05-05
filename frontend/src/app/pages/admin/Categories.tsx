@@ -13,10 +13,15 @@ import { Button } from '../../components/ui/button';
 import api from '../../../api/axiosInstance';
 import type { Category } from './AdminLayout';
 
-// NOTE VAN DAP:
-// AdminCategories quan ly danh muc lua dao.
-// Du lieu categories duoc truyen tu AdminLayout; khi them/sua/xoa thanh cong
-// thi goi fetchCategories de dong bo lai sidebar va bang danh muc.
+// AdminCategories quản lý danh mục lừa đảo (ScamCategory).
+// Du lieu categories được truyền từ AdminLayout qua useOutletContext
+// (sidebar và bảng danh mục dùng chung một state, không gọi lại API rảnh công).
+// Khi thêm/sửa/xóa thành công → gọi fetchCategories() để đồng bộ lại sidebar.
+// Luồng:
+//   Thêm  : form nhanh → POST /api/categories/
+//   Sửa  : Dialog + PATCH /api/categories/<id>/
+//   Xóa  : Dialog xác nhận + DELETE /api/categories/<id>/
+//          Backend chặn xóa nếu danh mục còn bài viết sử dụng.
 
 type DialogType = 'add' | 'edit' | 'delete' | null;
 
@@ -55,7 +60,7 @@ export function AdminCategories() {
     setShowAddForm(false);
   };
 
-  // ─── Thêm / Sửa danh mục ─────────────────────────────────────────────────
+  // ─── Thêm / Sửa danh mục ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!categoryName.trim()) {
       toast.error('Vui lòng nhập tên danh mục');
@@ -65,8 +70,9 @@ export function AdminCategories() {
     setSubmitting(true);
     try {
       if (dialogType === 'add') {
+        // Thêm mới: gọi POST rồi cập nhật state, không cần reload trang.
         const res = await api.post('categories/', {
-          category_name: categoryName,
+          category_name: categoryName,  // backend dùng snake_case cho field này.
           description: categoryDescription,
         });
         const raw = res.data;
@@ -82,6 +88,7 @@ export function AdminCategories() {
         toast.success('Đã thêm danh mục mới');
 
       } else if (dialogType === 'edit' && selectedCategory) {
+        // Sửa: gọi PATCH chỉ gửi field thay đổi, không phải toàn bộ object.
         await api.patch(`categories/${selectedCategory.id}/`, {
           category_name: categoryName,
           description: categoryDescription,
@@ -108,11 +115,12 @@ export function AdminCategories() {
     }
   };
 
-  // ─── Xóa danh mục ────────────────────────────────────────────────────────
+  // ─── Xóa danh mục ──────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!selectedCategory) return;
     setSubmitting(true);
     try {
+      // Gọi DELETE; backend chặn nếu danh mục còn bài viết liên kết.
       await api.delete(`categories/${selectedCategory.id}/`);
       setCategories((prev) => prev.filter((c) => c.id !== selectedCategory.id));
       toast.success('Đã xóa danh mục');

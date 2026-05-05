@@ -179,23 +179,21 @@ export function SearchPage() {
               <button
                 type="button"
                 onClick={() => setSelectedCategory('all')}
-                className={`group flex w-full items-center justify-between rounded-[10px] border px-3 py-2 transition-all ${
+                className={`group grid min-h-[52px] w-full grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-all ${
                   selectedCategory === 'all' ? 'border-[#F7BABA] bg-[#FFF1F1]' : 'border-transparent bg-white hover:bg-[#FFF5F5]'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-sm font-semibold ${
-                      selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                    }`}
-                  >
-                    {posts.length}
-                  </div>
-                  <span className={`font-medium ${selectedCategory === 'all' ? 'text-[#E01515]' : 'text-[#111827]'}`}>
-                    Tất cả
-                  </span>
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-semibold ${
+                    selectedCategory === 'all' ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                  }`}
+                >
+                  {posts.length}
                 </div>
-                <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                <span className={`min-w-0 font-medium leading-snug ${selectedCategory === 'all' ? 'text-[#E01515]' : 'text-[#111827]'}`}>
+                  Tất cả
+                </span>
+                <ChevronRight className="h-5 w-5 shrink-0 justify-self-end text-[#99A1AF]" />
               </button>
 
               {categories.map((category) => {
@@ -205,23 +203,21 @@ export function SearchPage() {
                     key={category.id}
                     type="button"
                     onClick={() => setSelectedCategory(category.id.toString())}
-                    className={`group flex w-full items-center justify-between rounded-[10px] border px-3 py-2 transition-all ${
+                    className={`group grid min-h-[52px] w-full grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-all ${
                       isActive ? 'border-[#F7BABA] bg-[#FFF1F1]' : 'border-transparent bg-white hover:bg-[#FFF5F5]'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-sm font-semibold ${
-                          isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                        }`}
-                      >
-                        {category.count}
-                      </div>
-                      <span className={`font-medium ${isActive ? 'text-[#E01515]' : 'text-[#111827]'}`}>
-                        {category.category_name}
-                      </span>
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-semibold ${
+                        isActive ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                      }`}
+                    >
+                      {category.count}
                     </div>
-                    <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                    <span className={`min-w-0 font-medium leading-snug ${isActive ? 'text-[#E01515]' : 'text-[#111827]'}`}>
+                      {category.category_name}
+                    </span>
+                    <ChevronRight className="h-5 w-5 shrink-0 justify-self-end text-[#99A1AF]" />
                   </button>
                 );
               })}
@@ -230,23 +226,21 @@ export function SearchPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedCategory(UNCATEGORIZED_CATEGORY_ID)}
-                  className={`group flex w-full items-center justify-between rounded-[10px] border px-3 py-2 transition-all ${
+                  className={`group grid min-h-[52px] w-full grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-all ${
                     selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'border-[#F7BABA] bg-[#FFF1F1]' : 'border-transparent bg-white hover:bg-[#FFF5F5]'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-sm font-semibold ${
-                        selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
-                      }`}
-                    >
-                      {uncategorizedCount}
-                    </div>
-                    <span className={`font-medium ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'text-[#E01515]' : 'text-[#111827]'}`}>
-                      Chưa phân loại
-                    </span>
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-semibold ${
+                      selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'bg-[#E01515] text-white' : 'bg-[#F3F4F6] text-[#64748B]'
+                    }`}
+                  >
+                    {uncategorizedCount}
                   </div>
-                  <ChevronRight className="h-5 w-5 text-[#99A1AF]" />
+                  <span className={`min-w-0 font-medium leading-snug ${selectedCategory === UNCATEGORIZED_CATEGORY_ID ? 'text-[#E01515]' : 'text-[#111827]'}`}>
+                    Chưa phân loại
+                  </span>
+                  <ChevronRight className="h-5 w-5 shrink-0 justify-self-end text-[#99A1AF]" />
                 </button>
               )}
             </div>
